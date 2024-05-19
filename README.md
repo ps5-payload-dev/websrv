@@ -13,7 +13,7 @@ Examples:
 - http://ps5:8080/fs/?fmt=json - Browser the filesystem (json)
 - http://ps5:8080/fs/system_ex/app/NPXS40028/redis.conf - Download a file
 - http://ps5:8080/launch?titleId=PPSA01325 Launch ASTROs Playroom
-
+- http://ps5:8080/hbldr?path=%2Fdata%2Fdiasurgical%2Fdevilution%2Fdevilutionx Launch /data/diasurgical/devilution/devilutionx
 
 ## Building
 TODO
