@@ -63,6 +63,41 @@ launch_request(struct MHD_Connection *conn, const char* url) {
 
 
 /**
+ * Respond to a launch request.
+ **/
+static enum MHD_Result
+hbldr_request(struct MHD_Connection *conn, const char* url) {
+  struct MHD_Response *resp;
+  const char* path;
+  char *args[] = {0};
+  int ret = MHD_NO;
+  const char* page;
+  int status;
+
+  path = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "path");
+  if(!path) {
+    status = MHD_HTTP_BAD_REQUEST;
+    page = "";
+
+  } else if(sys_launch_homebrew(path, args)) {
+    status = MHD_HTTP_SERVICE_UNAVAILABLE;
+    page = "";
+  } else {
+    status = MHD_HTTP_OK;
+    page = "";
+  }
+
+  if((resp=MHD_create_response_from_buffer(strlen(page), (void*)page,
+					   MHD_RESPMEM_PERSISTENT))) {
+    ret = websrv_queue_response(conn, status, resp);
+    MHD_destroy_response(resp);
+  }
+
+  return ret;
+}
+
+
+/**
  *
  **/
 static enum MHD_Result
@@ -94,6 +129,10 @@ ahc_echo(void *cls, struct MHD_Connection *conn,
 
   if(!strcmp("/launch", url)) {
     return launch_request(conn, url);
+  }
+
+  if(!strcmp("/hbldr", url)) {
+    return hbldr_request(conn, url);
   }
 
   if(!strcmp("/", url) || !url[0]) {

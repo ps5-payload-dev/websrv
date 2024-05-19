@@ -1,6 +1,7 @@
 gen
 *.o
 *.elf
+*.7z
 websrv.pc
 *~
 
