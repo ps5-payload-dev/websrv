@@ -56,7 +56,7 @@ typedef struct dir_read_sm {
  * Read parts of a file on disk.
  **/
 static ssize_t
-on_file_read(void *cls, uint64_t pos, char *buf, size_t max) {
+file_read(void *cls, uint64_t pos, char *buf, size_t max) {
   FILE *file = cls;
   size_t len;
 
@@ -80,7 +80,7 @@ on_file_read(void *cls, uint64_t pos, char *buf, size_t max) {
  * Close a file on disk.
  **/
 static void
-on_file_close(void *cls) {
+file_close(void *cls) {
   FILE *file = cls;
 
   if(file) {
@@ -90,10 +90,51 @@ on_file_close(void *cls) {
 
 
 /**
+ * Read the contents of a directory, and render it as json.
+ **/
+static ssize_t
+dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
+  dir_read_sm_t* sm = cls;
+  struct dirent *e;
+  int res;
+
+  if(max < 512) {
+    return 0;
+  }
+
+  if(sm->state == 0) {
+    res = snprintf(buf, max, "[{ \"name\": \".\"}");
+    sm->state++;
+    return res;
+  }
+
+  if(sm->state == 1) {
+    if(!(e=readdir(sm->dir))) {
+      sm->state++;
+      return 0;
+    }
+    if(e->d_name[0] == '.') {
+      return 0;
+    }
+
+    return snprintf(buf, max, ",{ \"name\": \"%s\"}", e->d_name);
+  }
+
+  if(sm->state == 2) {
+    res = snprintf(buf, max, "]");
+    sm->state++;
+    return res;
+  }
+
+  return MHD_CONTENT_READER_END_OF_STREAM;
+}
+
+
+/**
  * Read the contents of a directory, and render it as html.
  **/
 static ssize_t
-on_dir_read(void *cls, uint64_t pos, char *buf, size_t max) {
+dir_read_html(void *cls, uint64_t pos, char *buf, size_t max) {
   dir_read_sm_t* sm = cls;
   struct dirent *e;
   int res;
@@ -111,7 +152,7 @@ on_dir_read(void *cls, uint64_t pos, char *buf, size_t max) {
 		   "  </head>"						\
 		   "  <body>"						\
 		   "    <h1>Index of %s</h1>"				\
-		   "    <ul>"
+		   "    <ul>"						\
 		   ,
 		   sm->path, sm->path);
     sm->state++;
@@ -144,7 +185,7 @@ on_dir_read(void *cls, uint64_t pos, char *buf, size_t max) {
  * Close a directory.
  **/
 static void
-on_dir_close(void *cls) {
+dir_close(void *cls) {
   dir_read_sm_t* sm = cls;
 
   if(sm && sm->dir) {
@@ -157,7 +198,7 @@ on_dir_close(void *cls) {
  * Respond to a file request.
  **/
 static enum MHD_Result
-on_file_request(struct MHD_Connection *conn, const char* path) {
+file_request(struct MHD_Connection *conn, const char* path) {
   struct MHD_Response *resp;
   int ret = MHD_NO;
   struct stat st;
@@ -177,8 +218,8 @@ on_file_request(struct MHD_Connection *conn, const char* path) {
   }
 
   if((resp=MHD_create_response_from_callback(st.st_size, 32 * PAGE_SIZE,
-					     &on_file_read, file,
-					     &on_file_close))) {
+					     &file_read, file,
+					     &file_close))) {
     ret = MHD_queue_response (conn, MHD_HTTP_OK, resp);
     MHD_destroy_response(resp);
     return ret;
@@ -194,12 +235,15 @@ on_file_request(struct MHD_Connection *conn, const char* path) {
  * Respond to a directory request.
  **/
 static enum MHD_Result
-on_dir_request(struct MHD_Connection *conn, const char* path) {
+dir_request(struct MHD_Connection *conn, const char* path) {
+  MHD_ContentReaderCallback dir_read_cb;
   size_t len = strlen(path);
   struct MHD_Response *resp;
   char url[PATH_MAX];
   int ret = MHD_NO;
   dir_read_sm_t sm;
+  const char* mime;
+  const char* fmt;
   DIR *dir;
 
   if(!len || path[len-1] != '/') {
@@ -226,10 +270,21 @@ on_dir_request(struct MHD_Connection *conn, const char* path) {
   sm.dir = dir;
   sm.path = path;
   sm.state = 0;
+
+  fmt = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "fmt");
+  if(fmt && !strcmp(fmt, "json")) {
+    dir_read_cb = &dir_read_json;
+    mime = "application/json";
+  } else {
+    dir_read_cb = &dir_read_html;
+    mime = "text/html";
+  }
+
   if((resp=MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, 32*PAGE_SIZE,
-					     &on_dir_read, &sm,
-					     &on_dir_close))) {
-    ret = MHD_queue_response (conn, MHD_HTTP_OK, resp);
+					     dir_read_cb, &sm,
+					     &dir_close))) {
+    MHD_add_response_header(resp, "Content-Type", mime);
+    ret = MHD_queue_response(conn, MHD_HTTP_OK, resp);
     MHD_destroy_response(resp);
     return ret;
   }
@@ -241,21 +296,21 @@ on_dir_request(struct MHD_Connection *conn, const char* path) {
 
 
 enum MHD_Result
-fs_on_request(struct MHD_Connection *conn, const char* url) {
+fs_request(struct MHD_Connection *conn, const char* url) {
   struct MHD_Response *resp;
   const char* path = url+3;
   int ret = MHD_NO;
   struct stat st;
 
   if(!strlen(path)) {
-    return on_dir_request(conn, "/");
+    return dir_request(conn, "/");
   }
 
   if(!stat(path, &st)) {
     if(S_ISREG(st.st_mode)) {
-      return on_file_request(conn, path);
+      return file_request(conn, path);
     } else {
-      return on_dir_request(conn, path);
+      return dir_request(conn, path);
     }
   }
 

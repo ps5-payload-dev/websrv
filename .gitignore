@@ -1,4 +1,6 @@
+gen
 *.o
 *.elf
+websrv.pc
 *~
 
