@@ -3,7 +3,13 @@ This is a simple web server that can be executed on a Playstation 5 that has
 been jailbroken via the [BD-J][bdj] or the [webkit][webkit] entry points.
 
 ## Quick-start
-TODO
+To deploy ps5-payload-websrv, first launch the [ps5-payload-elfldr][elfldr], then
+load the payload and connect to the web server on port 8080:
+
+```console
+john@localhost:~$ export PS5_HOST=ps5
+john@localhost:~$ wget -q -O - https://github.com/ps5-payload-dev/websrv/releases/download/v0.1/Payload.zip | gunzip -c -d | nc -q0 $PS5_HOST 9021
+john@localhost:~ $wget -q -O - http://$PS5_HOST:8080/index.html
 
 ## Available services
 TODO
