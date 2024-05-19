@@ -40,6 +40,8 @@ int  sceUserServiceInitialize(void*);
 int  sceUserServiceGetForegroundUser(uint32_t *user_id);
 void sceUserServiceTerminate(void);
 
+int sceSystemServiceGetAppIdOfRunningBigApp(void);
+int sceSystemServiceKillApp(int app_id, int how, int reason, int core_dump);
 int sceSystemServiceLaunchApp(const char* title_id, char** argv,
 			      app_launch_ctx_t* ctx);
 
@@ -48,6 +50,7 @@ int
 sys_launch_title(const char* title_id, const char* args) {
   app_launch_ctx_t ctx = {0};
   char* argv[255];
+  int app_id;
   char* buf;
   int err;
 
@@ -59,6 +62,13 @@ sys_launch_title(const char* title_id, const char* args) {
     perror("sceUserServiceGetForegroundUser");
     free(buf);
     return err;
+  }
+
+  if((app_id=sceSystemServiceGetAppIdOfRunningBigApp()) > 0) {
+    if((err=sceSystemServiceKillApp(app_id, -1, 0, 0))) {
+      perror("sceSystemServiceKillApp");
+      return err;
+    }
   }
 
   buf = strdup(args);
