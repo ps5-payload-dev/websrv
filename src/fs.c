@@ -95,15 +95,19 @@ file_close(void *cls) {
 static ssize_t
 dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
   dir_read_sm_t* sm = cls;
+  char path[PATH_MAX];
   struct dirent *e;
+  struct stat st;
+  mode_t mode;
   int res;
+  char c;
 
   if(max < 512) {
     return 0;
   }
 
   if(sm->state == 0) {
-    res = snprintf(buf, max, "[{ \"name\": \".\"}");
+    res = snprintf(buf, max, "[{ \"name\": \".\", \"mode\": \"d\"}");
     sm->state++;
     return res;
   }
@@ -117,7 +121,21 @@ dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
       return 0;
     }
 
-    return snprintf(buf, max, ",{ \"name\": \"%s\"}", e->d_name);
+    sprintf(path, "%s/%s", sm->path, e->d_name);
+    if(stat(path, &st) != 0) {
+      return 0;
+    }
+
+    if(S_ISDIR(st.st_mode)) c = 'd';
+    else if(S_ISBLK(st.st_mode)) c = 'b';
+    else if(S_ISCHR(st.st_mode)) c = 'c';
+    else if(S_ISLNK(st.st_mode)) c = 'l';
+    else if(S_ISFIFO(st.st_mode)) c = 'p';
+    else if(S_ISSOCK(st.st_mode)) c = 's';
+    else c = '-';
+
+    return snprintf(buf, max, ",{ \"name\": \"%s\", \"mode\": \"%c\"}",
+		    e->d_name, c);
   }
 
   if(sm->state == 2) {
