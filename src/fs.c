@@ -28,6 +28,7 @@ along with this program; see the file COPYING. If not, see
 #include <microhttpd.h>
 
 #include "fs.h"
+#include "websrv.h"
 
 
 /**
@@ -229,7 +230,7 @@ file_request(struct MHD_Connection *conn, const char* path) {
   if(!file) {
     if((resp=MHD_create_response_from_buffer(strlen(PAGE_404), PAGE_404,
 					     MHD_RESPMEM_PERSISTENT))) {
-      ret = MHD_queue_response(conn, MHD_HTTP_NOT_FOUND, resp);
+      ret = websrv_queue_response(conn, MHD_HTTP_NOT_FOUND, resp);
       MHD_destroy_response(resp);
     }
     return ret;
@@ -238,7 +239,7 @@ file_request(struct MHD_Connection *conn, const char* path) {
   if((resp=MHD_create_response_from_callback(st.st_size, 32 * PAGE_SIZE,
 					     &file_read, file,
 					     &file_close))) {
-    ret = MHD_queue_response (conn, MHD_HTTP_OK, resp);
+    ret = websrv_queue_response (conn, MHD_HTTP_OK, resp);
     MHD_destroy_response(resp);
     return ret;
   }
@@ -271,7 +272,7 @@ dir_request(struct MHD_Connection *conn, const char* path) {
     }
 
     MHD_add_response_header(resp, MHD_HTTP_HEADER_LOCATION, url);
-    ret = MHD_queue_response(conn, MHD_HTTP_MOVED_PERMANENTLY, resp);
+    ret = websrv_queue_response(conn, MHD_HTTP_MOVED_PERMANENTLY, resp);
     MHD_destroy_response(resp);
     return ret;
   }
@@ -279,7 +280,7 @@ dir_request(struct MHD_Connection *conn, const char* path) {
   if(!(dir=opendir(path))) {
     if((resp=MHD_create_response_from_buffer(strlen(PAGE_404), PAGE_404,
 					     MHD_RESPMEM_PERSISTENT))) {
-      ret = MHD_queue_response(conn, MHD_HTTP_NOT_FOUND, resp);
+      ret = websrv_queue_response(conn, MHD_HTTP_NOT_FOUND, resp);
       MHD_destroy_response(resp);
     }
     return ret;
@@ -302,7 +303,7 @@ dir_request(struct MHD_Connection *conn, const char* path) {
 					     dir_read_cb, &sm,
 					     &dir_close))) {
     MHD_add_response_header(resp, "Content-Type", mime);
-    ret = MHD_queue_response(conn, MHD_HTTP_OK, resp);
+    ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
     MHD_destroy_response(resp);
     return ret;
   }
@@ -334,7 +335,7 @@ fs_request(struct MHD_Connection *conn, const char* url) {
 
   if((resp=MHD_create_response_from_buffer(strlen(PAGE_404), PAGE_404,
 					   MHD_RESPMEM_PERSISTENT))) {
-    ret = MHD_queue_response(conn, MHD_HTTP_NOT_FOUND, resp);
+    ret = websrv_queue_response(conn, MHD_HTTP_NOT_FOUND, resp);
     MHD_destroy_response(resp);
   }
 

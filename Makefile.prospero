@@ -26,8 +26,8 @@ endif
 PYTHON ?= python3
 
 BIN    := websrv.elf
-SRCS   := src/sys_prospero.c src/asset.c src/fs.c src/main.c
-CFLAGS := -Wall -Werror -lmicrohttpd
+SRCS   := src/sys_prospero.c src/websrv.c src/asset.c src/fs.c src/main.c
+CFLAGS := -Wall -Werror
 LDADD  := -lmicrohttpd -lSceSystemService -lSceUserService
 
 ASSETS   := $(wildcard assets/*)

@@ -24,6 +24,7 @@ along with this program; see the file COPYING. If not, see
 #include "asset.h"
 #include "fs.h"
 #include "sys.h"
+#include "websrv.h"
 
 
 /**
@@ -53,7 +54,7 @@ launch_request(struct MHD_Connection *conn, const char* url) {
 
   if((resp=MHD_create_response_from_buffer(strlen(page), (void*)page,
 					   MHD_RESPMEM_PERSISTENT))) {
-    ret = MHD_queue_response(conn, status, resp);
+    ret = websrv_queue_response(conn, status, resp);
     MHD_destroy_response(resp);
   }
 

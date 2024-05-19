@@ -20,6 +20,8 @@ along with this program; see the file COPYING. If not, see
 #include <microhttpd.h>
 
 #include "fs.h"
+#include "websrv.h"
+
 
 /**
  * File not found (404)
@@ -76,7 +78,7 @@ asset_request(struct MHD_Connection *conn, const char* url) {
 
   if((resp=MHD_create_response_from_buffer(size, data,
 					   MHD_RESPMEM_PERSISTENT))) {
-    ret = MHD_queue_response(conn, status, resp);
+    ret = websrv_queue_response(conn, status, resp);
     MHD_destroy_response(resp);
   }
 
