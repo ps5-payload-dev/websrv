@@ -34,15 +34,13 @@ jobs:
         make DESTDIR=${{ runner.tool_cache }}/ps5-payload-sdk clean install
         echo PS5_PAYLOAD_SDK=${{ runner.tool_cache }}/ps5-payload-sdk >> $GITHUB_ENV
 
-    - name: Install libmicrohttpd
-      run: |
-        ./libmicrohttpd.sh
-
     - name: Checkout Payload
       uses: actions/checkout@v3
 
     - name: Build Payload
-      run: make clean all
+      run: |
+        bash libmicrohttpd.sh
+        make clean all
 
     - name: Upload Payload
       uses: actions/upload-artifact@v3
