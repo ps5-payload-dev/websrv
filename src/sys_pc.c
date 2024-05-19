@@ -20,28 +20,14 @@ along with this program; see the file COPYING. If not, see
 
 
 int
-sys_launch_title(const char* title_id, char** args) {
-  printf("launch title: %s ", title_id);
-
-  while(args[0]) {
-    printf("%s ", args[0]);
-    args++;
-  }
-  puts("");
-
+sys_launch_title(const char* title_id, char* args) {
+  printf("launch title: %s %s", title_id, args);
   return 0;
 }
 
 
 int
-sys_launch_homebrew(const char* path, char** args) {
-  printf("launch homebrew: %s ", path);
-
-  while(args[0]) {
-    printf("%s ", args[0]);
-    args++;
-  }
-  puts("");
-
+sys_launch_homebrew(const char* path, char* args) {
+  printf("launch homebrew: %s %s", path, args);
   return 0;
 }

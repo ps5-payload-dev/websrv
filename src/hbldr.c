@@ -34,6 +34,8 @@ along with this program; see the file COPYING. If not, see
 
 #include "elfldr.h"
 #include "pt.h"
+#include "sys.h"
+#include "websrv.h"
 
 
 #define PSNOW_EBOOT "/system_ex/app/NPXS40106/eboot.bin"
@@ -398,11 +400,17 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname) {
 
 
 int
-sys_launch_homebrew(const char* path, char** args) {
+sys_launch_homebrew(const char* path, const char* args) {
   uint32_t user_id;
+  char* argv[255];
   uint8_t* elf;
   int app_id;
   pid_t pid;
+  char* buf;
+
+  if(!args) {
+    args = "";
+  }
 
   if(!(elf=readfile(path, 0))) {
     return -1;
@@ -430,10 +438,14 @@ sys_launch_homebrew(const char* path, char** args) {
     }
   }
 
-  if((pid=bigapp_launch(user_id, args)) < 0) {
+  buf = strdup(args);
+  websrv_split_args(buf, argv, 255);
+  if((pid=bigapp_launch(user_id, argv)) < 0) {
+    free(buf);
     return -1;
   }
 
+  free(buf);
   kernel_set_proc_rootdir(pid, kernel_get_root_vnode());
   kernel_set_proc_jaildir(pid, 0);
 

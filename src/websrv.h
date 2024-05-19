@@ -22,3 +22,5 @@ enum MHD_Result websrv_queue_response(struct MHD_Connection *conn,
 				      unsigned int status,
 				      struct MHD_Response *resp);
 
+
+void websrv_split_args(char* args, char** argv, size_t size);

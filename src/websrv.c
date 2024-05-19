@@ -14,6 +14,9 @@ You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
+#include <stdlib.h>
+#include <string.h>
+
 #include <microhttpd.h>
 
 #include "websrv.h"
@@ -29,3 +32,23 @@ websrv_queue_response(struct MHD_Connection *conn, unsigned int status,
 }
 
 
+void
+websrv_split_args(char* args, char** argv, size_t size) {
+  size_t len = strlen(args);
+
+  for(int i=0, j=0; i<len && j<size; i++) {
+    if(args[i] == ' ') {
+      args[i] = 0;
+      continue;
+    }
+
+    if(args[i] && !i) {
+      argv[j++] = args+i;
+      continue;
+    }
+
+    if(args[i] && !args[i-1]) {
+      argv[j++] = args+i;
+    }
+  }
+}

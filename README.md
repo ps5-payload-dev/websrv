@@ -14,6 +14,7 @@ Examples:
 - http://ps5:8080/fs/system_ex/app/NPXS40028/redis.conf - Download a file
 - http://ps5:8080/launch?titleId=PPSA01325 Launch ASTROs Playroom
 - http://ps5:8080/hbldr?path=/data/diasurgical/devilution/devilutionx - Launch /data/diasurgical/devilution/devilutionx
+- http://ps5:8080/hbldr?path=/data/LakeSnes/lakesnes.elf&args=/data/LakeSnes/roms/punch.smc - Launch lakesnes.elf with the rom punch.smc
 
 ## Building
 TODO

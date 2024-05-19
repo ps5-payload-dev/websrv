@@ -34,25 +34,22 @@ static enum MHD_Result
 launch_request(struct MHD_Connection *conn, const char* url) {
   struct MHD_Response *resp;
   const char* title_id;
-  char *args[] = {0};
+  const char *args;
   int ret = MHD_NO;
-  const char* page;
   int status;
 
   title_id = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "titleId");
+  args = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "args");
+
   if(!title_id) {
     status = MHD_HTTP_BAD_REQUEST;
-    page = "";
-
   } else if(sys_launch_title(title_id, args)) {
     status = MHD_HTTP_SERVICE_UNAVAILABLE;
-    page = "";
   } else {
     status = MHD_HTTP_OK;
-    page = "";
   }
 
-  if((resp=MHD_create_response_from_buffer(strlen(page), (void*)page,
+  if((resp=MHD_create_response_from_buffer(0, "",
 					   MHD_RESPMEM_PERSISTENT))) {
     ret = websrv_queue_response(conn, status, resp);
     MHD_destroy_response(resp);
@@ -69,26 +66,22 @@ static enum MHD_Result
 hbldr_request(struct MHD_Connection *conn, const char* url) {
   struct MHD_Response *resp;
   const char* path;
-  char *args[] = {0};
+  const char *args;
   int ret = MHD_NO;
-  const char* page;
   int status;
 
   path = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "path");
+  args = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "args");
+
   if(!path) {
     status = MHD_HTTP_BAD_REQUEST;
-    page = "";
-
   } else if(sys_launch_homebrew(path, args)) {
     status = MHD_HTTP_SERVICE_UNAVAILABLE;
-    page = "";
   } else {
     status = MHD_HTTP_OK;
-    page = "";
   }
 
-  if((resp=MHD_create_response_from_buffer(strlen(page), (void*)page,
-					   MHD_RESPMEM_PERSISTENT))) {
+  if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
     ret = websrv_queue_response(conn, status, resp);
     MHD_destroy_response(resp);
   }

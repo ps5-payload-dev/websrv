@@ -23,6 +23,9 @@ along with this program; see the file COPYING. If not, see
 #include <sys/sysctl.h>
 #include <sys/syscall.h>
 
+#include "sys.h"
+#include "websrv.h"
+
 
 typedef struct app_launch_ctx {
   uint32_t structsize;
@@ -42,19 +45,31 @@ int sceSystemServiceLaunchApp(const char* title_id, char** argv,
 
 
 int
-sys_launch_title(const char* title_id, char** args) {
+sys_launch_title(const char* title_id, const char* args) {
   app_launch_ctx_t ctx = {0};
+  char* argv[255];
+  char* buf;
   int err;
+
+  if(!args) {
+    args = "";
+  }
 
   if((err=sceUserServiceGetForegroundUser(&ctx.user_id))) {
     perror("sceUserServiceGetForegroundUser");
+    free(buf);
     return err;
   }
 
-  if((err=sceSystemServiceLaunchApp(title_id, args, &ctx)) < 0) {
+  buf = strdup(args);
+  websrv_split_args(buf, argv, 255);
+  if((err=sceSystemServiceLaunchApp(title_id, argv, &ctx)) < 0) {
     perror("sceSystemServiceLaunchApp");
+    free(buf);
     return err;
   }
+
+  free(buf);
 
   return 0;
 }
