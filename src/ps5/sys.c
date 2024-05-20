@@ -98,12 +98,12 @@ sys_launch_homebrew(const char* path, const char* args) {
   int fds[2];
   char* buf;
   pid_t pid;
-  
-  printf("launch homebrew: %s %s\n", path, args);
 
   if(!args) {
     args = "";
   }
+
+  printf("launch homebrew: %s %s\n", path, args);
 
   if(pipe(fds)) {
     perror("pipe");
@@ -135,11 +135,11 @@ sys_launch_title(const char* title_id, const char* args) {
   char* buf;
   int err;
 
-  printf("launch title: %s %s\n", title_id, args);
-
   if(!args) {
     args = "";
   }
+
+  printf("launch title: %s %s\n", title_id, args);
 
   if((err=sceUserServiceGetForegroundUser(&ctx.user_id))) {
     perror("sceUserServiceGetForegroundUser");
