@@ -69,19 +69,6 @@ typedef struct elfldr_ctx {
 
 
 /**
- * Absolute path to the SceSpZeroConf eboot.
- **/
-static const char* SceSpZeroConf = "/system/vsh/app/NPXS40112/eboot.bin";
-
-
-/**
- *
- **/
-int sceKernelSpawn(int *pid, int dbg, const char *path, char *root,
-		   char* argv[]);
-
-
-/**
  *
  **/
 extern char** environ;
@@ -490,27 +477,6 @@ elfldr_prepare_exec(pid_t pid, uint8_t *elf) {
 }
 
 
-/**
- * Set the name of a process.
- **/
-static int
-elfldr_set_procname(pid_t pid, const char* name) {
-  intptr_t buf;
-
-  if((buf=pt_mmap(pid, 0, PAGE_SIZE, PROT_READ | PROT_WRITE,
-		  MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)) == -1) {
-    pt_perror(pid, "pt_mmap");
-    return -1;
-  }
-
-  mdbg_copyin(pid, name, buf, strlen(name)+1);
-  pt_syscall(pid, SYS_thr_set_name, -1, buf);
-  pt_msync(pid, buf, PAGE_SIZE, MS_SYNC);
-  pt_munmap(pid, buf, PAGE_SIZE);
-
-  return 0;
-}
-
 
 int
 elfldr_exec(int stdin_fd, int stdout_fd, int stderr_fd,
@@ -565,136 +531,5 @@ elfldr_exec(int stdin_fd, int stdout_fd, int stderr_fd,
   }
 
   return error;
-}
-
-
-/**
- * Set the heap size for libc.
- **/
-static int
-elfldr_set_heap_size(pid_t pid, ssize_t size) {
-  intptr_t sceLibcHeapSize;
-  intptr_t sceLibcParam;
-  intptr_t sceProcParam;
-  intptr_t Need_sceLibc;
-
-  if(!(sceProcParam=pt_sceKernelGetProcParam(pid))) {
-    pt_perror(pid, "pt_sceKernelGetProcParam");
-    return -1;
-  }
-
-  if(mdbg_copyout(pid, sceProcParam+56, &sceLibcParam,
-		  sizeof(sceLibcParam))) {
-    perror("mdbg_copyout");
-    return -1;
-  }
-
-  if(mdbg_copyout(pid, sceLibcParam+16, &sceLibcHeapSize,
-		  sizeof(sceLibcHeapSize))) {
-    perror("mdbg_copyout");
-    return -1;
-  }
-
-  if(mdbg_setlong(pid, sceLibcHeapSize, size)) {
-    perror("mdbg_setlong");
-    return -1;
-  }
-
-  if(size != -1) {
-    return 0;
-  }
-
-  if(mdbg_copyout(pid, sceLibcParam+72, &Need_sceLibc,
-		  sizeof(Need_sceLibc))) {
-    perror("mdbg_copyout");
-    return -1;
-  }
-
-  return mdbg_setlong(pid, sceLibcParam+32, Need_sceLibc);
-}
-
-
-/**
- * Execute an ELF inside a new process.
- **/
-pid_t
-elfldr_spawn(int stdin_fd, int stdout_fd, int stderr_fd,
-	     uint8_t* elf, char** argv) {
-  uint8_t int3instr = 0xcc;
-  intptr_t brkpoint;
-  uint8_t orginstr;
-  pid_t pid = -1;
-
-  if(sceKernelSpawn(&pid, 1, SceSpZeroConf, 0, argv)) {
-    perror("sceKernelSpawn");
-    return -1;
-  }
-
-  // The proc is now in the STOP state, with the instruction pointer pointing
-  // at the libkernel entry. Let the kernel assign process parameters accessed
-  // via sceKernelGetProcParam()
-  if(pt_syscall(pid, 599)) {
-    puts("sys_dynlib_process_needed_and_relocate failed");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
-    return -1;
-  }
-
-  // Allow libc to allocate arbitrary amount of memory.
-  elfldr_set_heap_size(pid, -1);
-
-  //Insert a breakpoint at the eboot entry.
-  if(!(brkpoint=kernel_dynlib_entry_addr(pid, 0))) {
-    puts("kernel_dynlib_entry_addr failed");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
-    return -1;
-  }
-  brkpoint += 58;// offset to invocation of main()
-  if(mdbg_copyout(pid, brkpoint, &orginstr, sizeof(orginstr))) {
-    perror("mdbg_copyout");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
-    return -1;
-  }
-  if(mdbg_copyin(pid, &int3instr, brkpoint, sizeof(int3instr))) {
-    perror("mdbg_copyin");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
-    return -1;
-  }
-
-  // Continue execution until we hit the breakpoint, then remove it.
-  if(pt_continue(pid, SIGCONT)) {
-    perror("pt_continue");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
-    return -1;
-  }
-  if(waitpid(pid, 0, 0) == -1) {
-    perror("waitpid");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
-    return -1;
-  }
-  if(mdbg_copyin(pid, &orginstr, brkpoint, sizeof(orginstr))) {
-    perror("mdbg_copyin");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
-    return -1;
-  }
-
-  if(kernel_set_ucred_uid(pid, 0)) {
-    perror("kernel_set_ucred_uid failed()");
-  }
-
-  // Execute the ELF
-  elfldr_set_procname(pid, argv[0]);
-  if(elfldr_exec(stdin_fd, stdout_fd, stderr_fd, pid, elf)) {
-    kill(pid, SIGKILL);
-    return -1;
-  }
-
-  return pid;
 }
 

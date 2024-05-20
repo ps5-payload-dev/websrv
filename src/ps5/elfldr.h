@@ -14,22 +14,12 @@ You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
-#include <stdio.h>
+#pragma once
 
-#include "websrv.h"
+#include <unistd.h>
 
-
-int
-main() {
-  const uint16_t port = 8080;
-
-  printf("Web server was compiled at %s %s\n", __DATE__, __TIME__);
-
-  while(1) {
-    websrv_listen(port);
-    sleep(3);
-  }
-
-  return 0;
-}
-
+/**
+ * Execute an ELF inside the process with the given pid.
+ **/
+int elfldr_exec(int stdin_fd, int stdout_fd, int stderr_fd,
+		pid_t pid, uint8_t* elf);

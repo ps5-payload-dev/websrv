@@ -14,19 +14,18 @@ You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
-#pragma once
-
-#include <unistd.h>
-
-/**
- * Spawn a new process.
- **/
-pid_t elfldr_spawn(int stdin_fd, int stdout_fd, int stderr_fd,
-		   uint8_t *elf, char* argv[]);
+#include <stdio.h>
 
 
-/**
- * Execute an ELF inside the process with the given pid.
- **/
-int elfldr_exec(int stdin_fd, int stdout_fd, int stderr_fd,
-		pid_t pid, uint8_t* elf);
+int
+sys_launch_title(const char* title_id, char* args) {
+  printf("launch title: %s %s\n", title_id, args);
+  return 0;
+}
+
+
+int
+sys_launch_homebrew(const char* path, char* args) {
+  printf("launch homebrew: %s %s\n", path, args);
+  return 0;
+}

@@ -17,7 +17,9 @@
 PYTHON ?= python3
 
 BIN   := websrv.pc
-SRCS  := src/sys_pc.c src/websrv.c src/asset.c src/fs.c src/main.c
+SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c
+SRCS   += src/pc/sys.c
+
 LDADD := -lmicrohttpd
 
 ASSETS   := $(wildcard assets/*)

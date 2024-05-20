@@ -21,10 +21,12 @@ along with this program; see the file COPYING. If not, see
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <libgen.h>
 
 #include <sys/mman.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
 #include <sys/sysctl.h>
 #include <sys/user.h>
 #include <sys/wait.h>
@@ -74,7 +76,6 @@ typedef struct app_launch_ctx {
 int sceUserServiceInitialize(void*);
 int sceUserServiceGetForegroundUser(uint32_t *user_id);
 int sceUserServiceTerminate(void);
-
 
 int sceSystemServiceGetAppIdOfRunningBigApp(void);
 int sceSystemServiceKillApp(int app_id, int how, int reason, int core_dump);
@@ -333,6 +334,28 @@ bigapp_launch(uint32_t user_id, char** argv) {
 
 
 /**
+ * Set the name of a process.
+ **/
+int
+bigapp_set_procname(pid_t pid, const char* name) {
+  intptr_t buf;
+
+  if((buf=pt_mmap(pid, 0, PAGE_SIZE, PROT_READ | PROT_WRITE,
+		  MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)) == -1) {
+    pt_perror(pid, "pt_mmap");
+    return -1;
+  }
+
+  mdbg_copyin(pid, name, buf, strlen(name)+1);
+  pt_syscall(pid, SYS_thr_set_name, -1, buf);
+  pt_msync(pid, buf, PAGE_SIZE, MS_SYNC);
+  pt_munmap(pid, buf, PAGE_SIZE);
+
+  return 0;
+}
+
+
+/**
  *
  **/
 static pid_t
@@ -387,6 +410,7 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname) {
   }
 
   bigapp_set_argv0(pid, progname);
+  bigapp_set_procname(pid, basename(progname));
 
   // Execute the ELF
   if(elfldr_exec(STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, pid, elf)) {
@@ -400,17 +424,11 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname) {
 
 
 int
-sys_launch_homebrew(const char* path, const char* args) {
+hbldr_launch(const char* path, char** argv) {
   uint32_t user_id;
-  char* argv[255];
   uint8_t* elf;
   int app_id;
   pid_t pid;
-  char* buf;
-
-  if(!args) {
-    args = "";
-  }
 
   if(!(elf=readfile(path, 0))) {
     return -1;
@@ -438,17 +456,17 @@ sys_launch_homebrew(const char* path, const char* args) {
     }
   }
 
-  buf = strdup(args);
-  websrv_split_args(buf, argv, 255);
   if((pid=bigapp_launch(user_id, argv)) < 0) {
-    free(buf);
     return -1;
   }
 
-  free(buf);
   kernel_set_proc_rootdir(pid, kernel_get_root_vnode());
   kernel_set_proc_jaildir(pid, 0);
 
-  return bigapp_replace(pid, elf, path);
+  if(bigapp_replace(pid, elf, path) < 0) {
+    return -1;
+  }
+
+  return 0;
 }
 

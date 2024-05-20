@@ -24,3 +24,5 @@ enum MHD_Result websrv_queue_response(struct MHD_Connection *conn,
 
 
 void websrv_split_args(char* args, char** argv, size_t size);
+
+int websrv_listen(unsigned short port);

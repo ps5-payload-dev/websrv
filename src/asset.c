@@ -45,7 +45,7 @@ typedef struct asset {
 
 static asset_t* g_asset_head = 0;
 
-#include <stdio.h>
+
 void
 asset_register(const char* path, void* data, size_t size) {
   asset_t* a = calloc(1, sizeof(asset_t));

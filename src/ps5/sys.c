@@ -23,6 +23,8 @@ along with this program; see the file COPYING. If not, see
 #include <sys/sysctl.h>
 #include <sys/syscall.h>
 
+#include "hbldr.h"
+#include "pt.h"
 #include "sys.h"
 #include "websrv.h"
 
@@ -46,50 +48,11 @@ int sceSystemServiceLaunchApp(const char* title_id, char** argv,
 			      app_launch_ctx_t* ctx);
 
 
-int
-sys_launch_title(const char* title_id, const char* args) {
-  app_launch_ctx_t ctx = {0};
-  char* argv[255];
-  int app_id;
-  char* buf;
-  int err;
-
-  if(!args) {
-    args = "";
-  }
-
-  if((err=sceUserServiceGetForegroundUser(&ctx.user_id))) {
-    perror("sceUserServiceGetForegroundUser");
-    free(buf);
-    return err;
-  }
-
-  if((app_id=sceSystemServiceGetAppIdOfRunningBigApp()) > 0) {
-    if((err=sceSystemServiceKillApp(app_id, -1, 0, 0))) {
-      perror("sceSystemServiceKillApp");
-      return err;
-    }
-  }
-
-  buf = strdup(args);
-  websrv_split_args(buf, argv, 255);
-  if((err=sceSystemServiceLaunchApp(title_id, argv, &ctx)) < 0) {
-    perror("sceSystemServiceLaunchApp");
-    free(buf);
-    return err;
-  }
-
-  free(buf);
-
-  return 0;
-}
-
-
 /**
  * Fint the pid of a process with the given name.
  **/
 static pid_t
-find_pid(const char* name) {
+ps5_find_pid(const char* name) {
   int mib[4] = {1, 14, 8, 0};
   pid_t mypid = getpid();
   pid_t pid = -1;
@@ -129,8 +92,86 @@ find_pid(const char* name) {
 }
 
 
+int
+sys_launch_homebrew(const char* path, const char* args) {
+  char* argv[255];
+  char* buf;
+  pid_t pid;
+
+  
+  printf("launch homebrew: %s %s\n", path, args);
+  
+  if(!args) {
+    args = "";
+  }
+
+  buf = strdup(args);
+  websrv_split_args(buf, argv, 255);
+
+  if(hbldr_launch(path, argv) < 0) {
+    free(buf);
+    return -1;
+  }
+
+  free(buf);
+  
+  if((pid=ps5_find_pid("SceNKWebProcess")) > 0) {
+    printf("exit %d\n", pid);
+
+    pt_attach(pid);
+    pt_syscall(pid, SYS_exit);
+    pt_detach(pid);
+  }
+
+  return 0;
+}
+
+
+
+int
+sys_launch_title(const char* title_id, const char* args) {
+  app_launch_ctx_t ctx = {0};
+  char* argv[255];
+  int app_id;
+  char* buf;
+  int err;
+
+  printf("launch title: %s %s\n", title_id, args);
+
+  if(!args) {
+    args = "";
+  }
+
+  if((err=sceUserServiceGetForegroundUser(&ctx.user_id))) {
+    perror("sceUserServiceGetForegroundUser");
+    return err;
+  }
+
+  if((app_id=sceSystemServiceGetAppIdOfRunningBigApp()) > 0) {
+    if((err=sceSystemServiceKillApp(app_id, -1, 0, 0))) {
+      perror("sceSystemServiceKillApp");
+      return err;
+    }
+  }
+
+  buf = strdup(args);
+  websrv_split_args(buf, argv, 255);
+  if((err=sceSystemServiceLaunchApp(title_id, argv, &ctx)) < 0) {
+    perror("sceSystemServiceLaunchApp");
+    free(buf);
+    return err;
+  }
+
+  free(buf);
+
+  return 0;
+}
+
+
+
+
 __attribute__((constructor)) static void
-prospero_init(void) {
+ps5_init(void) {
   pid_t pid;
   int err;
 
@@ -141,7 +182,7 @@ prospero_init(void) {
 
   syscall(SYS_thr_set_name, -1, "websrv.elf");
 
-  while((pid=find_pid("websrv.elf")) > 0) {
+  while((pid=ps5_find_pid("websrv.elf")) > 0) {
     if((err=kill(pid, SIGKILL))) {
       perror("kill");
       exit(err);
@@ -152,7 +193,6 @@ prospero_init(void) {
 
 
 __attribute__((destructor)) static void
-prospero_fini(void) {
+ps5_fini(void) {
   sceUserServiceTerminate();
 }
-

@@ -14,20 +14,8 @@ You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#pragma once
 
 
-int
-sys_launch_title(const char* title_id, char* args) {
-  printf("launch title: %s %s", title_id, args);
-  return 0;
-}
+int hbldr_launch(const char* path, char** argv);
 
-
-int
-sys_launch_homebrew(const char* path, char* args) {
-  printf("launch homebrew: %s %s", path, args);
-  return 0;
-}

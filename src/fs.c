@@ -99,8 +99,6 @@ dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
   char path[PATH_MAX];
   struct dirent *e;
   struct stat st;
-  mode_t mode;
-  int res;
   char c;
 
   if(max < 512) {
@@ -108,9 +106,8 @@ dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
   }
 
   if(sm->state == 0) {
-    res = snprintf(buf, max, "[{ \"name\": \".\", \"mode\": \"d\"}");
     sm->state++;
-    return res;
+    return snprintf(buf, max, "[{ \"name\": \".\", \"mode\": \"d\"}");
   }
 
   if(sm->state == 1) {
@@ -140,9 +137,8 @@ dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
   }
 
   if(sm->state == 2) {
-    res = snprintf(buf, max, "]");
     sm->state++;
-    return res;
+    return snprintf(buf, max, "]");
   }
 
   return MHD_CONTENT_READER_END_OF_STREAM;
@@ -156,26 +152,24 @@ static ssize_t
 dir_read_html(void *cls, uint64_t pos, char *buf, size_t max) {
   dir_read_sm_t* sm = cls;
   struct dirent *e;
-  int res;
 
   if(max < 512) {
     return 0;
   }
 
   if(sm->state == 0) {
-    res = snprintf(buf, max,
-		   "<!DOCTYPE html>"					\
-		   "<html>"						\
-		   "  <head>"						\
-		   "    <title>Index of %s</title>"			\
-		   "  </head>"						\
-		   "  <body>"						\
-		   "    <h1>Index of %s</h1>"				\
-		   "    <ul>"						\
-		   ,
-		   sm->path, sm->path);
     sm->state++;
-    return res;
+    return snprintf(buf, max,
+		    "<!DOCTYPE html>"					\
+		    "<html>"						\
+		    "  <head>"						\
+		    "    <title>Index of %s</title>"			\
+		    "  </head>"						\
+		    "  <body>"						\
+		    "    <h1>Index of %s</h1>"				\
+		    "    <ul>"						\
+		    ,
+		    sm->path, sm->path);
   }
 
   if(sm->state == 1) {
@@ -191,9 +185,8 @@ dir_read_html(void *cls, uint64_t pos, char *buf, size_t max) {
   }
 
   if(sm->state == 2) {
-    res = snprintf(buf, max, "</ul></body></html>");
     sm->state++;
-    return res;
+    return snprintf(buf, max, "</ul></body></html>");
   }
 
   return MHD_CONTENT_READER_END_OF_STREAM;
