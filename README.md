@@ -13,8 +13,6 @@ john@localhost:~$ wget -q -O - http://$PS5_HOST:8080/index.html
 ```
 
 ## Available services
-TODO
-
 Examples:
 - http://ps5:8080/fs/ - Browser the filesystem (html)
 - http://ps5:8080/fs/?fmt=json - Browser the filesystem (json)
