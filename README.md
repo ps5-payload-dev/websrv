@@ -22,7 +22,13 @@ Examples:
 - http://ps5:8080/hbldr?path=/data/LakeSnes/lakesnes.elf&args=/data/LakeSnes/roms/punch.smc - Launch lakesnes.elf with the rom punch.smc
 
 ## Building
-TODO
+Assuming you have the [ps5-payload-sdk][sdk] installed on a Debian-flavored
+operating system, the payload can be compiled using the following commands:
+```console
+john@localhost:ps5-payload-dev/websrv$ export PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
+john@localhost:ps5-payload-dev/websrv$ ./libmicrohttpd.sh # build and install libmicrohttpd to $PS5_PAYLOAD_SDK
+john@localhost:ps5-payload-dev/websrv$ make
+```
 
 ## Reporting Bugs
 If you encounter problems with ps5-payload-websrv, please [file a github issue][issues].
