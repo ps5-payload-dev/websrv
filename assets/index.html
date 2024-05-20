@@ -1,9 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>ps5-payload-websrv</title>
+    <title>Titles</title>
+    <script src="titles.js"></script>
   </head>
   <body>
-    <p>Hello, world!</p>
+    <script>
+      document.onload = (async function() {
+          await renderTitleList();
+      })()
+    </script>
   </body>
 </html>
+
