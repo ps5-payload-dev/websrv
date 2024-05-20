@@ -106,22 +106,28 @@ hbldr_request(struct MHD_Connection *conn, const char* url) {
   const char* path;
   const char *args;
   int ret = MHD_NO;
-  int status;
+  int fd;
 
   path = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "path");
   args = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "args");
 
   if(!path) {
-    status = MHD_HTTP_BAD_REQUEST;
-  } else if(sys_launch_homebrew(path, args)) {
-    status = MHD_HTTP_SERVICE_UNAVAILABLE;
-  } else {
-    status = MHD_HTTP_OK;
-  }
+    if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
+      ret = websrv_queue_response(conn, MHD_HTTP_BAD_REQUEST, resp);
+      MHD_destroy_response(resp);
+    }
 
-  if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
-    ret = websrv_queue_response(conn, status, resp);
-    MHD_destroy_response(resp);
+  } else if((fd=sys_launch_homebrew(path, args)) < 0) {
+    if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
+      ret = websrv_queue_response(conn, MHD_HTTP_SERVICE_UNAVAILABLE, resp);
+      MHD_destroy_response(resp);
+    }
+
+  } else {
+    if((resp=MHD_create_response_from_pipe(fd))) {
+      ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
+      MHD_destroy_response(resp);
+    }
   }
 
   return ret;

@@ -359,7 +359,7 @@ bigapp_set_procname(pid_t pid, const char* name) {
  *
  **/
 static pid_t
-bigapp_replace(pid_t pid, uint8_t* elf, const char* progname) {
+bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio) {
   uint8_t int3instr = 0xcc;
   intptr_t brkpoint;
   uint8_t orginstr;
@@ -413,7 +413,7 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname) {
   bigapp_set_procname(pid, basename(progname));
 
   // Execute the ELF
-  if(elfldr_exec(STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO, pid, elf)) {
+  if(elfldr_exec(-1, stdio, stdio, pid, elf)) {
     kill(pid, SIGKILL);
     pt_detach(pid);
     return -1;
@@ -423,8 +423,8 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname) {
 }
 
 
-int
-hbldr_launch(const char* path, char** argv) {
+pid_t
+hbldr_launch(const char* path, char** argv, int stdio) {
   uint32_t user_id;
   uint8_t* elf;
   int app_id;
@@ -463,10 +463,10 @@ hbldr_launch(const char* path, char** argv) {
   kernel_set_proc_rootdir(pid, kernel_get_root_vnode());
   kernel_set_proc_jaildir(pid, 0);
 
-  if(bigapp_replace(pid, elf, path) < 0) {
+  if(bigapp_replace(pid, elf, path, stdio) < 0) {
     return -1;
   }
 
-  return 0;
+  return pid;
 }
 

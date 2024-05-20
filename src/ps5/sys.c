@@ -95,37 +95,36 @@ ps5_find_pid(const char* name) {
 int
 sys_launch_homebrew(const char* path, const char* args) {
   char* argv[255];
+  int fds[2];
   char* buf;
   pid_t pid;
-
   
   printf("launch homebrew: %s %s\n", path, args);
-  
+
   if(!args) {
     args = "";
+  }
+
+  if(pipe(fds)) {
+    perror("pipe");
+    return -1;
   }
 
   buf = strdup(args);
   websrv_split_args(buf, argv, 255);
 
-  if(hbldr_launch(path, argv) < 0) {
+  if((pid=hbldr_launch(path, argv, fds[1])) < 0) {
     free(buf);
+    close(fds[0]);
+    close(fds[1]);
     return -1;
   }
 
   free(buf);
-  
-  if((pid=ps5_find_pid("SceNKWebProcess")) > 0) {
-    printf("exit %d\n", pid);
+  close(fds[1]);
 
-    pt_attach(pid);
-    pt_syscall(pid, SYS_exit);
-    pt_detach(pid);
-  }
-
-  return 0;
+  return fds[0];
 }
-
 
 
 int
