@@ -167,8 +167,6 @@ sys_launch_title(const char* title_id, const char* args) {
 }
 
 
-
-
 __attribute__((constructor)) static void
 ps5_init(void) {
   pid_t pid;
