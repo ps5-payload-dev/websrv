@@ -180,7 +180,7 @@ ahc_echo(void *cls, struct MHD_Connection *conn,
   }
 
   if(!strcmp("/", url) || !url[0]) {
-    return asset_request(conn, "/index.html");
+    return asset_request(conn, "/homebrew.html");
   }
 
   return asset_request(conn, url);

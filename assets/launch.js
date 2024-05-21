@@ -13,8 +13,7 @@ async function getTitles() {
 }
 
 async function renderTitleList() {
-    var titles = await getTitles();
-    
+    let titles = await getTitles();
     titles.forEach(entry => {
 	if(entry.name.length != 9) {
 	    return;
@@ -22,12 +21,14 @@ async function renderTitleList() {
 
 	const icon0 = document.createElement('img');
 	icon0.src = '/fs/user/appmeta/' + entry.name + '/icon0.png';
-	icon0.width = 300;
-	icon0.height = 300;
-	icon0.style.cursor = 'pointer';
-	icon0.onclick = async function() {
+
+	const link = document.createElement('a');
+	link.href = '#';
+	link.onclick = async function() {
 	    launchTitle(entry.name);
 	}
-	document.body.appendChild(icon0);
+
+	link.appendChild(icon0);
+	document.body.appendChild(link);
     });
 }
