@@ -21,7 +21,7 @@ Examples:
 - http://ps5:8080/fs/?fmt=json - Browser the filesystem (json)
 - http://ps5:8080/fs/system_ex/app/NPXS40028/redis.conf - Download a file
 
-Installing Homebrew
+## Installing Homebrew
 The web server will search for homebrew in /data/homebrew, and makes a couple
 of assumtions on the filestructure. More specifically, suppose you have a
 homebrew called MyHomebrew, the loader assumes that the following files exist:
