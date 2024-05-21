@@ -105,11 +105,13 @@ hbldr_request(struct MHD_Connection *conn, const char* url) {
   struct MHD_Response *resp;
   const char* path;
   const char *args;
+  const char *pipe;
   int ret = MHD_NO;
   int fd;
 
   path = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "path");
   args = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "args");
+  pipe = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "pipe");
 
   if(!path) {
     if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
@@ -123,8 +125,13 @@ hbldr_request(struct MHD_Connection *conn, const char* url) {
       MHD_destroy_response(resp);
     }
 
-  } else {
+  } else if(pipe && strcmp(pipe, "0")) {
     if((resp=MHD_create_response_from_pipe(fd))) {
+      ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
+      MHD_destroy_response(resp);
+    }
+  } else {
+    if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
       ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
       MHD_destroy_response(resp);
     }
