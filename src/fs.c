@@ -90,16 +90,33 @@ file_close(void *cls) {
 }
 
 
+static char
+stat_modeat(const char* folder, const char* filename) {
+  char path[PATH_MAX];
+  struct stat st;
+
+  snprintf(path, PATH_MAX, "%s/%s", folder, filename);
+
+  if(stat(path, &st)) return '-';
+
+  if(S_ISDIR(st.st_mode)) return 'd';
+  if(S_ISBLK(st.st_mode)) return 'b';
+  if(S_ISCHR(st.st_mode)) return 'c';
+  if(S_ISLNK(st.st_mode)) return 'l';
+  if(S_ISFIFO(st.st_mode)) return 'p';
+  if(S_ISSOCK(st.st_mode)) return 's';
+
+  return '-';
+}
+
+
 /**
  * Read the contents of a directory, and render it as json.
  **/
 static ssize_t
 dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
   dir_read_sm_t* sm = cls;
-  char path[PATH_MAX];
   struct dirent *e;
-  struct stat st;
-  char c;
 
   if(max < 512) {
     return 0;
@@ -119,21 +136,8 @@ dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
       return 0;
     }
 
-    sprintf(path, "%s/%s", sm->path, e->d_name);
-    if(stat(path, &st) != 0) {
-      return 0;
-    }
-
-    if(S_ISDIR(st.st_mode)) c = 'd';
-    else if(S_ISBLK(st.st_mode)) c = 'b';
-    else if(S_ISCHR(st.st_mode)) c = 'c';
-    else if(S_ISLNK(st.st_mode)) c = 'l';
-    else if(S_ISFIFO(st.st_mode)) c = 'p';
-    else if(S_ISSOCK(st.st_mode)) c = 's';
-    else c = '-';
-
     return snprintf(buf, max, ",{ \"name\": \"%s\", \"mode\": \"%c\"}",
-		    e->d_name, c);
+		    e->d_name, stat_modeat(sm->path, e->d_name));
   }
 
   if(sm->state == 2) {
