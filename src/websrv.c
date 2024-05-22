@@ -131,6 +131,7 @@ hbldr_request(struct MHD_Connection *conn, const char* url) {
       MHD_destroy_response(resp);
     }
   } else {
+    close(fd);
     if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
       ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
       MHD_destroy_response(resp);
