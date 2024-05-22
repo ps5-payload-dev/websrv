@@ -151,7 +151,7 @@ pt_setregs(pid_t pid, const struct reg *r) {
 }
 
 
-long
+static long
 pt_call(pid_t pid, intptr_t addr, ...) {
   struct reg jmp_reg;
   struct reg bak_reg;
@@ -165,12 +165,12 @@ pt_call(pid_t pid, intptr_t addr, ...) {
   jmp_reg.r_rip = addr;
 
   va_start(ap, addr);
-  jmp_reg.r_rdi = va_arg(ap, uint64_t);
-  jmp_reg.r_rsi = va_arg(ap, uint64_t);
-  jmp_reg.r_rdx = va_arg(ap, uint64_t);
-  jmp_reg.r_rcx = va_arg(ap, uint64_t);
-  jmp_reg.r_r8  = va_arg(ap, uint64_t);
-  jmp_reg.r_r9  = va_arg(ap, uint64_t);
+  jmp_reg.r_rdi = va_arg(ap, int64_t);
+  jmp_reg.r_rsi = va_arg(ap, int64_t);
+  jmp_reg.r_rdx = va_arg(ap, int64_t);
+  jmp_reg.r_rcx = va_arg(ap, int64_t);
+  jmp_reg.r_r8  = va_arg(ap, int64_t);
+  jmp_reg.r_r9  = va_arg(ap, int64_t);
   va_end(ap);
 
   if(pt_setregs(pid, &jmp_reg)) {
@@ -218,12 +218,12 @@ pt_syscall(pid_t pid, int sysno, ...) {
   jmp_reg.r_rax = sysno;
 
   va_start(ap, sysno);
-  jmp_reg.r_rdi = va_arg(ap, uint64_t);
-  jmp_reg.r_rsi = va_arg(ap, uint64_t);
-  jmp_reg.r_rdx = va_arg(ap, uint64_t);
-  jmp_reg.r_r10 = va_arg(ap, uint64_t);
-  jmp_reg.r_r8  = va_arg(ap, uint64_t);
-  jmp_reg.r_r9  = va_arg(ap, uint64_t);
+  jmp_reg.r_rdi = va_arg(ap, int64_t);
+  jmp_reg.r_rsi = va_arg(ap, int64_t);
+  jmp_reg.r_rdx = va_arg(ap, int64_t);
+  jmp_reg.r_r10 = va_arg(ap, int64_t);
+  jmp_reg.r_r8  = va_arg(ap, int64_t);
+  jmp_reg.r_r9  = va_arg(ap, int64_t);
   va_end(ap);
 
   if(pt_setregs(pid, &jmp_reg)) {
@@ -270,19 +270,19 @@ pt_mmap(pid_t pid, intptr_t addr, size_t len, int prot, int flags,
 
 int
 pt_msync(pid_t pid, intptr_t addr, size_t len, int flags) {
-  return pt_syscall(pid, SYS_msync, addr, len, flags);
+  return (int)pt_syscall(pid, SYS_msync, addr, len, flags);
 }
 
 
 int
 pt_munmap(pid_t pid, intptr_t addr, size_t len) {
-  return pt_syscall(pid, SYS_munmap, addr, len);
+  return (int)pt_syscall(pid, SYS_munmap, addr, len);
 }
 
 
 int
 pt_mprotect(pid_t pid, intptr_t addr, size_t len, int prot) {
-  return pt_syscall(pid, SYS_mprotect, addr, len, prot);
+  return (int)pt_syscall(pid, SYS_mprotect, addr, len, prot);
 }
 
 

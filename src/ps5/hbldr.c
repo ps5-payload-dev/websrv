@@ -35,6 +35,7 @@ along with this program; see the file COPYING. If not, see
 #include <ps5/mdbg.h>
 
 #include "elfldr.h"
+#include "hbldr.h"
 #include "pt.h"
 #include "sys.h"
 #include "websrv.h"
@@ -43,8 +44,8 @@ along with this program; see the file COPYING. If not, see
 #define PSNOW_EBOOT "/system_ex/app/NPXS40106/eboot.bin"
 #define FAKE_PATH "/system_ex/app/FAKE00000"
 
-#define IOVEC_ENTRY(x) {x ? x : 0, \
-			x ? strlen(x)+1 : 0}
+#define IOVEC_ENTRY(x) {x != 0 ? x : 0, \
+			x != 0 ? strlen(x)+1 : 0}
 #define IOVEC_SIZE(x) (sizeof(x) / sizeof(struct iovec))
 
 
@@ -83,7 +84,7 @@ int sceSystemServiceLaunchApp(const char* title_id, char** argv,
 			      app_launch_ctx_t* ctx);
 
 
-int
+static int
 remount_system_ex(void) {
   struct iovec iov[] = {
     IOVEC_ENTRY("from"),      IOVEC_ENTRY("/dev/ssd0.system_ex"),
@@ -336,7 +337,7 @@ bigapp_launch(uint32_t user_id, char** argv) {
 /**
  * Set the name of a process.
  **/
-int
+static int
 bigapp_set_procname(pid_t pid, const char* name) {
   intptr_t buf;
 

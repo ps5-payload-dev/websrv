@@ -20,7 +20,7 @@ along with this program; see the file COPYING. If not, see
 
 
 int
-main() {
+main(int argc, char** argv) {
   const uint16_t port = 8080;
 
   printf("Web server was compiled at %s %s\n", __DATE__, __TIME__);

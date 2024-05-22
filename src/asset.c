@@ -19,6 +19,7 @@ along with this program; see the file COPYING. If not, see
 
 #include <microhttpd.h>
 
+#include "asset.h"
 #include "fs.h"
 #include "websrv.h"
 
@@ -61,11 +62,11 @@ asset_register(const char* path, void* data, size_t size) {
 
 enum MHD_Result
 asset_request(struct MHD_Connection *conn, const char* url) {
-  int status = MHD_HTTP_NOT_FOUND;
+  unsigned int status = MHD_HTTP_NOT_FOUND;
+  enum MHD_Result ret = MHD_NO;
   size_t size = strlen(PAGE_404);
   struct MHD_Response *resp;
   void* data = PAGE_404;
-  int ret = MHD_NO;
 
   for(asset_t* a=g_asset_head; a!=0; a=a->next) {
     if(!strcmp(url, a->path)) {

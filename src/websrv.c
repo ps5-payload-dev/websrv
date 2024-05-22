@@ -47,7 +47,7 @@ websrv_split_args(char* args, char** argv, size_t size) {
   size_t len = strlen(args);
 
   memset(argv, 0, size*sizeof(char*));
-  for(int i=0, j=0; i<len && j<size; i++) {
+  for(size_t i=0, j=0; i<len && j<size; i++) {
     if(args[i] == ' ') {
       args[i] = 0;
       continue;
@@ -70,11 +70,11 @@ websrv_split_args(char* args, char** argv, size_t size) {
  **/
 static enum MHD_Result
 launch_request(struct MHD_Connection *conn, const char* url) {
+  enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
   const char* title_id;
+  unsigned int status;
   const char *args;
-  int ret = MHD_NO;
-  int status;
 
   title_id = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "titleId");
   args = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "args");
@@ -102,11 +102,11 @@ launch_request(struct MHD_Connection *conn, const char* url) {
  **/
 static enum MHD_Result
 hbldr_request(struct MHD_Connection *conn, const char* url) {
+  enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
   const char* path;
   const char *args;
   const char *pipe;
-  int ret = MHD_NO;
   int fd;
 
   path = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "path");

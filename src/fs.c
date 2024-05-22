@@ -215,8 +215,8 @@ dir_close(void *cls) {
  **/
 static enum MHD_Result
 file_request(struct MHD_Connection *conn, const char* path) {
+  enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
-  int ret = MHD_NO;
   struct stat st;
   FILE *file = 0;
 
@@ -253,10 +253,10 @@ file_request(struct MHD_Connection *conn, const char* path) {
 static enum MHD_Result
 dir_request(struct MHD_Connection *conn, const char* path) {
   MHD_ContentReaderCallback dir_read_cb;
+  enum MHD_Result ret = MHD_NO;
   size_t len = strlen(path);
   struct MHD_Response *resp;
   char url[PATH_MAX];
-  int ret = MHD_NO;
   dir_read_sm_t sm;
   const char* mime;
   const char* fmt;
@@ -313,9 +313,9 @@ dir_request(struct MHD_Connection *conn, const char* path) {
 
 enum MHD_Result
 fs_request(struct MHD_Connection *conn, const char* url) {
+  enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
   const char* path = url+3;
-  int ret = MHD_NO;
   struct stat st;
 
   if(!strlen(path)) {
