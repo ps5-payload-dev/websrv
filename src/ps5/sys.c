@@ -49,6 +49,74 @@ int sceSystemServiceLaunchApp(const char* title_id, char** argv,
 
 
 /**
+ * Decode an escaped argument.
+ **/
+static char*
+args_decode(const char* s) {
+  size_t length = strlen(s);
+  char *arg = malloc(length+1);
+  size_t off = 0;
+  int escape = 0;
+
+  for(size_t i=0; i<length; i++) {
+    if(s[i] == '\\' && !escape) {
+      escape = 1;
+    } else {
+      arg[off++] = s[i];
+      escape = 0;
+    }
+  }
+
+  arg[off] = 0;
+  return arg;
+}
+
+
+static int
+args_split(const char* args, char** argv, size_t size) {
+  char* buf = strdup(args);
+  size_t len = strlen(buf);
+  int escape = 0;
+  int argc = 0;
+
+  memset(argv, 0, size*sizeof(char*));
+  for(int i=0; i<len && argc<size; i++) {
+    if(escape) {
+      escape = 0;
+      continue;
+    }
+
+    if(buf[i] == '\\') {
+      escape = 1;
+      continue;
+    }
+
+    if(buf[i] == ' ') {
+      buf[i] = 0;
+      continue;
+    }
+
+    if(buf[i] && !i) {
+      argv[argc++] = buf+i;
+      continue;
+    }
+
+    if(buf[i] && !buf[i-1]) {
+      argv[argc++] = buf+i;
+    }
+  }
+
+  for(int i=0; i<argc; i++) {
+    argv[i] = args_decode(argv[i]);
+  }
+
+  free(buf);
+
+  return argc;
+}
+
+
+/**
  * Fint the pid of a process with the given name.
  **/
 static pid_t
@@ -95,8 +163,8 @@ ps5_find_pid(const char* name) {
 int
 sys_launch_homebrew(const char* path, const char* args) {
   char* argv[255];
+  int argc = 0;
   int fds[2];
-  char* buf;
   pid_t pid;
 
   if(!args) {
@@ -110,18 +178,18 @@ sys_launch_homebrew(const char* path, const char* args) {
     return -1;
   }
 
-  buf = strdup(args);
-  websrv_split_args(buf, argv, 255);
+  argc = args_split(args, argv, 255);
+  pid = hbldr_launch(path, argv, fds[1]);
 
-  if((pid=hbldr_launch(path, argv, fds[1])) < 0) {
-    free(buf);
-    close(fds[0]);
-    close(fds[1]);
-    return -1;
+  close(fds[1]);
+  for(int i=0; i<argc; i++) {
+    free(argv[i]);
   }
 
-  free(buf);
-  close(fds[1]);
+  if(pid < 0) {
+    close(fds[0]);
+    return -1;
+  }
 
   return fds[0];
 }
@@ -131,8 +199,8 @@ int
 sys_launch_title(const char* title_id, const char* args) {
   app_launch_ctx_t ctx = {0};
   char* argv[255];
+  int argc = 0;
   int app_id;
-  char* buf;
   int err;
 
   if(!args) {
@@ -153,17 +221,16 @@ sys_launch_title(const char* title_id, const char* args) {
     }
   }
 
-  buf = strdup(args);
-  websrv_split_args(buf, argv, 255);
+  argc = args_split(args, argv, 255);
   if((err=sceSystemServiceLaunchApp(title_id, argv, &ctx)) < 0) {
     perror("sceSystemServiceLaunchApp");
-    free(buf);
-    return err;
   }
 
-  free(buf);
+  for(int i=0; i<argc; i++) {
+    free(argv[i]);
+  }
 
-  return 0;
+  return err;
 }
 
 
