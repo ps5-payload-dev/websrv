@@ -31,8 +31,12 @@ You can also add your own custom UI extentions by specifying a javascript file n
 - /data/homebrew/MyHomebrew/homebrew.js
 
 This is useful when the payload accepts different command line options, e.g.,
-an emulator that expects arguments for loading roms. For an example, see:
+an emulator that expects arguments for loading roms. For an example on
+available capabillitiles, see:
 - https://github.com/ps5-payload-dev/websrv/tree/master/homebrew/demo
+
+For real-world homebrew, checkout the latest release at:
+- https://github.com/ps5-payload-dev/websrv/releases
 
 ## Building
 Assuming you have the [ps5-payload-sdk][sdk] installed on a Debian-flavored
