@@ -65,7 +65,12 @@ class ApiClient {
             return null;
         }
         let data = await response.json();
-        return data.filter(entry => !ignoredFileNames.includes(entry.name)).map(entry => new DirectoryListing(entry.name, entry.mode));
+	data.sort((x, y) => x.mode == y.mode ?
+		  x.name.localeCompare(y.name) :
+		  x.mode.localeCompare(y.mode));
+
+        return data.filter(entry => !ignoredFileNames.includes(entry.name)).map(entry =>
+	    new DirectoryListing(entry.name, entry.mode));
     }
 
     /**
