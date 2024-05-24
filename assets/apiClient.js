@@ -22,7 +22,7 @@ class DirectoryListing {
 }
 
 // @ts-ignore
-const baseURL = 'http://127.0.0.1:8080';
+const baseURL = window.location.origin == 'null' ? 'http://127.0.0.1:8080' : window.location.origin;
 const ignoredFileNames = ['.', '..'];
 class ApiClient {
     /**
