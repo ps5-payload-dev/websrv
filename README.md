@@ -52,10 +52,16 @@ please file an issue before you start to work on you changes. This will allow us
 to discuss the solution properly before you commit time and effort.
 
 ## License
-ps5-payload-websrv is licensed under the GPLv3+.
+ps5-payload-websrv uses [smoothscroll][smoothscroll] and [navigo][navigo] to
+render its web interface, both which are licenced under the MIT licence. Unless
+otherwhise explicitly specified inside induvidual files, The rest is the source
+code included with ps5-payload-websrv are licensed under the GPLv3+.
+
 
 [bdj]: https://github.com/john-tornblom/bdj-sdk
 [sdk]: https://github.com/ps5-payload-dev/sdk
 [webkit]: https://github.com/Cryptogenic/PS5-IPV6-Kernel-Exploit
 [issues]: https://github.com/ps5-payload-dev/websrv/issues/new
 [elfldr]: https://github.com/ps5-payload-dev/elfldr
+[smoothscroll]: https://github.com/iamdustan/smoothscroll
+[navigo]: https://github.com/krasimir/navigo
