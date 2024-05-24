@@ -120,7 +120,7 @@ async function renderMainContentCarousel(items, fadeout = true) {
                 const entryElementMoreOptionsButton = document.createElement('div');
                 entryElementMoreOptionsButton.classList.add('entry');
                 entryElementMoreOptionsButton.classList.add('entry-more-button');
-                entryElementMoreOptionsButton.innerText = '•••';
+                entryElementMoreOptionsButton.innerHTML = '&hellip;';
 
                 entryElementMoreOptionsButton.onclick = () => {
                     if (!entryElement.classList.contains('selected')) {
