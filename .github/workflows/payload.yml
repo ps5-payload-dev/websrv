@@ -48,3 +48,25 @@ jobs:
         name: Payload
         path: ./websrv.elf
         if-no-files-found: error
+
+    - name: Upload DevilutionX
+      uses: actions/upload-artifact@v3
+      with:
+        name: DevilutionX
+        path: ./homebrew/DevilutionX
+        if-no-files-found: error
+
+    - name: Upload FFplay
+      uses: actions/upload-artifact@v3
+      with:
+        name: FFplay
+        path: ./homebrew/ffplay
+        if-no-files-found: error
+
+    - name: Upload LakeSnes
+      uses: actions/upload-artifact@v3
+      with:
+        name: LakeSnes
+        path: ./homebrew/LakeSnes
+        if-no-files-found: error
+
