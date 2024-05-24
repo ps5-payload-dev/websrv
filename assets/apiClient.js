@@ -36,9 +36,9 @@ class ApiClient {
         });
 
         if (typeof args === 'string') {
-            params.append('args', args.replace(" ", "\ "));
+            params.append('args', args.replaceAll(" ", "\\ "));
         } else if (Array.isArray(args)) {
-            params.append('args', args.map(arg => arg.replace(" ", "\ ")).join(' '));
+            params.append('args', args.map(arg => arg.replaceAll(" ", "\\ ")).join(' '));
         }
 
         let uri = baseURL + '/hbldr?' + params.toString();
