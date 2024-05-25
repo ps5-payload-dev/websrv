@@ -38,6 +38,7 @@ body {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    font-size: 150%;
 }
 
 div.carousel {
@@ -76,8 +77,8 @@ div.separator {
 
 div.entry-wrapper {
     flex: none;
-    height: 40vh;
-    width: 33vh;
+    height: 60vh;
+    width: 60vh;
     margin-right: 8vh;
     transition: transform 0.3s;
     box-sizing: border-box;
@@ -254,7 +255,9 @@ div.back-icon {
 }
 
 .launch-app-overlay::after {
-    content: "App has launched in the background. You can close this window now.";
+    content: "App has launched in the background. \A You can close this window now.";
+    white-space: pre-wrap;
+    text-align: center;
 }
 
 #modal-overlay {
@@ -346,7 +349,7 @@ div.back-icon {
 .entry img {
     display: block;
     max-width: 100%;
-    max-height: 23vh;
+    max-height: 35vh;
     object-fit: contain;
     mix-blend-mode: multiply;
 }
