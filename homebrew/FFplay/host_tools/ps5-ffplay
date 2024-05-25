@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+#   Copyright (C) 2024 John Törnblom
+#
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; see the file COPYING. If not see
+# <http://www.gnu.org/licenses/>
+
+PS5_HOST=
+FFPLAY=/data/homebrew/FFplay/ffplay.elf
+
+while getopts "h:" opt; do
+    case ${opt} in
+	h) PS5_HOST=$OPTARG;;
+    esac
+done
+shift $((OPTIND -1))
+
+if [[ -z $PS5_HOST || -z $1 ]]; then
+    echo "Usage: $(basename $0) -h HOST URI" >&2
+    exit 1
+fi
+
+curl --get \
+     --data-urlencode "path=$FFPLAY" \
+     --data-urlencode "args=$*" \
+     --data-urlencode "pipe=1" \
+     http://$PS5_HOST:8080/hbldr
+
