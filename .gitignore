@@ -1,6 +1,5 @@
 gen
 *.o
-*.elf
+websrv.elf
 websrv.pc
 *~
-

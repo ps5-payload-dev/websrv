@@ -10,7 +10,7 @@ then load the payload and connect to the web server on port 8080:
 
 ```console
 john@localhost:~$ export PS5_HOST=ps5
-john@localhost:~$ wget -q -O - https://github.com/ps5-payload-dev/websrv/releases/download/v0.1/Payload.zip | gunzip -c -d | nc -q0 $PS5_HOST 9021
+john@localhost:~$ wget -q -O - https://github.com/ps5-payload-dev/websrv/releases/download/v0.2/Payload.zip | gunzip -c -d | nc -q0 $PS5_HOST 9021
 ```
 
 ## Available services

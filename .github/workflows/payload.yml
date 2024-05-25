@@ -60,7 +60,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: FFplay
-        path: ./homebrew/ffplay
+        path: ./homebrew/FFplay
         if-no-files-found: error
 
     - name: Upload LakeSnes
