@@ -49,6 +49,13 @@ jobs:
         path: ./websrv.elf
         if-no-files-found: error
 
+    - name: Upload Launcher
+      uses: actions/upload-artifact@v3
+      with:
+        name: Launcher
+        path: ./homebrew/IV9999-FAKE00001_00-HOMEBREWLOADER01.pkg
+        if-no-files-found: error
+
     - name: Upload DevilutionX
       uses: actions/upload-artifact@v3
       with:
@@ -70,3 +77,16 @@ jobs:
         path: ./homebrew/LakeSnes
         if-no-files-found: error
 
+    - name: Upload SVTplay
+      uses: actions/upload-artifact@v3
+      with:
+        name: SVTplay
+        path: ./homebrew/SVTplay
+        if-no-files-found: error
+
+    - name: Upload SverigesRadio
+      uses: actions/upload-artifact@v3
+      with:
+        name: SverigesRadio
+        path: ./homebrew/SverigesRadio
+        if-no-files-found: error
