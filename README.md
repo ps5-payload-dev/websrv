@@ -13,6 +13,10 @@ john@localhost:~$ export PS5_HOST=ps5
 john@localhost:~$ wget -q -O - https://github.com/ps5-payload-dev/websrv/releases/download/v0.2/Payload.zip | gunzip -c -d | nc -q0 $PS5_HOST 9021
 ```
 
+To interact with ps5-payload-websrv, either install the [Launcher PKG][launcher]
+on your PS5, or point your browser to one of the available services exemplified
+below.
+
 ## Available services
 Examples:
 - http://ps5:8080/index.html - Launch Homebrew
@@ -67,3 +71,4 @@ code included with ps5-payload-websrv are licensed under the GPLv3+.
 [elfldr]: https://github.com/ps5-payload-dev/elfldr
 [smoothscroll]: https://github.com/iamdustan/smoothscroll
 [navigo]: https://github.com/krasimir/navigo
+[launcher]: https://github.com/ps5-payload-dev/websrv/blob/master/homebrew/IV9999-FAKE00001_00-HOMEBREWLOADER01.pkg?raw=true
