@@ -6,7 +6,7 @@ or remotely from your PC, phone, etc.
 
 ## Quick-start
 To deploy ps5-payload-websrv, first launch the [ps5-payload-elfldr][elfldr],
-then load the payload and connect to the web server on port 8080:
+then load the payload as follows:
 
 ```console
 john@localhost:~$ export PS5_HOST=ps5
