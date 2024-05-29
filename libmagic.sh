@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #   Copyright (C) 2024 John Törnblom
 #
 # This file is free software; you can redistribute it and/or modify it
@@ -14,28 +15,23 @@
 # along with this program; see the file COPYING. If not see
 # <http://www.gnu.org/licenses/>.
 
-PYTHON ?= python3
+LIB_URL="https://astron.com/pub/file/"
+LIB_VER="5.45"
 
-BIN   := websrv.pc
-SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c
-SRCS   += src/pc/sys.c
+if [[ -z "$PS5_PAYLOAD_SDK" ]]; then
+    echo "error: PS5_PAYLOAD_SDK is not set"
+    exit 1
+fi
 
-LDADD := -lmicrohttpd -lmagic
+source ${PS5_PAYLOAD_SDK}/toolchain/prospero.sh || exit 1
 
-ASSETS   := $(wildcard assets/*)
-GEN_SRCS := $(patsubst assets/%,gen/%, $(ASSETS:=.c))
+TEMPDIR=$(mktemp -d)
+trap 'rm -rf -- "$TEMPDIR"' EXIT
 
-all: $(BIN)
+wget -O $TEMPDIR/lib.tar.gz $LIB_URL/file-$LIB_VER.tar.gz || exit 1
+tar xf $TEMPDIR/lib.tar.gz -C $TEMPDIR || exit 1
 
-gen:
-	mkdir gen
-
-clean:
-	rm -rf $(BIN) gen
-
-gen/%.c: assets/% gen
-	$(PYTHON) gen-asset-module.py --path $* $< > $@
-
-$(BIN): $(SRCS) $(GEN_SRCS)
-	$(CC) -o $@  $^ $(LDADD)
-
+cd $TEMPDIR/file-$LIB_VER
+./configure --prefix="${PS5_SYSROOT}" --host=x86_64 \
+	    --disable-shared --enable-static
+${MAKE} install DESTDIR="/"

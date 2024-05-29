@@ -17,6 +17,7 @@ along with this program; see the file COPYING. If not, see
 #include <stdlib.h>
 #include <string.h>
 
+#include <magic.h>
 #include <microhttpd.h>
 
 #include "asset.h"
@@ -38,6 +39,7 @@ along with this program; see the file COPYING. If not, see
 
 typedef struct asset {
   const char   *path;
+  const char   *mime;
   void         *data;
   size_t        size;
   struct asset *next;
@@ -50,11 +52,22 @@ static asset_t* g_asset_head = 0;
 void
 asset_register(const char* path, void* data, size_t size) {
   asset_t* a = calloc(1, sizeof(asset_t));
+  const char* mime;
+  magic_t m;
 
   a->path = path;
   a->data = data;
   a->size = size;
   a->next = g_asset_head;
+
+  if((m=magic_open(MAGIC_MIME))) {
+    if(!magic_load(m, NULL)) {
+      if((mime=magic_buffer(m, data, size))) {
+	a->mime = strdup(mime);
+      }
+    }
+    magic_close(m);
+  }
 
   g_asset_head = a;
 }
@@ -67,11 +80,13 @@ asset_request(struct MHD_Connection *conn, const char* url) {
   size_t size = strlen(PAGE_404);
   struct MHD_Response *resp;
   void* data = PAGE_404;
+  const char* mime = 0;
 
   for(asset_t* a=g_asset_head; a!=0; a=a->next) {
     if(!strcmp(url, a->path)) {
       data = a->data;
       size = a->size;
+      mime = a->mime;
       status = MHD_HTTP_OK;
       break;
     }
@@ -79,6 +94,9 @@ asset_request(struct MHD_Connection *conn, const char* url) {
 
   if((resp=MHD_create_response_from_buffer(size, data,
 					   MHD_RESPMEM_PERSISTENT))) {
+    if(mime) {
+      MHD_add_response_header(resp, "Content-Type", mime);
+    }
     ret = websrv_queue_response(conn, status, resp);
     MHD_destroy_response(resp);
   }

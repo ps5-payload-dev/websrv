@@ -29,7 +29,8 @@ BIN    := websrv.elf
 SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c
 SRCS   += src/ps5/sys.c src/ps5/pt.c src/ps5/elfldr.c src/ps5/hbldr.c
 CFLAGS := -Wall -Werror -Isrc
-LDADD  := -lkernel_sys -lmicrohttpd -lSceSystemService -lSceUserService
+LDADD  := -lkernel_sys -lSceSystemService -lSceUserService
+LDADD  += -lmagic -lmicrohttpd
 
 ASSETS   := $(wildcard assets/*)
 GEN_SRCS := $(patsubst assets/%,gen/%, $(ASSETS:=.c))
