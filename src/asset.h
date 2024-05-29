@@ -28,5 +28,5 @@ enum MHD_Result asset_request(struct MHD_Connection *conn,
 /**
  * Register the presence of an asset.
  **/
-void asset_register(const char* path, void* data, size_t size);
+void asset_register(const char* path, void* data, size_t size, const char* mime);
 

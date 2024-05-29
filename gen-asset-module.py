@@ -18,16 +18,17 @@
 
 import argparse
 import string
+import mimetypes
 
 
 tmpl = string.Template('''
-void asset_register(const char* path, void* data, unsigned long size);
+void asset_register(const char*, void*, unsigned long, const char*);
 
 static unsigned char data[] = $data;
 
 __attribute__((constructor)) static void
 constructor(void) {
-  asset_register("/$path", data, sizeof(data));
+  asset_register("/$path", data, sizeof(data), "$mime");
 }
 ''')
 
@@ -55,5 +56,6 @@ if __name__ == '__main__':
         args.path = args.FILE
 
     data = ''.join(gen_data(args.FILE))
-    print(tmpl.substitute(data=data, path=args.path))
+    print(tmpl.substitute(data=data, path=args.path,
+                          mime=mimetypes.guess_type(args.path)[0]))
 
