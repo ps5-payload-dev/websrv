@@ -20,52 +20,86 @@ along with this program; see the file COPYING. If not, see
 /**
  * @typedef {Object} ModalItem
  * @property {string} text
- * @property {string} onclick
+ * @property {function():any} onclick
  */
 
 /**
+ * Shouldnt be interacted with directly, use router methods
  * @param {ModalItem[]} items
  */
 function renderModalOverlay(items) {
-	let modalOverlay = document.getElementById('modal-overlay');
-	if (modalOverlay) {
-		modalOverlay.remove();
+	const content = document.getElementById("content");
+	if (!content) {
+		throw new Error("content not found");
+	}
+	const oldOverlays = content.querySelectorAll("[data-modal-overlay]");
+	for (let overlay of oldOverlays) {
+		overlay.remove();
 	}
 
 	removeAllCursorSnapOverlays();
 
-	const overlay = document.createElement('div');
-	overlay.id = 'modal-overlay';
+	const overlay = document.createElement("div");
+	overlay.setAttribute("data-modal-overlay", "");
+	overlay.classList.add("modal-overlay");
 
-	const modalContent = document.createElement('div');
-	modalContent.id = 'modal-content';
+	const modalContent = document.createElement("div");
+	modalContent.classList.add("modal-content");
 
 	for (let item of items) {
-		const entry = document.createElement('a');
-		entry.classList.add('list-entry');
-		const textElement = document.createElement('p');
-		textElement.classList.add('text-center');
+		const entry = document.createElement("a");
+		entry.classList.add("list-entry");
+		entry.style.transition = "transform 0.3s ease";
+		entry.style.position = "relative";
+		const textElement = document.createElement("p");
+		textElement.classList.add("text-center");
 		textElement.innerText = item.text;
 		entry.appendChild(textElement);
 
-		entry.onclick = () => {
-			let onlick = new Function('return ' + item.onclick)();
-			onlick();
+		// entry.onclick = item.onclick;
+		entry.onclick = async () => {
+
+			entry.classList.add("loading-overlay");
+			entry.classList.add("loading");
+			await sleep(0);
+
+			let onclickResult = await item.onclick();
+
+			let res = onclickResult;
+			let logStream = null;
+
+			if (res && res.path) {
+				logStream = await ApiClient.launchApp(res.path, res.args);
+				res = logStream != null;
+			}
+
+			if (res == true) {
+				entry.style.transform = "scale(2)";
+				setTimeout(() => {
+					entry.style.removeProperty("transform");
+				}, 300);
+				Globals.Router.handleLaunchedAppView(logStream);
+			}
+			
+			entry.classList.remove("loading-overlay");
+			entry.classList.remove("loading");
 		}
 		entry.tabIndex = 1;
 		modalContent.appendChild(entry);
 	}
 
 	overlay.appendChild(modalContent);
-	document.body.appendChild(overlay);
+	content.appendChild(overlay);
 }
 
 function closeModal() {
-	let overlay = document.getElementById('modal-overlay');
-	if (!overlay) {
-		return;
+	const content = document.getElementById("content");
+	if (!content) {
+		throw new Error("content not found");
 	}
-	overlay.remove();
+	const oldOverlays = content.querySelectorAll("[data-modal-overlay]");
+	for (let overlay of oldOverlays) {
+		overlay.remove();
+	}
 	generateCursorSnapOverlays();
-	// TODO: animate
 }

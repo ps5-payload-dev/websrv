@@ -16,49 +16,50 @@ along with this program; see the file COPYING. If not, see
 
 
 async function main() {
-    const PAYLOAD = window.workingDir + '/ffplay.elf';
-
-    async function launchChannel(url) {
-	await ApiClient.launchApp(PAYLOAD, url);
-	return true;
-    }
+    const BASE_STREAM_URL = 'http://http-live.sr.se/'
+    const BASE_LOGO_URL = '/fs/' + window.workingDir + '/logos/';
+    const PAYLOAD_PATH = window.workingDir + '/ffplay.elf';
 
     async function getChannelList() {
 	return [
 	    {
 		mainText: '',
-		imgPath: '/fs/' + window.workingDir + '/logos/P1.png',
+		imgPath: BASE_LOGO_URL + 'P1.png',
 		onclick: async() => {
-		    let res = await launchChannel('http://http-live.sr.se/p1-aac-192');
-		    history.back();
-		    return res;
+		    return {
+			path: PAYLOAD_PATH,
+			args: BASE_STREAM_URL + 'p1-aac-192'
+		    };
 		}
 	    },
 	    {
 		mainText: '',
-		imgPath: '/fs/' + window.workingDir + '/logos/P2.png',
+		imgPath: BASE_LOGO_URL + 'P2.png',
 		onclick: async() => {
-		    let res = await launchChannel('http://http-live.sr.se/p2musik-aac-320');
-		    history.back();
-		    return res;
+		    return {
+			path: PAYLOAD_PATH,
+			args: BASE_STREAM_URL + 'p2musik-aac-320'
+		    };
 		}
 	    },
 	    {
 		mainText: '',
 		imgPath: '/fs/' + window.workingDir + '/logos/P3.png',
 		onclick: async() => {
-		    let res = await launchChannel('http://http-live.sr.se/p3-aac-192');
-		    history.back();
-		    return res;
+		    return {
+			path: PAYLOAD_PATH,
+			args: BASE_STREAM_URL + 'p3-aac-192'
+		    };
 		}
 	    },
 	    {
 		mainText: '',
 		imgPath: '/fs/' + window.workingDir + '/logos/P4.png',
 		onclick: async() => {
-		    let res = await launchChannel('https://http-live.sr.se/p4ostergotland-aac-192');
-		    history.back();
-		    return res;
+		    return {
+			path: PAYLOAD_PATH,
+			args: BASE_STREAM_URL + 'p4ostergotland-aac-192'
+		    };
 		}
 	    }
 	];

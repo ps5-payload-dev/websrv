@@ -18,16 +18,8 @@ along with this program; see the file COPYING. If not, see
 // @ts-check
 
 /**
- * @typedef {Object} Navigo
- * @property {(path: string) => void} navigate
- * @property {((func: () => void) => Navigo) & ((path: string, func: () => void) => Navigo)} on
- * @property {() => Navigo} resolve 
- */
-
-/**
  * @typedef {Object} Globals
- * @property {Navigo} Router
- * @property {Object} Funcs
+ * @property {Router} Router
  * @property {string?} hbApiJs
  * @property {string?} ApiClientJs
  * @property {number?} removeScrollingClassFromCarouselTimeoutId
@@ -36,8 +28,7 @@ along with this program; see the file COPYING. If not, see
 /** @type {Globals} */
 const Globals = {
     // @ts-ignore
-    Router: new Navigo("/", { hash: true }),
-    Funcs: {},
+    Router: null,
     hbApiJs: null,
     ApiClientJs: null,
     removeScrollingClassFromCarouselTimeoutId: null

@@ -58,7 +58,7 @@ please file an issue before you start to work on you changes. This will allow us
 to discuss the solution properly before you commit time and effort.
 
 ## License
-ps5-payload-websrv uses [smoothscroll][smoothscroll] and [navigo][navigo] to
+ps5-payload-websrv uses [smoothscroll][smoothscroll] and [xterm.js][xterm.js] to
 render its web interface, both which are licenced under the MIT licence. Unless
 otherwhise explicitly specified inside induvidual files, The rest is the source
 code included with ps5-payload-websrv are licensed under the GPLv3+.
@@ -70,5 +70,5 @@ code included with ps5-payload-websrv are licensed under the GPLv3+.
 [issues]: https://github.com/ps5-payload-dev/websrv/issues/new
 [elfldr]: https://github.com/ps5-payload-dev/elfldr
 [smoothscroll]: https://github.com/iamdustan/smoothscroll
-[navigo]: https://github.com/krasimir/navigo
+[xterm.js]: https://github.com/xtermjs/xterm.js
 [launcher]: https://github.com/ps5-payload-dev/websrv/blob/master/homebrew/IV9999-FAKE00001_00-HOMEBREWLOADER01.pkg?raw=true

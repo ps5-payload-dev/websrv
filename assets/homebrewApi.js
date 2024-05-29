@@ -20,7 +20,6 @@ along with this program; see the file COPYING. If not, see
 
 const EXTENSION_API_PARENT_SHOW_CAROUSEL = "EXTENSION_API_PARENT_SHOW_CAROUSEL";
 const EXTENSION_API_PARENT_FILE_BROWSER = "EXTENSION_API_PARENT_FILE_BROWSER";
-const EXTENSION_API_PARENT_SHOW_MODAL_LIST = "EXTENSION_API_PARENT_SHOW_MODAL_LIST";
 
 // https://stackoverflow.com/questions/105034/how-do-i-create-a-guid-uuid
 function uuidv4() {
@@ -30,7 +29,7 @@ function uuidv4() {
 }
 
 function remapFunctionsToFunctionIds(obj) {
-    if (typeof obj !== 'object' || obj === null) {
+    if (typeof obj !== "object" || obj === null) {
         return obj;
     }
 
@@ -41,14 +40,14 @@ function remapFunctionsToFunctionIds(obj) {
 
     return Object.keys(obj).reduce((acc, key) => {
         // return a uuid instead of the function and save the the function here in the sandbox so its state is saved and we can easily call it
-        if (typeof obj[key] === 'function') {
+        if (typeof obj[key] === "function") {
             let uuid = uuidv4();
             if (!window.Funcs) {
                 window.Funcs = {};
             }
             window.Funcs[uuid] = obj[key];
             acc[key] = uuid;
-        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        } else if (typeof obj[key] === "object" && obj[key] !== null) {
             // Recursively serialize nested objects
             acc[key] = remapFunctionsToFunctionIds(obj[key]);
         } else {

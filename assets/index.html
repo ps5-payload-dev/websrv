@@ -23,24 +23,27 @@ along with this program; see the file COPYING. If not, see
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Homebrew Launcher v0.3</title>
     <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="xterm.css">  <!-- https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" -->
 </head>
 
 <body>
-    <div class="container" id="content">
-    </div>
+    <!-- router relies on the div with id="content" -->
+    <!-- <div class="container" id="content"> 
+    </div> -->
 
     <!-- https://github.com/iamdustan/smoothscroll -->
     <script src="smoothscroll.min.js"></script>
 
-    <!-- https://github.com/krasimir/navigo -->
-    <script src="navigo.min.js"></script>
+    <!-- https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js -->
+    <script src="xterm.js"></script> 
 
+    <script src="utils.js"></script>
+    <script src="router.js"></script>
     <script src="global.js"></script>
     <script src="apiClient.js"></script>
-    <script src="utils.js"></script>
     <script src="homebrewStore.js"></script>
-    <script src="modalView.js"></script>
     <script src="carouselView.js"></script>
+    <script src="modalView.js"></script>
     <script src="filePickerView.js"></script>
     <script src="extensionsHandler.js"></script>
     <script src="main.js"></script>

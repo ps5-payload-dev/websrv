@@ -40,57 +40,32 @@ async function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// this is kind of a memory leak, 
-// if the user goes to home and then reenters the carousel created by the hb.js itll make new entries
-// which makes sense but the old ones arent removed
-function remapFunctionsToLocalFunctionIds(obj) {
-    if (typeof obj !== 'object' || obj === null) {
-        return obj;
-    }
+class Semaphore {
+	constructor(max) {
+		this.max = max;
+		this.current = 0;
+		this.queue = [];
+	}
 
-    // if array, iterate over its elements recursively
-    if (Array.isArray(obj)) {
-        return obj.map(item => remapFunctionsToLocalFunctionIds(item));
-    }
+	acquire() {
+		if (this.current < this.max) {
+			this.current++;
+			return Promise.resolve();
+		} else {
+			return new Promise((resolve) => this.queue.push(resolve));
+		}
+	}
 
-    return Object.keys(obj).reduce((acc, key) => {
-        if (typeof obj[key] === 'function') {
-            let uuid = uuidv4();
-            if (!Globals.Funcs) {
-                Globals.Funcs = {};
-            }
-            Globals.Funcs[uuid] = obj[key];
-            acc[key] = uuid;
-        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-            // Recursively serialize nested objects
-            acc[key] = remapFunctionsToLocalFunctionIds(obj[key]);
-        } else {
-            acc[key] = obj[key];
-        }
-        return acc;
-    }, {});
-}
+	release() {
+		if (this.queue.length > 0) {
+			const resolve = this.queue.shift();
+			resolve();
+		} else {
+			this.current--;
+		}
+	}
 
-function remapFunctionIdsToLocalCalls(obj) {
-    if (typeof obj !== 'object' || obj === null) {
-        return obj;
-    }
-
-    // if array, iterate over its elements recursively
-    if (Array.isArray(obj)) {
-        return obj.map(item => remapFunctionIdsToLocalCalls(item));
-    }
-
-    return Object.keys(obj).reduce((acc, key) => {
-        if (key === 'onclick') {
-            let matchingFunc = Globals.Funcs[obj[key]];
-            acc[key] = matchingFunc;
-        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-            // Recursively serialize nested objects
-            acc[key] = remapFunctionIdsToLocalCalls(obj[key]);
-        } else {
-            acc[key] = obj[key];
-        }
-        return acc;
-    }, {});
+	awaitCurrentQueue() {
+		return Promise.all(this.queue);
+	}
 }

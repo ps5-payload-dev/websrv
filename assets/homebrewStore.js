@@ -81,8 +81,8 @@ function getHomebrewList() {
     return JSON.parse(temp_hblistStr).reduce((acc, entry) => {
         acc.push({
             path: entry,
-            dir: entry.substring(0, entry.lastIndexOf('/')),
-            filename: entry.substring(entry.lastIndexOf('/') + 1)
+            dir: entry.substring(0, entry.lastIndexOf("/")),
+            filename: entry.substring(entry.lastIndexOf("/") + 1)
         });
         return acc;
     }, []);
@@ -151,7 +151,7 @@ async function scanHomebrews() {
             }
 
             if (foundExecutableName) {
-                addToHomebrewStore(path + entry.name + '/' + foundExecutableName);
+                addToHomebrewStore(path + entry.name + "/" + foundExecutableName);
             }
         }
     }

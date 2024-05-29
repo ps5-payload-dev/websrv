@@ -24,48 +24,51 @@ class DirectoryListing {
      * @param {string} name
      * @param {string} mode
     */
-   constructor(name, mode) {
-       this.name = name;
-       this.mode = mode;
+    constructor(name, mode) {
+        this.name = name;
+        this.mode = mode;
     }
-    
+
     isDir() {
-        return this.mode === 'd' && !ignoredFileNames.includes(this.name);
+        return this.mode === "d" && !ignoredFileNames.includes(this.name);
     }
-    
+
     isFile() {
-        return this.mode === '-' && !ignoredFileNames.includes(this.name);
+        return this.mode === "-" && !ignoredFileNames.includes(this.name);
     }
 }
 
 // @ts-ignore
-const baseURL = window.location.origin == 'null' ? 'http://127.0.0.1:8080' : window.location.origin;
-const ignoredFileNames = ['.', '..'];
+const baseURL = window.location.origin == "null" ? "http://127.0.0.1:8080" : window.location.origin;
+const ignoredFileNames = [".", ".."];
 class ApiClient {
     /**
      * @param {string} path
      * @param {(string | string[])?} [args]
-     * @returns {Promise<boolean>} only returns true, throws error if not success code
+     * @returns {Promise<ReadableStream<Uint8Array>?>} only returns true, throws error if not success code
      */
     static async launchApp(path, args = null) {
         let params = new URLSearchParams({
-            'path': path
+            "pipe": "1",
+            "path": path
         });
 
-        if (typeof args === 'string') {
-            params.append('args', args.replaceAll(" ", "\\ "));
+        if (typeof args === "string") {
+            // @ts-ignore
+            params.append("args", args.replaceAll(" ", "\\ "));
         } else if (Array.isArray(args)) {
-            params.append('args', args.map(arg => arg.replaceAll(" ", "\\ ")).join(' '));
+            // @ts-ignore
+            params.append("args", args.map(arg => arg.replaceAll(" ", "\\ ")).join(" "));
         }
 
-        let uri = baseURL + '/hbldr?' + params.toString();
+        let uri = baseURL + "/hbldr?" + params.toString();
 
         let response = await fetch(uri);
         if (response.status !== 200) {
-            throw new Error('Failed to launch app, status code: ' + response.status);
+            throw new Error("Failed to launch app, status code: " + response.status);
         }
 
-        return true;
+        return response.body;
     }
 
     /**
@@ -73,8 +76,8 @@ class ApiClient {
      * @returns {Promise<DirectoryListing[]?>}
      */
     static async fsListDir(path) {
-        if (!path.endsWith('/')) {
-            path += '/';
+        if (!path.endsWith("/")) {
+            path += "/";
         }
 
         let response = await fetch(baseURL + "/fs" + path + "?fmt=json");
@@ -82,12 +85,12 @@ class ApiClient {
             return null;
         }
         let data = await response.json();
-	data.sort((x, y) => x.mode == y.mode ?
-		  x.name.localeCompare(y.name) :
-		  x.mode.localeCompare(y.mode));
+        data.sort((x, y) => x.mode == y.mode ?
+            x.name.localeCompare(y.name) :
+            y.mode.localeCompare(x.mode));
 
         return data.filter(entry => !ignoredFileNames.includes(entry.name)).map(entry =>
-	    new DirectoryListing(entry.name, entry.mode));
+            new DirectoryListing(entry.name, entry.mode));
     }
 
     /**
@@ -96,7 +99,7 @@ class ApiClient {
      * @returns {Promise<ReadableStream<Uint8Array>?>}
      */
     static async fsGetFileStream(path) {
-        if (path.endsWith('/') || !path.startsWith('/')) {
+        if (path.endsWith("/") || !path.startsWith("/")) {
             return null;
         }
 
@@ -113,7 +116,7 @@ class ApiClient {
      * @returns {Promise<string?>}
      */
     static async fsGetFileText(path) {
-        if (path.endsWith('/') || !path.startsWith('/')) {
+        if (path.endsWith("/") || !path.startsWith("/")) {
             return null;
         }
 

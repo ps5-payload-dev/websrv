@@ -14,16 +14,55 @@ You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
+@keyframes fadein {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeout {
+    0% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+@keyframes zoomin {
+    0% {
+        transform: scale(0.8);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes spinner {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 
 :root {
-    font-family: 'Arial', sans-serif;
+    font-family: "Arial", sans-serif;
     --text-color: #fff;
-    --secondary-text-color: #aaa;
+    --secondary-text-color: #bbb;
     color: var(--text-color);
     --background-color: #0b0d0f;
     --surface-color: #1f2225;
     --surface-color-hover: #3b4047;
     --modal-background-color: #181a1c;
+    --file-picker-back-icon-color: var(--text-color);
+    --file-picker-file-icon-color: var(--text-color);
+    --file-picker-directory-icon-color: #f9e87c;
 }
 
 *:focus {
@@ -38,26 +77,8 @@ body {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    font-size: 150%;
-}
-
-div.carousel {
-    margin-top: 10vh;
-    display: flex;
-    flex-direction: row;
-    width: 100%;
-    padding: 40px;
-    box-sizing: border-box;
-    overflow-x: hidden;
-    overflow-y: hidden;
-}
-
-/* to center items */
-div.carousel::after,
-div.carousel::before {
-    content: '';
-    flex: none;
-    width: 100vw;
+    font-size: 20px;
+    margin: 0;
 }
 
 .header {
@@ -72,42 +93,29 @@ div.carousel::before {
 
 div.separator {
     margin-top: 2rem;
-    border-bottom: 1px solid #fff;
+    border-bottom: 1px solid var(--text-color);
 }
 
-div.entry-wrapper {
-    flex: none;
-    height: 60vh;
-    width: 60vh;
-    margin-right: 8vh;
-    transition: transform 0.3s;
-    box-sizing: border-box;
-    position: relative;
-}
-
-div.entry {
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    background-color: var(--surface-color);
-    border-radius: 6px;
-    transition: background-color 0.3s;
+div.carousel {
+    padding: 40px;
+    height: 100vh;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    flex-direction: row;
+    width: 100%;
     box-sizing: border-box;
-    height: calc(100% - 50px);
-    cursor: pointer;
-    padding: 1rem;
-    text-wrap: pretty;
-    overflow-wrap: break-word;
-    text-align: center;
-    overflow: hidden;
-    position: relative;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    align-items: center;
 }
 
-div.entry-wrapper.selected {
-    /* some js is tied to this for the cursor snapping to work so if you change this also change that */
-    transform: scale(1.2);
+/* add some padding to be able scroll the first/last item in the carousel to the center */
+div.carousel::after,
+div.carousel::before {
+    position: relative;
+    content: "";
+    flex: none;
+    width: 50vw;
+    height: 1px;
 }
 
 div.carousel.scrolling div.entry-wrapper.selected div.entry-main {
@@ -127,49 +135,73 @@ div.entry-wrapper:not(.selected) div.entry {
 }
 
 
+div.entry-wrapper {
+    flex: none;
+    height: 55vh;
+    width: 50vh;
+    margin-right: 8vh;
+    transition: transform 0.3s;
+    box-sizing: border-box;
+    position: relative;
+}
+
+div.entry-wrapper.selected {
+    /* some js is tied to this for the cursor snapping to work so if you change this also change that */
+    transform: scale(1.2);
+}
+
+div.entry {
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    background-color: var(--surface-color);
+    border-radius: 1vh;
+    transition: background-color 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: calc(100% - 50px);
+    cursor: pointer;
+    padding: 1rem;
+    text-wrap: pretty;
+    overflow-wrap: break-word;
+    text-align: center;
+    overflow: hidden;
+    position: relative;
+}
+
 div.entry p {
     padding: 0;
     margin: 5px;
     max-width: 100%;
 }
 
+.entry img {
+    display: block;
+    max-width: 100%;
+    max-height: 30vh;
+    object-fit: contain;
+}
+
 div.entry-more-button {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 5vh;
+    height: 7vh;
     text-align: center;
     margin-top: 0.5em;
     background-color: var(--surface-color);
-    border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.3s;
 }
 
 .text-secondary {
-    font-size: 0.8em;
+    font-size: 0.85em;
     color: var(--secondary-text-color);
 }
 
-div.carousel-below {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-div.browse-button {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 8vh;
-    text-align: center;
-    margin-top: 0.5em;
-    background-color: var(--surface-color);
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    width: calc(33vh * 1.2);
-    font-size: 1.5em;
+.entry-name {
+    font-weight: 700;
 }
 
 div.list {
@@ -196,71 +228,160 @@ a.list-entry:hover {
     background-color: var(--surface-color-hover);
 }
 
+div.list-entry-icon {
+    min-height: 2rem;
+    min-width: 2rem;
+    margin-left: 1rem;
+    margin-right: 1rem;
+    mask-size: contain;
+    -webkit-mask-size: contain;
+}
+
+.entry-main{
+    position: relative;
+}
+
+.entry-img{
+    margin-bottom: 10vh;
+}
+
+.entry-main img[style*="display: block"]~p:nth-child(2) {
+    position: absolute;
+    bottom: 7vh;
+}
+
+.entry-main img[style*="display: block"]~p:nth-child(3) {
+    position: absolute;
+    bottom: 3vh;
+}
+
+/* div.dir-icon {
+    background-color: var(--file-picker-directory-icon-color);
+    mask: url("googlefonts_folder.svg") no-repeat center;
+    -webkit-mask: url("googlefonts_folder.svg") no-repeat center;
+    mask-size:contain;
+    -webkit-mask-size:contain;
+}
+
+div.file-icon {
+    background-color: var(--file-picker-file-icon-color);
+    mask: url("googlefonts_file.svg") no-repeat center;
+    -webkit-mask: url("googlefonts_file.svg") no-repeat center;
+    mask-size:contain;
+    -webkit-mask-size:contain;
+}
+
+div.back-icon {
+    background-color: var(--file-picker-back-icon-color);
+    mask: url("googlefonts_arrow_back.svg") no-repeat center;
+    -webkit-mask: url("googlefonts_arrow_back.svg") no-repeat center;
+    mask-size:contain;
+    -webkit-mask-size:contain;
+} */
+
 div.dir-icon {
     /* from google fonts */
-    background-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%20-960%20960%20960%22%20fill%3D%22%23e8eaed%22%3E%3Cpath%20d%3D%22M160-160q-33%200-56.5-23.5T80-240v-480q0-33%2023.5-56.5T160-800h207q16%200%2030.5%206t25.5%2017l57%2057h320q33%200%2056.5%2023.5T880-640v400q0%2033-23.5%2056.5T800-160H160Zm0-80h640v-400H447l-80-80H160v480Zm0%200v-480%20480Z%22%2F%3E%3C%2Fsvg%3E");
-    height: 2rem;
-    width: 2rem;
-    margin: 1rem;
+    background-color: var(--file-picker-directory-icon-color);
+    mask: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMjhweCIgdmlld0JveD0iMCAtOTYwIDk2MCA5NjAiIHdpZHRoPSIyOHB4IiBmaWxsPSIjZThlYWVkIj48cGF0aCBkPSJNMTYwLTE2MHEtMzMgMC01Ni41LTIzLjVUODAtMjQwdi00ODBxMC0zMyAyMy41LTU2LjVUMTYwLTgwMGgyMDdxMTYgMCAzMC41IDZ0MjUuNSAxN2w1NyA1N2gzMjBxMzMgMCA1Ni41IDIzLjVUODgwLTY0MHY0MDBxMCAzMy0yMy41IDU2LjVUODAwLTE2MEgxNjBabTAtODBoNjQwdi00MDBINDQ3bC04MC04MEgxNjB2NDgwWm0wIDB2LTQ4MCA0ODBaIi8+PC9zdmc+') no-repeat center;
+    -webkit-mask: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMjhweCIgdmlld0JveD0iMCAtOTYwIDk2MCA5NjAiIHdpZHRoPSIyOHB4IiBmaWxsPSIjZThlYWVkIj48cGF0aCBkPSJNMTYwLTE2MHEtMzMgMC01Ni41LTIzLjVUODAtMjQwdi00ODBxMC0zMyAyMy41LTU2LjVUMTYwLTgwMGgyMDdxMTYgMCAzMC41IDZ0MjUuNSAxN2w1NyA1N2gzMjBxMzMgMCA1Ni41IDIzLjVUODgwLTY0MHY0MDBxMCAzMy0yMy41IDU2LjVUODAwLTE2MEgxNjBabTAtODBoNjQwdi00MDBINDQ3bC04MC04MEgxNjB2NDgwWm0wIDB2LTQ4MCA0ODBaIi8+PC9zdmc+') no-repeat center;
+    mask-size: contain;
+    -webkit-mask-size: contain;
 }
 
 div.file-icon {
     /* from google fonts */
-    background-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%20-960%20960%20960%22%20fill%3D%22%23e8eaed%22%3E%3Cpath%20d%3D%22M240-80q-33%200-56.5-23.5T160-160v-640q0-33%2023.5-56.5T240-880h287q16%200%2030.5%206t25.5%2017l194%20194q11%2011%2017%2025.5t6%2030.5v447q0%2033-23.5%2056.5T720-80H240Zm280-560v-160H240v640h480v-440H560q-17%200-28.5-11.5T520-640ZM240-800v200-200%20640-640Z%22%2F%3E%3C%2Fsvg%3E");
-    height: 2rem;
-    width: 2rem;
-    margin: 1rem;
+    background-color: var(--file-picker-file-icon-color);
+    mask: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMjhweCIgdmlld0JveD0iMCAtOTYwIDk2MCA5NjAiIHdpZHRoPSIyOHB4Ij48cGF0aCBkPSJNMjQwLTgwcS0zMyAwLTU2LjUtMjMuNVQxNjAtMTYwdi02NDBxMC0zMyAyMy41LTU2LjVUMjQwLTg4MGgyODdxMTYgMCAzMC41IDZ0MjUuNSAxN2wxOTQgMTk0cTExIDExIDE3IDI1LjV0NiAzMC41djQ0N3EwIDMzLTIzLjUgNTYuNVQ3MjAtODBIMjQwWm0yODAtNTYwdi0xNjBIMjQwdjY0MGg0ODB2LTQ0MEg1NjBxLTE3IDAtMjguNS0xMS41VDUyMC02NDBaTTI0MC04MDB2MjAwLTIwMCA2NDAtNjQwWiIvPjwvc3ZnPg==') no-repeat center;
+    -webkit-mask: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMjhweCIgdmlld0JveD0iMCAtOTYwIDk2MCA5NjAiIHdpZHRoPSIyOHB4Ij48cGF0aCBkPSJNMjQwLTgwcS0zMyAwLTU2LjUtMjMuNVQxNjAtMTYwdi02NDBxMC0zMyAyMy41LTU2LjVUMjQwLTg4MGgyODdxMTYgMCAzMC41IDZ0MjUuNSAxN2wxOTQgMTk0cTExIDExIDE3IDI1LjV0NiAzMC41djQ0N3EwIDMzLTIzLjUgNTYuNVQ3MjAtODBIMjQwWm0yODAtNTYwdi0xNjBIMjQwdjY0MGg0ODB2LTQ0MEg1NjBxLTE3IDAtMjguNS0xMS41VDUyMC02NDBaTTI0MC04MDB2MjAwLTIwMCA2NDAtNjQwWiIvPjwvc3ZnPg==') no-repeat center;
+    mask-size: contain;
+    -webkit-mask-size: contain;
 }
 
 div.back-icon {
     /* from google fonts */
-    background-image: url("data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%20-960%20960%20960%22%20fill%3D%22%23e8eaed%22%3E%3Cpath%20d%3D%22m313-440%20196%20196q12%2012%2011.5%2028T508-188q-12%2011-28%2011.5T452-188L188-452q-6-6-8.5-13t-2.5-15q0-8%202.5-15t8.5-13l264-264q11-11%2027.5-11t28.5%2011q12%2012%2012%2028.5T508-715L313-520h447q17%200%2028.5%2011.5T800-480q0%2017-11.5%2028.5T760-440H313Z%22%2F%3E%3C%2Fsvg%3E");
+    background-color: var(--file-picker-back-icon-color);
+    mask: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgLTk2MCA5NjAgOTYwIiBmaWxsPSIjZThlYWVkIj48cGF0aCBkPSJtMzEzLTQ0MCAxOTYgMTk2cTEyIDEyIDExLjUgMjhUNTA4LTE4OHEtMTIgMTEtMjggMTEuNVQ0NTItMTg4TDE4OC00NTJxLTYtNi04LjUtMTN0LTIuNS0xNXEwLTggMi41LTE1dDguNS0xM2wyNjQtMjY0cTExLTExIDI3LjUtMTF0MjguNSAxMXExMiAxMiAxMiAyOC41VDUwOC03MTVMMzEzLTUyMGg0NDdxMTcgMCAyOC41IDExLjVUODAwLTQ4MHEwIDE3LTExLjUgMjguNVQ3NjAtNDQwSDMxM1oiLz48L3N2Zz4=') no-repeat center;
+    -webkit-mask: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgLTk2MCA5NjAgOTYwIiBmaWxsPSIjZThlYWVkIj48cGF0aCBkPSJtMzEzLTQ0MCAxOTYgMTk2cTEyIDEyIDExLjUgMjhUNTA4LTE4OHEtMTIgMTEtMjggMTEuNVQ0NTItMTg4TDE4OC00NTJxLTYtNi04LjUtMTN0LTIuNS0xNXEwLTggMi41LTE1dDguNS0xM2wyNjQtMjY0cTExLTExIDI3LjUtMTF0MjguNSAxMXExMiAxMiAxMiAyOC41VDUwOC03MTVMMzEzLTUyMGg0NDdxMTcgMCAyOC41IDExLjVUODAwLTQ4MHEwIDE3LTExLjUgMjguNVQ3NjAtNDQwSDMxM1oiLz48L3N2Zz4=') no-repeat center;
+    mask-size: contain;
+    -webkit-mask-size: contain;
+}
+
+div.ps-triangle-icon {
+    /* https://commons.wikimedia.org/wiki/File:PlayStation_Portable_T_button.svg */
+    background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDE2LjAuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkNhcGFfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeD0iMHB4IiB5PSIwcHgiCgkgdmlld0JveD0iMCAwIDIwLjAwMiAyMCIgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgMjAuMDAyIDIwIiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPGc+Cgk8Zz4KCQk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzFfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjEwLjAwMSIgeTE9IjAiIHgyPSIxMC4wMDEiIHkyPSIxNy45MDA4Ij4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzVBNUI1RiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIwLjAzMjYiIHN0eWxlPSJzdG9wLWNvbG9yOiM1NzU4NUMiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC40NTYiIHN0eWxlPSJzdG9wLWNvbG9yOiMzMzMyMzQiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC43OTMyIiBzdHlsZT0ic3RvcC1jb2xvcjojMUMxQjFDIi8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxNDEyMTMiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxjaXJjbGUgZmlsbD0idXJsKCNTVkdJRF8xXykiIGN4PSIxMC4wMDEiIGN5PSIxMCIgcj0iMTAuMDAxIi8+CgkJPGxpbmVhckdyYWRpZW50IGlkPSJTVkdJRF8yXyIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSIxMC4wMDEiIHkxPSIwIiB4Mj0iMTAuMDAxIiB5Mj0iMjAuMDAwNSI+CgkJCTxzdG9wICBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiM1QTVCNUYiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC4wMTk3IiBzdHlsZT0ic3RvcC1jb2xvcjojNTY1NzVBIi8+CgkJCTxzdG9wICBvZmZzZXQ9IjAuMTUyNCIgc3R5bGU9InN0b3AtY29sb3I6IzNFM0U0MCIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIwLjI5ODkiIHN0eWxlPSJzdG9wLWNvbG9yOiMyQjJBMkMiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC40NjQ3IiBzdHlsZT0ic3RvcC1jb2xvcjojMUUxQzFFIi8+CgkJCTxzdG9wICBvZmZzZXQ9IjAuNjY1NyIgc3R5bGU9InN0b3AtY29sb3I6IzE2MTQxNiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTQxMjEzIi8+CgkJPC9saW5lYXJHcmFkaWVudD4KCQk8cGF0aCBmaWxsPSJ1cmwoI1NWR0lEXzJfKSIgZD0iTTEwLjAwMiwxLjZjNC42MzEsMCw4LjQsMy43NjgsOC40LDguNGMwLDQuNjMyLTMuNzcsOC40LTguNCw4LjRDNS4zNjksMTguNCwxLjYsMTQuNjMyLDEuNiwxMAoJCQlDMS42LDUuMzY4LDUuMzY5LDEuNiwxMC4wMDIsMS42IE0xMC4wMDIsMEM0LjQ3OCwwLDAsNC40NzcsMCwxMHM0LjQ3OCwxMCwxMC4wMDIsMTBjNS41MjEsMCwxMC00LjQ3OCwxMC0xMFMxNS41MjMsMCwxMC4wMDIsMAoJCQlMMTAuMDAyLDB6Ii8+Cgk8L2c+Cgk8cGF0aCBmaWxsPSIjRURFQ0VCIiBkPSJNMTAuMDAxLDcuNTg3bDEuMjY5LDIuMTk3bDEuMjcsMi4xOThoLTIuNTM4SDcuNDY0bDEuMjY5LTIuMTk4TDEwLjAwMSw3LjU4NyBNMTAuMDAxLDUuMjQ4TDcuNzIsOS4yCgkJbC0yLjI4MiwzLjk1M2g0LjU2M2g0LjU2M0wxMi4yODIsOS4yTDEwLjAwMSw1LjI0OEwxMC4wMDEsNS4yNDh6Ii8+CjwvZz4KPC9zdmc+Cg==');
+    display: inline-block;
     height: 2rem;
     width: 2rem;
-    margin: 1rem;
+    margin: 0.5rem;
 }
 
-@keyframes fadein {
-    0% {
-        opacity: 0;
-    }
-
-    100% {
-        opacity: 1;
-    }
+div.ps-circle-icon {
+    /* https://commons.wikimedia.org/wiki/File:PlayStation_Portable_C_button.svg */
+    background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDE2LjAuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkNhcGFfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeD0iMHB4IiB5PSIwcHgiCgkgdmlld0JveD0iMCAwIDIwLjAwMSAyMC4wMDEiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgMCAwIDIwLjAwMSAyMC4wMDEiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8Zz4KCTxnPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMTAiIHkxPSIwIiB4Mj0iMTAiIHkyPSIxNy45MDE2Ij4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzVBNUI1RiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIwLjAzMjYiIHN0eWxlPSJzdG9wLWNvbG9yOiM1NzU4NUMiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC40NTYiIHN0eWxlPSJzdG9wLWNvbG9yOiMzMzMyMzQiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC43OTMyIiBzdHlsZT0ic3RvcC1jb2xvcjojMUMxQjFDIi8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxNDEyMTMiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxjaXJjbGUgZmlsbD0idXJsKCNTVkdJRF8xXykiIGN4PSIxMCIgY3k9IjEwIiByPSIxMCIvPgoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMl8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iMTAiIHkxPSIwIiB4Mj0iMTAiIHkyPSIyMC4wMDE1Ij4KCQkJPHN0b3AgIG9mZnNldD0iMCIgc3R5bGU9InN0b3AtY29sb3I6IzVBNUI1RiIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIwLjAxOTciIHN0eWxlPSJzdG9wLWNvbG9yOiM1NjU3NUEiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC4xNTI0IiBzdHlsZT0ic3RvcC1jb2xvcjojM0UzRTQwIi8+CgkJCTxzdG9wICBvZmZzZXQ9IjAuMjk4OSIgc3R5bGU9InN0b3AtY29sb3I6IzJCMkEyQyIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIwLjQ2NDciIHN0eWxlPSJzdG9wLWNvbG9yOiMxRTFDMUUiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC42NjU3IiBzdHlsZT0ic3RvcC1jb2xvcjojMTYxNDE2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxNDEyMTMiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxwYXRoIGZpbGw9InVybCgjU1ZHSURfMl8pIiBkPSJNMTAsMS42YzQuNjMzLDAsOC40LDMuNzY5LDguNCw4LjQwMWMwLDQuNjMxLTMuNzY4LDguNC04LjQsOC40Yy00LjYzMSwwLTguNC0zLjc3LTguNC04LjQKCQkJQzEuNiw1LjM2OCw1LjM2OSwxLjYsMTAsMS42IE0xMCwwQzQuNDc3LDAsMCw0LjQ3OCwwLDEwYzAsNS41MjMsNC40NzcsMTAuMDAxLDEwLDEwLjAwMVMyMCwxNS41MjQsMjAsMTBDMjAsNC40NzgsMTUuNTIzLDAsMTAsMAoJCQlMMTAsMHoiLz4KCTwvZz4KCTxwYXRoIGZpbGw9IiNFREVDRUIiIGQ9Ik0xMCw2LjgyMWMxLjc1NCwwLDMuMTc4LDEuNDI2LDMuMTc4LDMuMTc5YzAsMS43NTItMS40MjQsMy4xNzgtMy4xNzgsMy4xNzgKCQljLTEuNzUyLDAtMy4xNzgtMS40MjYtMy4xNzgtMy4xNzhDNi44MjIsOC4yNDcsOC4yNDgsNi44MjEsMTAsNi44MjEgTTEwLDUuNTc5Yy0yLjQ0MSwwLTQuNDIsMS45NzktNC40Miw0LjQyMQoJCWMwLDIuNDQxLDEuOTc5LDQuNDIsNC40Miw0LjQyczQuNDIyLTEuOTc5LDQuNDIyLTQuNDJDMTQuNDIyLDcuNTU5LDEyLjQ0MSw1LjU3OSwxMCw1LjU3OUwxMCw1LjU3OXoiLz4KPC9nPgo8L3N2Zz4K');
+    display: inline-block;
+    height: 2rem;
+    width: 2rem;
+    margin: 0.5rem;
 }
 
-@keyframes fadeout {
-    0% {
-        opacity: 1;
-    }
-
-    100% {
-        opacity: 0;
-    }
+div.ps-icon {
+    /* https://commons.wikimedia.org/wiki/File:PlayStation_button_Home.svg */
+    background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDE2LjAuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkNhcGFfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeD0iMHB4IiB5PSIwcHgiCgkgdmlld0JveD0iMCAwIDIwLjAwNyAyMC4wMDYiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgMCAwIDIwLjAwNyAyMC4wMDYiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8Zz4KCQoJCTxsaW5lYXJHcmFkaWVudCBpZD0iU1ZHSURfMV8iIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iOTYuMDAwNSIgeTE9IjM1NS45OTU2IiB4Mj0iMTE2LjAwNjgiIHkyPSIzNTUuOTk1NiIgZ3JhZGllbnRUcmFuc2Zvcm09Im1hdHJpeCgwIDEgLTEgMCAzNjUuOTk5NSAtOTYuMDAwNSkiPgoJCTxzdG9wICBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiM1QjVCNUYiLz4KCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTQxNDE0Ii8+Cgk8L2xpbmVhckdyYWRpZW50PgoJPGNpcmNsZSBmaWxsPSJ1cmwoI1NWR0lEXzFfKSIgY3g9IjEwLjAwMyIgY3k9IjEwLjAwMyIgcj0iMTAuMDAzIi8+Cgk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzJfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjEwLjAwMzQiIHkxPSIwIiB4Mj0iMTAuMDAzNCIgeTI9IjIwLjAwNjMiPgoJCTxzdG9wICBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiM1QjVCNUYiLz4KCQk8c3RvcCAgb2Zmc2V0PSIwLjAyMzEiIHN0eWxlPSJzdG9wLWNvbG9yOiM1OTU5NUQiLz4KCQk8c3RvcCAgb2Zmc2V0PSIwLjQ1MDciIHN0eWxlPSJzdG9wLWNvbG9yOiMzMzMzMzUiLz4KCQk8c3RvcCAgb2Zmc2V0PSIwLjc5MTIiIHN0eWxlPSJzdG9wLWNvbG9yOiMxQzFDMUQiLz4KCQk8c3RvcCAgb2Zmc2V0PSIxIiBzdHlsZT0ic3RvcC1jb2xvcjojMTQxNDE0Ii8+Cgk8L2xpbmVhckdyYWRpZW50PgoJPHBhdGggZmlsbD0idXJsKCNTVkdJRF8yXykiIGQ9Ik0xMC4wMDMsMS4yOTFjNC44MDQsMCw4LjcxMywzLjkwOSw4LjcxMyw4LjcxM3MtMy45MDksOC43MTItOC43MTMsOC43MTIKCQljLTQuODAzLDAtOC43MTItMy45MDktOC43MTItOC43MTJTNS4yLDEuMjkxLDEwLjAwMywxLjI5MSBNMTAuMDAzLDBDNC40NzksMCwwLDQuNDc5LDAsMTAuMDAzYzAsNS41MjQsNC40NzksMTAuMDAzLDEwLjAwMywxMC4wMDMKCQljNS41MjUsMCwxMC4wMDQtNC40NzksMTAuMDA0LTEwLjAwM0MyMC4wMDcsNC40NzksMTUuNTI4LDAsMTAuMDAzLDBMMTAuMDAzLDB6Ii8+CjwvZz4KPHBhdGggZmlsbD0iI0ZGRkZGRiIgZD0iTTEyLjUyNSwxMC43NjNjMC40MiwwLDAuNzcyLTAuMTcsMS4wMTgtMC40OTFjMC4yNjYtMC4zNDcsMC40MDYtMC44NjcsMC40MDYtMS41MDQKCWMwLTEuODQzLTAuNjI1LTIuNjQ4LTIuNTczLTMuMzE2Yy0wLjYxNy0wLjIwOS0yLjAwNS0wLjY0LTMuMDQ4LTAuODUxdjEwLjEyNmwyLjA1OCwwLjY1M1Y2Ljg0OGMwLTAuNTI4LDAuMjk2LTAuODU1LDAuNjczLTAuNzMKCWMwLjU2NCwwLjE1NiwwLjU2NCwwLjc5NSwwLjU2NCwxLjAzNnYzLjM5NEMxMS45NDMsMTAuNjksMTIuMjQ2LDEwLjc2MywxMi41MjUsMTAuNzYzeiIvPgo8cGF0aCBmaWxsPSIjRkZGRkZGIiBkPSJNMTYuOTkzLDEyLjg3M2MwLjA4OS0wLjExMiwwLjExNy0wLjIyOCwwLjA4Mi0wLjM0M2MtMC4wNDMtMC4xNDEtMC4yMjctMC40MTMtMC45NjUtMC42NDcKCWMtMC45MTgtMC4zNDgtMi4xNzctMC40OTQtMy4yMDgtMC4zODNjLTAuOTk1LDAuMTEtMS43MTYsMC4zNjItMS43MjQsMC4zNjVsLTAuMDQ1LDAuMDE1djEuMDk2bDIuMzI1LTAuODE5CgljMC40NDYtMC4xNiwxLjEzNi0wLjE5NiwxLjUwOS0wLjA3NGMwLjI2OCwwLjA4OCwwLjMyNiwwLjIyOSwwLjMyNywwLjMzMmMwLjAwMSwwLjEyMy0wLjA3OSwwLjI5OC0wLjQ3LDAuNDM4bC0zLjY5MSwxLjMxNnYxLjA0NQoJbDQuOTUtMS43NzdDMTYuMDg5LDEzLjQzNSwxNi43NCwxMy4xOTIsMTYuOTkzLDEyLjg3M3oiLz4KPHBhdGggZmlsbD0iI0ZGRkZGRiIgZD0iTTcuNTcxLDEwLjkzbC0zLjE4LDEuMTNjLTAuMDExLDAuMDA0LTAuODAzLDAuMjY3LTEuMjYsMC42MDVjLTAuMTYyLDAuMTItMC4yMzUsMC4yNjgtMC4yMDgsMC40MTcKCWMwLjA1MSwwLjI3OCwwLjQxNSwwLjUzNywwLjk3MiwwLjY5NGMxLjE2NSwwLjM4NSwyLjM4NywwLjQ4MywzLjU2OCwwLjI4OWwwLjEwNy0wLjAxOHYtMC44ODRsLTAuOTY1LDAuMzUKCWMtMC40NDYsMC4xNi0xLjEzNywwLjE5Ni0xLjUxLDAuMDc0Yy0wLjI2OC0wLjA4OC0wLjMyNi0wLjIyOS0wLjMyNy0wLjMzMmMtMC4wMDItMC4xMjMsMC4wNzktMC4yOTgsMC40NzEtMC40MzlsMi4zMzItMC44MzVWMTAuOTMKCXoiLz4KPC9zdmc+Cg==');
+    display: inline-block;
+    height: 2rem;
+    width: 2rem;
+    margin: 0.5rem;
 }
 
-.launch-app-overlay {
+div.ps-r2-icon {
+    /* https://commons.wikimedia.org/wiki/File:PlayStation_button_R2.svg */
+    background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDE2LjAuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8IURPQ1RZUEUgc3ZnIFBVQkxJQyAiLS8vVzNDLy9EVEQgU1ZHIDEuMS8vRU4iICJodHRwOi8vd3d3LnczLm9yZy9HcmFwaGljcy9TVkcvMS4xL0RURC9zdmcxMS5kdGQiPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkNhcGFfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeD0iMHB4IiB5PSIwcHgiCgkgdmlld0JveD0iMCAwIDIwIDE0Ljk0OSIgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgMjAgMTQuOTQ5IiB4bWw6c3BhY2U9InByZXNlcnZlIj4KPGc+Cgk8Zz4KCQk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzFfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjEwIiB5MT0iMCIgeDI9IjEwIiB5Mj0iMTMuMzc5NCI+CgkJCTxzdG9wICBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiM1QjVCNUYiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC4wNjI2IiBzdHlsZT0ic3RvcC1jb2xvcjojNTM1MzU2Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjAuMzAxOCIgc3R5bGU9InN0b3AtY29sb3I6IzM3MzczOSIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIwLjUzOTciIHN0eWxlPSJzdG9wLWNvbG9yOiMyNDI0MjUiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC43NzM5IiBzdHlsZT0ic3RvcC1jb2xvcjojMTgxODE4Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxNDE0MTQiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxwYXRoIGZpbGw9InVybCgjU1ZHSURfMV8pIiBkPSJNMjAsMTAuNzQ2YzAsNS42MDQtMjAsNS42MDQtMjAsMFYyLjU2M0MwLDEuMTQ3LDEuMTQ2LDAsMi41NjIsMGgxNC44NzYKCQkJQzE4Ljg1NCwwLDIwLDEuMTQ3LDIwLDIuNTYzVjEwLjc0NnoiLz4KCQk8bGluZWFyR3JhZGllbnQgaWQ9IlNWR0lEXzJfIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjEwIiB5MT0iMCIgeDI9IjEwIiB5Mj0iMTQuOTQ5MiI+CgkJCTxzdG9wICBvZmZzZXQ9IjAiIHN0eWxlPSJzdG9wLWNvbG9yOiM1QjVCNUYiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC4wMTU1IiBzdHlsZT0ic3RvcC1jb2xvcjojNTg1ODVCIi8+CgkJCTxzdG9wICBvZmZzZXQ9IjAuMTQ4OCIgc3R5bGU9InN0b3AtY29sb3I6IzNGM0Y0MSIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIwLjI5NiIgc3R5bGU9InN0b3AtY29sb3I6IzJDMkMyRCIvPgoJCQk8c3RvcCAgb2Zmc2V0PSIwLjQ2MjQiIHN0eWxlPSJzdG9wLWNvbG9yOiMxRTFFMUYiLz4KCQkJPHN0b3AgIG9mZnNldD0iMC42NjQzIiBzdHlsZT0ic3RvcC1jb2xvcjojMTYxNjE3Ii8+CgkJCTxzdG9wICBvZmZzZXQ9IjEiIHN0eWxlPSJzdG9wLWNvbG9yOiMxNDE0MTQiLz4KCQk8L2xpbmVhckdyYWRpZW50PgoJCTxwYXRoIGZpbGw9InVybCgjU1ZHSURfMl8pIiBkPSJNMTcuNDM4LDEuNTEyYzAuNTgsMCwxLjA1MSwwLjQ3MSwxLjA1MSwxLjA1MXY4LjE4NGMwLDAuNTg2LTAuODAxLDEuMjM1LTIuMTQzLDEuNzM2CgkJCWMtMS42MjUsMC42MDctMy45MzgsMC45NTUtNi4zNDYsMC45NTVzLTQuNzIyLTAuMzQ4LTYuMzQ2LTAuOTU1Yy0xLjM0Mi0wLjUwMS0yLjE0My0xLjE1LTIuMTQzLTEuNzM2VjIuNTYzCgkJCWMwLTAuNTgsMC40NzEtMS4wNTEsMS4wNS0xLjA1MUgxNy40MzggTTE3LjQzOCwwSDIuNTYyQzEuMTQ2LDAsMCwxLjE0NywwLDIuNTYzdjguMTg0YzAsMi44MDIsNSw0LjIwMywxMCw0LjIwMwoJCQlzMTAtMS40MDEsMTAtNC4yMDNWMi41NjNDMjAsMS4xNDcsMTguODU0LDAsMTcuNDM4LDBMMTcuNDM4LDB6Ii8+Cgk8L2c+Cgk8Zz4KCQk8cGF0aCBmaWxsPSIjRkZGRkZGIiBkPSJNMTAuMDgyLDYuMDhjMC4yMDEtMC4zMjYsMC4zMDMtMC43MDUsMC4zMDMtMS4xMjZjMC0wLjMxNy0wLjA1Ny0wLjYxOC0wLjE3LTAuODk1CgkJCWMtMC4xMTMtMC4yNzgtMC4yNzktMC41MjEtMC40OTEtMC43MjJDOS41MTMsMy4xMzksOS4yNTksMi45OCw4Ljk2OCwyLjg2OEM4LjY3OCwyLjc1Nyw4LjM1NCwyLjcsOC4wMDIsMi43SDQuMTg4djcuNTE5aDEuODI5CgkJCVY3LjQyM2gxLjQwM2MwLjQ3MiwwLDAuNjcsMC4wOTMsMC43NTMsMC4xN2MwLjExNywwLjEwOSwwLjE3NywwLjMxMSwwLjE3NywwLjU5OXYyLjAyN2gxLjg0MVY4LjAwOAoJCQljMC0wLjQ1Ni0wLjA3NS0wLjc5Ni0wLjIyOS0xLjAzN0M5Ljg2OSw2LjgyNSw5Ljc0LDYuNzAyLDkuNTc1LDYuNjAzQzkuNzgxLDYuNDY5LDkuOTUxLDYuMjk0LDEwLjA4Miw2LjA4eiBNNi4wMTgsNC4zMTRoMS43MzYKCQkJYzAuMzE2LDAsMC41MzgsMC4wNjksMC42NjIsMC4yMDZDOC41NDUsNC42NjUsOC42MDksNC44NSw4LjYwOSw1LjA4M2MwLDAuMjI2LTAuMDY0LDAuNDA1LTAuMTk3LDAuNTUKCQkJQzguMjg0LDUuNzcxLDguMDQ1LDUuODQxLDcuNzAxLDUuODQxSDYuMDE4VjQuMzE0eiIvPgoJCTxwYXRoIGZpbGw9IiNGRkZGRkYiIGQ9Ik0xMi43OTEsOC42MjZjMC4wNDMtMC4wOTksMC4xMTEtMC4yMDYsMC4yMDUtMC4zMjJjMC4xNzQtMC4yMiwwLjM5NS0wLjQyNywwLjY1LTAuNjE1CgkJCWMwLjM4MS0wLjI3MywwLjcxMS0wLjUyNiwwLjk3OS0wLjc1MWMwLjI3NS0wLjIzLDAuNTAxLTAuNDYyLDAuNjctMC42ODhjMC4xNzQtMC4yMywwLjMwMS0wLjQ3LDAuMzc5LTAuNzExCgkJCWMwLjA3Ny0wLjI0LDAuMTE2LTAuNTEsMC4xMTYtMC44MDFjMC0wLjM3Ni0wLjA2NS0wLjcxMi0wLjE5NC0wLjk5N2MtMC4xMy0wLjI4Ny0wLjMxNC0wLjUyOS0wLjU0OC0wLjcyCgkJCWMtMC4yMjktMC4xODgtMC41MDktMC4zMjktMC44My0wLjQyMmMtMC4zMTMtMC4wOTEtMC42NjItMC4xMzctMS4wMzYtMC4xMzdjLTAuNzksMC0xLjQxNCwwLjIzOS0xLjg1NCwwLjcxMQoJCQljLTAuNDM4LDAuNDY4LTAuNjU5LDEuMTIxLTAuNjU5LDEuOTQxdjAuMTg4aDEuNzIzVjUuMTE1YzAtMC40MiwwLjA3Ny0wLjcxNywwLjIyMy0wLjg2YzAuMTUxLTAuMTQ4LDAuMzU3LTAuMjIsMC42MzItMC4yMgoJCQljMC4xMiwwLDAuMjM2LDAuMDEzLDAuMzQ0LDAuMDM4YzAuMDk1LDAuMDIxLDAuMTc0LDAuMDYsMC4yNDIsMC4xMTNjMC4wNjQsMC4wNTMsMC4xMTUsMC4xMjMsMC4xNTMsMC4yMTUKCQkJYzAuMDQsMC4xLDAuMDYyLDAuMjI4LDAuMDYyLDAuMzhjMCwwLjEzLTAuMDIsMC4yNTEtMC4wNTUsMC4zNmMtMC4wMzcsMC4xMDctMC4wOTksMC4yMTktMC4xODYsMC4zMzEKCQkJYy0wLjA5MiwwLjExOC0wLjIxOSwwLjI0Ni0wLjM3NywwLjM4MWMtMC4xNjMsMC4xMzktMC4zNzQsMC4yOTgtMC42MjcsMC40NzVjLTAuNDY3LDAuMzM0LTAuODQ4LDAuNjUyLTEuMTM0LDAuOTQ2CgkJCWMtMC4yOSwwLjI5OC0wLjUxOSwwLjU5Ny0wLjY4MSwwLjg5Yy0wLjE2MywwLjI5Ni0wLjI3NCwwLjYwMS0wLjMzMiwwLjkwNmMtMC4wNTYsMC4yOTctMC4wODQsMC42Mi0wLjA4NCwwLjk2djAuMTg4aDUuMjM5VjguNjI2CgkJCUgxMi43OTF6Ii8+Cgk8L2c+CjwvZz4KPC9zdmc+Cg==');
+    background-repeat: no-repeat;
+    display: inline-block;
+    height: 1.5rem;
+    width: 2rem;
+    margin: 0.5rem;
+}
+
+
+.launched-app-view {
     position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
     right: 0;
-    background-color: var(--background-color);
-    z-index: 100000;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    animation: fadein 0.3s ease;
 }
 
-.launch-app-overlay::after {
-    content: "App has launched in the background. \A You can close this window now.";
-    white-space: pre-wrap;
+.launched-app-view div{
+    display: flex;
+    align-items: center;
+}
+
+.launched-app-view div.terminal div {
+    display: block;
+}
+
+.launched-app-view p {
     text-align: center;
 }
 
-#modal-overlay {
+.terminal-wrapper{
+    position: absolute;
+    z-index: 99999;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-overlay {
     position: fixed;
     top: 0;
     bottom: 0;
@@ -276,25 +397,13 @@ div.back-icon {
     backdrop-filter: blur(5px);
 }
 
-
-@keyframes zoomin {
-    0% {
-        transform: scale(0.8);
-    }
-
-    100% {
-        transform: scale(1);
-    }
-
-}
-
-#modal-content {
+.modal-content {
     background-color: var(--modal-background-color);
     padding: 20px;
     border-radius: 10px;
     animation: zoomin 0.3s ease;
-    width: 60vh;
-    height: 60vh;
+    width: 70vh;
+    height: 70vh;
 }
 
 .text-center {
@@ -303,15 +412,15 @@ div.back-icon {
 }
 
 .fadeout {
-    animation: fadeout 0.3s ease !important;
+    animation: fadeout 0.25s ease !important;
 }
 
 .fadein {
-    animation: fadein 0.3s ease;
+    animation: fadein 0.25s ease;
 }
 
 .loading-overlay::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
@@ -325,7 +434,7 @@ div.back-icon {
 
 /* https://stephanwagner.me/only-css-loading-spinner */
 .loading::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 50%;
     left: 50%;
@@ -334,22 +443,8 @@ div.back-icon {
     margin-top: -2.5vh;
     margin-left: -2.5vh;
     border-radius: 50%;
-    border-top: 2px solid #fff;
+    border-top: 2px solid var(--text-color);
     border-right: 2px solid transparent;
     animation: spinner .6s linear infinite, fadein 0.3s ease;
     pointer-events: none;
-}
-
-@keyframes spinner {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-.entry img {
-    display: block;
-    max-width: 100%;
-    max-height: 35vh;
-    object-fit: contain;
-    mix-blend-mode: multiply;
 }

@@ -16,69 +16,76 @@ along with this program; see the file COPYING. If not, see
 
 
 async function main() {
-    const PAYLOAD = window.workingDir + '/ffplay.elf';
-    const API_URL = "https://api.svt.se/video/";
+    const BASE_API_URL = "https://api.svt.se/video/";
+    const BASE_LOGO_URL = '/fs/' + window.workingDir + '/logos/';
+    const PAYLOAD_PATH = window.workingDir + '/ffplay.elf';
 
-    async function launchChannel(channelId) {
-	let response = await fetch(API_URL + channelId);
+    async function resolveStreamURL(channelId) {
+	let response = await fetch(BASE_API_URL + channelId);
         if (!response.ok) {
-            return false;
+	    // throw Exception();
+            return '';
         }
         let data = await response.json();
 	for (const vidref of data.videoReferences) {
 	    if(vidref.format == 'hls') {
-		await ApiClient.launchApp(PAYLOAD, vidref.redirect);
-		return true;
+		return vidref.redirect;
 	    }
 	}
-	return false;
+	// throw Exception();
+	return '';
     }
 
     async function getChannelList() {
 	return [
 	    {
 		mainText: '',
-		imgPath: '/fs/' + window.workingDir + '/logos/SVT1.png',
+		imgPath: BASE_LOGO_URL + 'SVT1.png',
 		onclick: async() => {
-		    let res = await launchChannel('ch-svt1');
-		    history.back();
-		    return res;
+		    return {
+			path: PAYLOAD_PATH,
+			args: await resolveStreamURL('ch-svt1')
+		    };
 		}
 	    },
 	    {
 		mainText: '',
-		imgPath: '/fs/' + window.workingDir + '/logos/SVT2.png',
+		imgPath: BASE_LOGO_URL + 'SVT2.png',
 		onclick: async() => {
-		    let res = await launchChannel('ch-svt2');
-		    history.back();
-		    return res;
+		    return {
+			path: PAYLOAD_PATH,
+			args: await resolveStreamURL('ch-svt2')
+		    };
 		}
 	    },
 	    {
 		mainText: '',
-		imgPath: '/fs/' + window.workingDir + '/logos/SVT24.png',
+		imgPath: BASE_LOGO_URL + 'SVT24.png',
 		onclick: async() => {
-		    let res = await launchChannel('ch-svt24');
-		    history.back();
-		    return res;
+		    return {
+			path: PAYLOAD_PATH,
+			args: await resolveStreamURL('ch-svt24')
+		    };
 		}
 	    },
 	    {
 		mainText: '',
-		imgPath: '/fs/' + window.workingDir + '/logos/Kunskapskanalen.png',
+		imgPath: BASE_LOGO_URL + 'Kunskapskanalen.png',
 		onclick: async() => {
-		    let res = await launchChannel('ch-kunskapskanalen');
-		    history.back();
-		    return res;
+		    return {
+			path: PAYLOAD_PATH,
+			args: await resolveStreamURL('ch-kunskapskanalen')
+		    };
 		}
 	    },
 	    {
 		mainText: '',
-		imgPath: '/fs/' + window.workingDir + '/logos/Barnkanalen.png',
+		imgPath: BASE_LOGO_URL + 'Barnkanalen.png',
 		onclick: async() => {
-		    let res = await launchChannel('ch-barnkanalen');
-		    history.back();
-		    return res;
+		    return {
+			path: PAYLOAD_PATH,
+			args: await resolveStreamURL('ch-barnkanalen')
+		    };
 		}
 	    }
 	];
