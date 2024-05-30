@@ -128,94 +128,52 @@ async function renderLaunchedAppView(hbldrLogStream = null) {
 	if (!content) {
 		return;
 	}
-
-	let canExitWithBackButton = Globals.Router.initialHistoryLength <= 1;
-
 	const wrapper = document.createElement("div");
 	wrapper.classList.add("launched-app-view");
-
-	const text1 = document.createElement("p");
-	text1.innerText = "App has launched in the background.";
-	wrapper.appendChild(text1);
-
-	const text2 = document.createElement("div");
-	const text2_1 = document.createElement("span");
-	text2_1.innerText = "You can close with window by pressing ";
-	text2.appendChild(text2_1);
-
-	const psIconDiv = document.createElement("div");
-	psIconDiv.classList.add("ps-icon");
-	text2.appendChild(psIconDiv);
-
-	if (canExitWithBackButton) {
-		const text2_2 = document.createElement("span");
-		text2_2.innerText = " or ";
-		text2.appendChild(text2_2);
-		const circleIconDiv = document.createElement("div");
-		circleIconDiv.classList.add("ps-circle-icon");
-		text2.appendChild(circleIconDiv);
-	}
-	wrapper.appendChild(text2);
-
-	if (hbldrLogStream) {
-		const text3 = document.createElement("div");
-
-		const text3_1 = document.createElement("span");
-		text3_1.innerText = "Press ";
-		text3.appendChild(text3_1);
-
-		const text3_2 = document.createElement("div");
-		text3_2.classList.add("ps-r2-icon");
-		text3.appendChild(text3_2);
-
-		const text3_3 = document.createElement("span");
-		text3_3.innerText = " to view logs.";
-		text3.appendChild(text3_3);
-
-		wrapper.appendChild(text3);
-	}
-
-	const text4 = document.createElement("div");
-
-	const text4_1 = document.createElement("span");
-	text4_1.innerText = "Press ";
-	text4.appendChild(text4_1);
-
-	const text4_2 = document.createElement("div");
-	text4_2.classList.add("ps-triangle-icon");
-	text4.appendChild(text4_2);
-
-	const text4_3 = document.createElement("span");
-	text4_3.innerText = " to get back to menu.";
-	text4.appendChild(text4_3);
-
-	wrapper.appendChild(text4);
-
-	const terminalWrapper = document.createElement("div");
-	terminalWrapper.classList.add("terminal-wrapper");
-	// terminalWrapper.style.display = "flex";
-	terminalWrapper.style.display = "none";
-
-
-	const terminal = document.createElement("div");
-	terminal.classList.add("terminal");
-	
-	terminal.style.display = "block";
-	terminal.style.alignItems = "unset";
-	terminal.style.justifyContent = "unset";
-
-	terminalWrapper.appendChild(terminal);
-
-	wrapper.appendChild(terminalWrapper);
-
 	content.appendChild(wrapper);
 
+	const msgWrapper = document.createElement("div");
+	wrapper.appendChild(msgWrapper);
+
+	const msgIngress = document.createElement("span");
+	msgIngress.innerText = "App is running in the background, press ";
+	msgWrapper.appendChild(msgIngress);
+
+	const btnCircle = document.createElement("span");
+	btnCircle.classList.add("ps-circle-icon");
+	msgWrapper.appendChild(btnCircle);
+
+	const textCircle = document.createElement("span");
+	textCircle.innerText = " to close this dialog, or ";
+	msgWrapper.appendChild(textCircle);
+
+	const btnTriangle = document.createElement("span");
+	btnTriangle.classList.add("ps-triangle-icon");
+	msgWrapper.appendChild(btnTriangle);
+
+	const textTriangle = document.createElement("span");
+	textTriangle.innerText = " to go back to the launcher.";
+	msgWrapper.appendChild(textTriangle);
+
 	if (hbldrLogStream) {
+		const terminal = document.createElement("div");
+		terminal.classList.add("terminal");
+
+		terminal.style.display = "block";
+		terminal.style.alignItems = "unset";
+		terminal.style.justifyContent = "unset";
+		terminal.style.borderWidth = "2px";
+		terminal.style.padding = "5px";
+		wrapper.appendChild(terminal);
+
 		await (async () => {
 			const term = new Terminal({
 				convertEol: true,
 				altClickMovesCursor: false,
-				disableStdin: true
+				disableStdin: true,
+				fontSize: 18,
+				cols: 132,
+				rows: 26
 			});
 
 			try {
@@ -253,23 +211,6 @@ window.onload = async function () {
 
 	// for home page carousel
 	document.addEventListener("keydown", (event) => {
-		// R2
-		if (event.keyCode === 119) {
-			// try to find termnial-wrapper
-			const terminalWrappers = document.getElementsByClassName("terminal-wrapper");
-			if (terminalWrappers.length === 0) {
-				return;
-			}
-
-			const terminalWrapper = terminalWrappers[0];
-
-			if (terminalWrapper.style.display === "none") {
-				terminalWrapper.style.display = "flex";
-			} else {
-				terminalWrapper.style.display = "none";
-			}
-		}
-
 		// L1
 		if (event.keyCode === 116) {
 			// reset hb list
