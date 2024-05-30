@@ -20,7 +20,7 @@ async function main() {
 
     return {
         mainText: "DevilutionX",
-        secondaryText: 'Diablo build for modern operating systems',
+        secondaryText: 'Diablo build for modern OSes',
         onclick: async () => {
 	    return {
 		path: PAYLOAD,
