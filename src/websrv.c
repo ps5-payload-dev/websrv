@@ -46,7 +46,7 @@ websrv_queue_response(struct MHD_Connection *conn, unsigned int status,
  * Respond to a launch request.
  **/
 static enum MHD_Result
-launch_request(struct MHD_Connection *conn, const char* url) {
+launch_request(struct MHD_Connection *conn) {
   enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
   const char* title_id;
@@ -75,10 +75,10 @@ launch_request(struct MHD_Connection *conn, const char* url) {
 
 
 /**
- * Respond to a launch request.
+ * Respond to a homebrew loading request.
  **/
 static enum MHD_Result
-hbldr_request(struct MHD_Connection *conn, const char* url) {
+hbldr_request(struct MHD_Connection *conn) {
   enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
   const char* path;
@@ -150,11 +150,11 @@ ahc_echo(void *cls, struct MHD_Connection *conn,
   }
 
   if(!strcmp("/launch", url)) {
-    return launch_request(conn, url);
+    return launch_request(conn);
   }
 
   if(!strcmp("/hbldr", url)) {
-    return hbldr_request(conn, url);
+    return hbldr_request(conn);
   }
 
   if(!strcmp("/", url) || !url[0]) {
