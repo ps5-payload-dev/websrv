@@ -177,7 +177,7 @@ class Router {
 
     }
 
-    async handlePopState() {
+    async handlePopState(event) {
         if (this.disablePopHandler) {
             return;
         }
@@ -187,7 +187,7 @@ class Router {
         try {
             window.dispatchEvent(new CustomEvent("popstateHandlerEntered"));
             /** @type {State} */
-            const state = history.state;
+            const state = event.state;
 
             if (!state) {
                 await this.handleFallbackHome();

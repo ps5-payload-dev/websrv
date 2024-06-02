@@ -41,31 +41,41 @@ async function sleep(ms) {
 }
 
 class Semaphore {
-	constructor(max) {
-		this.max = max;
-		this.current = 0;
-		this.queue = [];
-	}
+    /**
+     * @param {number} [maxConcurrency]
+     */
+    constructor(maxConcurrency = 1) {
+        /** @type {{resolve: () => void, promise: Promise<void>}[]} */
+        this.queue = [];
+        this.maxConcurrency = maxConcurrency;
+    }
 
-	acquire() {
-		if (this.current < this.max) {
-			this.current++;
-			return Promise.resolve();
-		} else {
-			return new Promise((resolve) => this.queue.push(resolve));
-		}
-	}
+    acquire() {
+        let resolver;
+        const promise = new Promise((resolve) => {
+            resolver = resolve;
+        });
 
-	release() {
-		if (this.queue.length > 0) {
-			const resolve = this.queue.shift();
-			resolve();
-		} else {
-			this.current--;
-		}
-	}
+        this.queue.push({ resolve: resolver, promise: promise });
 
-	awaitCurrentQueue() {
-		return Promise.all(this.queue);
-	}
+        if (this.queue.length <= this.maxConcurrency) {
+            return Promise.resolve(); 
+        }
+
+        return promise;
+    }
+
+    release() {
+        if (this.queue.length === 0) {
+            return;
+        }
+
+        this.queue.shift().resolve();
+    }
+
+
+    awaitCurrentQueue() {
+        const promises = this.queue.map(item => item.promise);
+        return Promise.all(promises);
+    }
 }
