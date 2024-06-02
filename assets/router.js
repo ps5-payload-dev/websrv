@@ -133,8 +133,6 @@ class Router {
                 dataRouterId: uuidv4()
             };
 
-            console.log("shouldReplace", shouldReplace, "state", state);
-
             // add hash if not root
             if (newPath !== "/") {
                 newPath = `#${newPath}`;
@@ -185,7 +183,7 @@ class Router {
         }
 
         await this.navigationLock.acquire();
-
+        
         try {
             window.dispatchEvent(new CustomEvent("popstateHandlerEntered"));
             /** @type {State} */
@@ -228,7 +226,7 @@ class Router {
             restoredContent.style.display = "block";
 
             closeModal();
-        } finally{
+        } finally {
             await this.navigationLock.release();
         }
     }
@@ -310,7 +308,7 @@ class Router {
         this.disablePopHandler = true;
         // remove forward history
         window.history.pushState({}, "", `#${uuidv4()}`);
-        
+
         await new Promise(async (resolve) => {
             function handler(event) {
                 window.removeEventListener("popstate", handler);
@@ -328,7 +326,7 @@ class Router {
 
         await this.pushOrReplaceState("/launchedAppView");
         await renderLaunchedAppView(logStream);
-        
+
         // this.disablePopHandler = false;
     }
 
