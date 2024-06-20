@@ -69,12 +69,6 @@ typedef struct elfldr_ctx {
 
 
 /**
- *
- **/
-extern char** environ;
-
-
-/**
 * Parse a R_X86_64_RELATIVE relocatable.
 **/
 static int
@@ -294,60 +288,6 @@ elfldr_load(pid_t pid, uint8_t *elf) {
 
 
 /**
- *
- **/
-static intptr_t
-elfldr_envp(pid_t pid) {
-  size_t size = sizeof(char*);
-  intptr_t envp = 0;
-  intptr_t pos = 0;
-  int n = 0;
-
-  // no env variables defined
-  if(!environ || !environ[0]) {
-    return 0;
-  }
-
-  // compute needed memory size and number of variables
-  while(environ[n]) {
-    size += (8 + strlen(environ[n]) + 1);
-    n++;
-  }
-  size = ROUND_PG(size);
-
-  // allocate memory
-  if((envp=pt_mmap(pid, 0, size, PROT_WRITE | PROT_READ,
-		   MAP_ANONYMOUS | MAP_PRIVATE,
-		   -1, 0)) == -1) {
-    pt_perror(pid, "pt_mmap");
-    return 0;
-  }
-
-  // copy data
-  pos = envp + ((n + 1) * 8);
-  for(int i=0; i<n; i++) {
-    size_t len = strlen(environ[i]) + 1;
-
-    // copy string
-    if(mdbg_copyin(pid, environ[i], pos, len)) {
-      perror("mdbg_copyin");
-      pt_munmap(pid, envp, size);
-      return 0;
-    }
-
-    // copy pointer to string 
-    mdbg_setlong(pid, envp + (i*8), pos);
-    pos += len;
-  }
-
-  // null-terminate envp
-  mdbg_setlong(pid, envp + (n*8), 0);
-
-  return envp;
-}
-
-
-/**
  * Create payload args in the address space of the process with the given pid.
  **/
 static intptr_t
@@ -457,15 +397,10 @@ elfldr_prepare_exec(pid_t pid, uint8_t *elf) {
 
   if(mdbg_copyin(pid, call_rax, r.r_rip, sizeof(call_rax))) {
     perror("mdbg_copyin");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
     return -1;
   }
 
   r.r_rax = entry;
-  r.r_rcx = elfldr_envp(pid);
-  r.r_rdx = r.r_rsi; // argv
-  r.r_rsi = r.r_rdi; // argc
   r.r_rdi = args;
 
   if(pt_setregs(pid, &r)) {
@@ -478,58 +413,182 @@ elfldr_prepare_exec(pid_t pid, uint8_t *elf) {
 
 
 
+/**
+ * Set the current working directory.
+ **/
 int
-elfldr_exec(int stdin_fd, int stdout_fd, int stderr_fd,
-	    pid_t pid, uint8_t* elf) {
+elfldr_set_cwd(pid_t pid, const char* cwd) {
+  intptr_t buf;
+
+  if(!cwd) {
+    cwd = "/";
+  }
+
+  if((buf=pt_mmap(pid, 0, PAGE_SIZE, PROT_READ | PROT_WRITE,
+		  MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)) == -1) {
+    pt_perror(pid, "pt_mmap");
+    return -1;
+  }
+
+  mdbg_copyin(pid, cwd, buf, strlen(cwd)+1);
+  pt_syscall(pid, SYS_chdir, -1, buf);
+  pt_msync(pid, buf, PAGE_SIZE, MS_SYNC);
+  pt_munmap(pid, buf, PAGE_SIZE);
+
+  return 0;
+}
+
+
+int
+elfldr_set_environ(pid_t pid, char** envp) {
+  size_t size = sizeof(char*);
+  intptr_t environ_addr = 0;
+  intptr_t envp_addr = 0;
+  intptr_t pos = 0;
+  int n = 0;
+
+  // no env variables defined
+  if(!envp || !envp[0]) {
+    return 0;
+  }
+
+  // compute needed memory size and number of variables
+  while(envp[n]) {
+    size += (8 + strlen(envp[n]) + 1);
+    n++;
+  }
+  size = ROUND_PG(size);
+
+  // allocate memory
+  if((envp_addr=pt_mmap(pid, 0, size, PROT_WRITE | PROT_READ,
+			MAP_ANONYMOUS | MAP_PRIVATE,
+			-1, 0)) == -1) {
+    pt_perror(pid, "pt_mmap");
+    return -1;
+  }
+
+  // copy data
+  pos = envp_addr + ((n + 1) * 8);
+  for(int i=0; i<n; i++) {
+    size_t len = strlen(envp[i]) + 1;
+
+    // copy string
+    if(mdbg_copyin(pid, envp[i], pos, len)) {
+      perror("mdbg_copyin");
+      pt_munmap(pid, envp_addr, size);
+      return -1;
+    }
+
+    // copy pointer to string 
+    if(mdbg_setlong(pid, envp_addr + (i*8), pos)) {
+      perror("mdbg_setlong");
+      pt_munmap(pid, envp_addr, size);
+      return -1;
+    }
+    pos += len;
+  }
+
+  // null-terminate envp_addr
+  if(mdbg_setlong(pid, envp_addr + (n*8), 0)) {
+      perror("mdbg_setlong");
+      pt_munmap(pid, envp_addr, size);
+      return -1;
+  }
+
+  // resolve "environ"
+  if(!(environ_addr=pt_resolve(pid, "+2thxYZ4syk"))) {
+    perror("pt_resolve");
+    pt_munmap(pid, envp_addr, size);
+    return -1;
+  }
+
+  if(mdbg_setlong(pid, environ_addr, envp_addr)) {
+    perror("mdbg_setlong");
+    pt_munmap(pid, envp_addr, size);
+    return -1;
+  }
+
+  return 0;
+}
+
+
+int
+elfldr_set_procname(pid_t pid, const char* name) {
+  intptr_t buf;
+
+  if((buf=pt_mmap(pid, 0, PAGE_SIZE, PROT_READ | PROT_WRITE,
+		  MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)) == -1) {
+    pt_perror(pid, "pt_mmap");
+    return -1;
+  }
+
+  mdbg_copyin(pid, name, buf, strlen(name)+1);
+  pt_syscall(pid, SYS_thr_set_name, -1, buf);
+  pt_msync(pid, buf, PAGE_SIZE, MS_SYNC);
+  pt_munmap(pid, buf, PAGE_SIZE);
+
+  return 0;
+}
+
+
+int
+elfldr_set_stdio(pid_t pid, int stdio) {
+  int err = 0;
+
+  if(stdio >= 0) {
+    if((stdio=pt_rdup(pid, getpid(), stdio)) < 0) {
+      pt_perror(pid, "pt_rdup");
+      err = -1;
+    }
+    else if(pt_dup2(pid, stdio, STDOUT_FILENO) < 0) {
+      pt_perror(pid, "pt_dup2");
+      err = -1;
+    }
+    else if(pt_dup2(pid, stdio, STDERR_FILENO) < 0) {
+      pt_perror(pid, "pt_dup2");
+      err = -1;
+    }
+    else if (pt_close(pid, stdio) < 0) {
+      pt_perror(pid, "pt_close");
+      err = -1;
+    }
+  }
+
+  return err;
+}
+
+
+int
+elfldr_exec(pid_t pid, uint8_t* elf) {
   uint8_t privcaps[16] = {0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
                           0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
   uint8_t orgcaps[16];
-  int error = 0;
+  int err = 0;
 
   if(kernel_get_ucred_caps(pid, orgcaps)) {
     puts("kernel_get_ucred_caps failed");
-    pt_detach(pid);
     return -1;
   }
   if(kernel_set_ucred_caps(pid, privcaps)) {
     puts("kernel_set_ucred_caps failed");
-    pt_detach(pid);
     return -1;
   }
 
-  if(stdin_fd >= 0) {
-    stdin_fd = pt_rdup(pid, getpid(), stdin_fd);
-    pt_close(pid, STDIN_FILENO);
-    pt_dup2(pid, stdin_fd, STDIN_FILENO);
-    pt_close(pid, stdin_fd);
-  }
-  if(stdout_fd >= 0) {
-    stdout_fd = pt_rdup(pid, getpid(), stdout_fd);
-    pt_close(pid, STDOUT_FILENO);
-    pt_dup2(pid, stdout_fd, STDOUT_FILENO);
-    pt_close(pid, stdout_fd);
-  }
-  if(stderr_fd >= 0) {
-    stderr_fd = pt_rdup(pid, getpid(), stderr_fd);
-    pt_close(pid, STDERR_FILENO);
-    pt_dup2(pid, stderr_fd, STDERR_FILENO);
-    pt_close(pid, stderr_fd);
-  }
-
   if(elfldr_prepare_exec(pid, elf)) {
-    error = -1;
+    puts("elfldr_prepare_exec failed");
+    err = -1;
   }
 
   if(kernel_set_ucred_caps(pid, orgcaps)) {
     puts("kernel_set_ucred_caps failed");
-    error = -1;
+    err = -1;
   }
 
   if(pt_detach(pid)) {
     perror("pt_detach");
-    error = -1;
+    err = -1;
   }
 
-  return error;
+  return err;
 }
 

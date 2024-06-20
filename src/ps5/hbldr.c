@@ -44,8 +44,8 @@ along with this program; see the file COPYING. If not, see
 #define PSNOW_EBOOT "/system_ex/app/NPXS40106/eboot.bin"
 #define FAKE_PATH "/system_ex/app/FAKE00000"
 
-#define IOVEC_ENTRY(x) {x != 0 ? x : 0, \
-			x != 0 ? strlen(x)+1 : 0}
+#define IOVEC_ENTRY(x) {x ? x : 0, \
+			x ? strlen(x)+1 : 0}
 #define IOVEC_SIZE(x) (sizeof(x) / sizeof(struct iovec))
 
 
@@ -97,7 +97,6 @@ remount_system_ex(void) {
   };
 
   if(nmount(iov, IOVEC_SIZE(iov), MNT_UPDATE)) {
-    perror("nmount");
     return -1;
   }
 
@@ -251,41 +250,6 @@ find_pid(const char* name) {
 }
 
 
-/**
- *
- **/
-static int
-bigapp_set_argv0(pid_t pid, const char* argv0) {
-  intptr_t pos = pt_getargv(pid);
-  intptr_t buf = 0;
-
-  // allocate memory
-  if((buf=pt_mmap(pid, 0, PAGE_SIZE, PROT_WRITE | PROT_READ,
-		  MAP_ANONYMOUS | MAP_PRIVATE,
-		  -1, 0)) == -1) {
-    pt_perror(pid, "pt_mmap");
-    return -1;
-  }
-
-  // copy string
-  if(mdbg_copyin(pid, argv0, buf, strlen(argv0)+1)) {
-    perror("mdbg_copyin");
-    pt_munmap(pid, buf, PAGE_SIZE);
-    return -1;
-  }
-
-  // copy pointer to string
-  if(mdbg_setlong(pid, pos, buf)) {
-    perror("mdbg_setlong");
-    pt_munmap(pid, buf, PAGE_SIZE);
-    return -1;
-  }
-
-  return 0;
-}
-
-
-
 static pid_t
 bigapp_launch(uint32_t user_id, char** argv) {
   app_launch_ctx_t ctx = {.user_id = user_id};
@@ -335,22 +299,34 @@ bigapp_launch(uint32_t user_id, char** argv) {
 
 
 /**
- * Set the name of a process.
+ *
  **/
 static int
-bigapp_set_procname(pid_t pid, const char* name) {
-  intptr_t buf;
+bigapp_set_argv0(pid_t pid, const char* argv0) {
+  intptr_t pos = pt_getargv(pid);
+  intptr_t buf = 0;
 
-  if((buf=pt_mmap(pid, 0, PAGE_SIZE, PROT_READ | PROT_WRITE,
-		  MAP_ANONYMOUS | MAP_PRIVATE, -1, 0)) == -1) {
+  // allocate memory
+  if((buf=pt_mmap(pid, 0, PAGE_SIZE, PROT_WRITE | PROT_READ,
+		  MAP_ANONYMOUS | MAP_PRIVATE,
+		  -1, 0)) == -1) {
     pt_perror(pid, "pt_mmap");
     return -1;
   }
 
-  mdbg_copyin(pid, name, buf, strlen(name)+1);
-  pt_syscall(pid, SYS_thr_set_name, -1, buf);
-  pt_msync(pid, buf, PAGE_SIZE, MS_SYNC);
-  pt_munmap(pid, buf, PAGE_SIZE);
+  // copy string
+  if(mdbg_copyin(pid, argv0, buf, strlen(argv0)+1)) {
+    perror("mdbg_copyin");
+    pt_munmap(pid, buf, PAGE_SIZE);
+    return -1;
+  }
+
+  // copy pointer to string
+  if(mdbg_setlong(pid, pos, buf)) {
+    perror("mdbg_setlong");
+    pt_munmap(pid, buf, PAGE_SIZE);
+    return -1;
+  }
 
   return 0;
 }
@@ -360,10 +336,17 @@ bigapp_set_procname(pid_t pid, const char* name) {
  *
  **/
 static pid_t
-bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio) {
+bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio,
+	       char** envp) {
   uint8_t int3instr = 0xcc;
+  char buf[PATH_MAX];
   intptr_t brkpoint;
   uint8_t orginstr;
+  char* cwd;
+
+  if(!(cwd=getenv("PWD"))) {
+    cwd = getcwd(buf, sizeof(buf));
+  }
 
   if(pt_attach(pid) < 0) {
     perror("pt_attach");
@@ -411,10 +394,13 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio) {
   }
 
   bigapp_set_argv0(pid, progname);
-  bigapp_set_procname(pid, basename(progname));
+  elfldr_set_procname(pid, basename(progname));
+  elfldr_set_environ(pid, envp);
+  elfldr_set_cwd(pid, cwd);
+  elfldr_set_stdio(pid, stdio);
 
   // Execute the ELF
-  if(elfldr_exec(-1, stdio, stdio, pid, elf)) {
+  if(elfldr_exec(pid, elf)) {
     kill(pid, SIGKILL);
     pt_detach(pid);
     return -1;
@@ -425,18 +411,15 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio) {
 
 
 pid_t
-hbldr_launch(const char* path, char** argv, int stdio) {
+hbldr_launch(const char* path, int stdio, char** argv, char** envp) {
   uint32_t user_id;
   uint8_t* elf;
   int app_id;
   pid_t pid;
 
-  if(!(elf=readfile(path, 0))) {
-    return -1;
-  }
-
   if(fakeapp_create_if_missing()) {
     if(remount_system_ex()) {
+      perror("remount_system_ex");
       return -1;
     }
     if(fakeapp_create_if_missing()) {
@@ -464,9 +447,16 @@ hbldr_launch(const char* path, char** argv, int stdio) {
   kernel_set_proc_rootdir(pid, kernel_get_root_vnode());
   kernel_set_proc_jaildir(pid, 0);
 
-  if(bigapp_replace(pid, elf, path, stdio) < 0) {
+  if(!(elf=readfile(path, 0))) {
     return -1;
   }
+
+  if(bigapp_replace(pid, elf, path, stdio, envp) < 0) {
+    free(elf);
+    return -1;
+  }
+
+  free(elf);
 
   return pid;
 }

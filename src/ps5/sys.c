@@ -14,6 +14,8 @@ You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
+#include <libgen.h>
+#include <limits.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
@@ -162,10 +164,16 @@ ps5_find_pid(const char* name) {
 
 int
 sys_launch_homebrew(const char* path, const char* args) {
+  char home[PATH_MAX];
+  char pwd[PATH_MAX];
+  char buf[PATH_MAX];
   char* argv[255];
+  int optval = 1;
+  char* envp[3];
   int argc = 0;
   int fds[2];
   pid_t pid;
+  char* dir;
 
   if(!args) {
     args = "";
@@ -173,13 +181,30 @@ sys_launch_homebrew(const char* path, const char* args) {
 
   printf("launch homebrew: %s %s\n", path, args);
 
-  if(pipe(fds)) {
-    perror("pipe");
-    return -1;
+  if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == -1) {
+    perror("socketpair");
+    return 1;
   }
 
+  if(setsockopt(fds[1], SOL_SOCKET, SO_NOSIGPIPE, &optval, sizeof(optval)) < 0) {
+    perror("setsockopt");
+    close(fds[0]);
+    close(fds[1]);
+    return -11;
+  }
+
+  strncpy(buf, path, sizeof(buf));
+  dir = dirname(buf);
+
+  snprintf(pwd, sizeof(pwd), "PWD=%s", dir);
+  snprintf(home, sizeof(home), "HOME=%s", dir);
+
+  envp[0] = pwd;
+  envp[1] = home;
+  envp[2] = 0;
+
   argc = args_split(args, argv, 255);
-  pid = hbldr_launch(path, argv, fds[1]);
+  pid = hbldr_launch(path, fds[1], argv, envp);
 
   close(fds[1]);
   for(int i=0; i<argc; i++) {
