@@ -18,16 +18,62 @@ along with this program; see the file COPYING. If not, see
 async function main() {
     const PAYLOAD = window.workingDir + '/mednafen.elf';
     const ROMDIR = window.workingDir + '/roms/';
-    const ROMTYPES = ['nes', 'smc', 'sfc', 'gba', 'psx', 'cue', 'zip']
-    
+    const ROMTYPES = ['cue', 'dsk', 'gb', 'gba', 'gbc', 'gen', 'gg', 'lnx',
+		      'nes', 'ngp', 'pce', 'psx', 'sfc', 'smc', 'sms', 'vb',
+		      'ws', 'wsc', 'zip'];
+
+    function getRomType(filename) {
+	const dotIndex = filename.lastIndexOf('.');
+	if (dotIndex === -1) {
+	    return '';
+	}
+	return filename.slice(dotIndex + 1);
+    }
+
+    function getRomName(filename) {
+	const dotIndex = filename.lastIndexOf('.');
+	if (dotIndex === -1) {
+	    return filename;
+	}
+
+	return filename.slice(0, dotIndex);
+    }
+
+    function getPlatformName(romType) {
+	switch(romType) {
+        case 'dsk': return 'Apple ][';
+        case 'lnx': return 'Atari Lynx';
+        case 'gb': return 'Game Boy';
+        case 'gba': return 'Game Boy Advance';
+        case 'gbc': return 'Game Boy Color';
+        case 'gen': return 'Sega MegaDrive';
+        case 'gg': return 'Sega Game Gear';
+        case 'nes': return 'Nintendo Entertainment System';
+        case 'ngp': return 'Neo Geo Pocket';
+        case 'pce': return 'PC Engine';
+        case 'psx': return 'Sony Playstation';
+        case 'sfc':
+        case 'smc': return 'Super Nintendo';
+        case 'sms': return 'Sega Master System';
+        case 'vb': return 'Virtual Boy';
+        case 'ws': return 'WonderSwan';
+        case 'wsc': return 'WonderSwan Color';
+        default: return '';
+	}
+    }
+
     async function getRomList() {
         let listing = await ApiClient.fsListDir(ROMDIR);
 	return listing.filter(entry =>
-	    ROMTYPES.includes(entry.name.slice(-3))).map(entry => {
-		const name = entry.name.slice(0, -4);
+	    ROMTYPES.includes(getRomType(entry.name))).map(entry => {
+		const romType = getRomType(entry.name);
+		const romName = getRomName(entry.name);
+		const platformName = getPlatformName(romType);
+
 		return {
-		    mainText: name,
-		    imgPath: '/fs/' + ROMDIR + name + '.jpg',
+		    mainText: romName,
+		    secondaryText: platformName,
+		    imgPath: '/fs/' + ROMDIR + romName + '.jpg',
 		    onclick: async() => {
 			return {
 			    path: PAYLOAD,
@@ -37,12 +83,25 @@ async function main() {
 		};
 	    });
     }
+
     return {
         mainText: "Mednafen",
         secondaryText: 'Multi-system Emulator',
         onclick: async () => {
 	    let items = await getRomList();
             showCarousel(items);
-        }
+        },
+	options: [
+	    {
+		text: "Browse ROM...",
+		onclick: async () => {
+		    return {
+			path: PAYLOAD,
+			args: await pickFile(window.workingDir)
+		    };
+		}
+	    }
+	]
     };
 }
+
