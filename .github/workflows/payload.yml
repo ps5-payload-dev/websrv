@@ -70,6 +70,13 @@ jobs:
         path: ./homebrew/FFplay
         if-no-files-found: error
 
+    - name: Upload LakeSnes
+      uses: actions/upload-artifact@v3
+      with:
+        name: LakeSnes
+        path: ./homebrew/LakeSnes
+        if-no-files-found: error
+
     - name: Upload Mednafen
       uses: actions/upload-artifact@v3
       with:
