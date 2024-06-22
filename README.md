@@ -51,6 +51,11 @@ john@localhost:ps5-payload-dev/websrv$ ./libmicrohttpd.sh # build and install li
 john@localhost:ps5-payload-dev/websrv$ make
 ```
 
+## Known Issues
+- Homebrew sometimes crashes when you run it for the first time after a reboot.
+- The kernel can panic if you go into restmode and back again while a homebrew is running.
+
+
 ## Reporting Bugs
 If you encounter problems with ps5-payload-websrv, please [file a github issue][issues].
 If you plan on sending pull requests which affect more than a few lines of code,
