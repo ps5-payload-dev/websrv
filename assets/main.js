@@ -207,6 +207,14 @@ window.onload = async function () {
 		// window.location.href = "/";
 	});
 
+	const ver = await ApiClient.getVersion();
+	if (ver.api > 0) {
+		const verstr = ` ${ver.tag} (compiled at ${ver.date} ${ver.time})`;
+		document.title += verstr;
+	} else {
+		document.title += ' (unknown version)';
+	}
+
 	registerExtensionMessagesListener();
 
 	// for home page carousel

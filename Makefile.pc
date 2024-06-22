@@ -14,13 +14,16 @@
 # along with this program; see the file COPYING. If not see
 # <http://www.gnu.org/licenses/>.
 
+VERSION_TAG := $(shell git describe --abbrev=10 --dirty --always --tags)
+
 PYTHON ?= python3
 
 BIN   := websrv.pc
 SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c
 SRCS   += src/pc/sys.c
 
-LDADD := -lmicrohttpd
+CFLAGS := -Wall -DVERSION_TAG=\"$(VERSION_TAG)\"
+LDADD  := -lmicrohttpd
 
 ASSETS   := $(wildcard assets/*)
 GEN_SRCS := $(patsubst assets/%,gen/%, $(ASSETS:=.c))
@@ -37,5 +40,5 @@ gen/%.c: assets/% gen
 	$(PYTHON) gen-asset-module.py --path $* $< > $@
 
 $(BIN): $(SRCS) $(GEN_SRCS)
-	$(CC) -o $@  $^ $(LDADD)
+	$(CC) $(CFLAGS) -o $@  $^ $(LDADD)
 

@@ -23,12 +23,14 @@ else
     $(error PS5_PAYLOAD_SDK is undefined)
 endif
 
+VERSION_TAG := $(shell git describe --abbrev=10 --dirty --always --tags)
+
 PYTHON ?= python3
 
 BIN    := websrv.elf
 SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c
 SRCS   += src/ps5/sys.c src/ps5/pt.c src/ps5/elfldr.c src/ps5/hbldr.c
-CFLAGS := -Wall -Werror -Isrc
+CFLAGS := -Wall -Werror -Isrc -DVERSION_TAG=\"$(VERSION_TAG)\"
 LDADD  := -lkernel_sys -lmicrohttpd -lSceSystemService -lSceUserService
 
 ASSETS   := $(wildcard assets/*)

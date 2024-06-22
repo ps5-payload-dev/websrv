@@ -62,6 +62,21 @@ async function main() {
 	}
     }
 
+    async function checkApiVersion() {
+	try {
+	    const ver = await ApiClient.getVersion();
+	    console.log(ver);
+	    if (ver.api > 0) {
+		return true;
+	    }
+	} catch(error) {
+	    console.error(error);
+	}
+
+	alert('Incompatible web server');
+	return false;
+    }
+
     async function getRomList() {
         let listing = await ApiClient.fsListDir(ROMDIR);
 	return listing.filter(entry =>
@@ -88,17 +103,21 @@ async function main() {
         mainText: "Mednafen",
         secondaryText: 'Multi-system Emulator',
         onclick: async () => {
-	    let items = await getRomList();
-            showCarousel(items);
+	    if(await checkApiVersion()) {
+		let items = await getRomList();
+		showCarousel(items);
+	    }
         },
 	options: [
 	    {
 		text: "Browse ROM...",
 		onclick: async () => {
-		    return {
-			path: PAYLOAD,
-			args: await pickFile(window.workingDir)
-		    };
+		    if(await checkApiVersion()) {
+			return {
+			    path: PAYLOAD,
+			    args: await pickFile(window.workingDir)
+			};
+		    }
 		}
 	    }
 	]

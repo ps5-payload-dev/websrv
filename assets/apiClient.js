@@ -126,4 +126,20 @@ class ApiClient {
         }
         return await response.text();
     }
+
+    static async getVersion() {
+	try {
+		const response = await fetch(baseURL + '/version');
+		if (response.ok) {
+			return await response.json();
+		}
+	} catch (error) {
+	}
+	return {
+		api: 0,
+		tag: '',
+		date: '',
+		time: ''
+	};
+    }
 }

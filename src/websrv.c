@@ -29,6 +29,7 @@ along with this program; see the file COPYING. If not, see
 #include "asset.h"
 #include "fs.h"
 #include "sys.h"
+#include "version.h"
 #include "websrv.h"
 
 
@@ -39,6 +40,28 @@ websrv_queue_response(struct MHD_Connection *conn, unsigned int status,
   			  "*");
 
   return MHD_queue_response(conn, status, resp);
+}
+
+
+
+/**
+ * Respond to a version request.
+ **/
+static enum MHD_Result
+version_request(struct MHD_Connection *conn) {
+  size_t size = strlen(PAGE_VERSION);
+  enum MHD_Result ret = MHD_NO;
+  struct MHD_Response *resp;
+  void* data = PAGE_VERSION;
+
+  if((resp=MHD_create_response_from_buffer(size, data,
+					   MHD_RESPMEM_PERSISTENT))) {
+    MHD_add_response_header(resp, "Content-Type", "application/json");
+    ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
+    MHD_destroy_response(resp);
+  }
+
+  return ret;
 }
 
 
@@ -155,6 +178,10 @@ ahc_echo(void *cls, struct MHD_Connection *conn,
 
   if(!strcmp("/hbldr", url)) {
     return hbldr_request(conn);
+  }
+
+  if(!strcmp("/version", url)) {
+    return version_request(conn);
   }
 
   if(!strcmp("/", url) || !url[0]) {
