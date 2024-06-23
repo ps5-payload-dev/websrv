@@ -107,10 +107,12 @@ hbldr_request(struct MHD_Connection *conn) {
   const char* path;
   const char *args;
   const char *pipe;
+  const char *env;
   int fd;
 
   path = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "path");
   args = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "args");
+  env = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "env");
   pipe = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "pipe");
 
   if(!path) {
@@ -119,7 +121,7 @@ hbldr_request(struct MHD_Connection *conn) {
       MHD_destroy_response(resp);
     }
 
-  } else if((fd=sys_launch_homebrew(path, args)) < 0) {
+  } else if((fd=sys_launch_homebrew(path, args, env)) < 0) {
     if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
       ret = websrv_queue_response(conn, MHD_HTTP_SERVICE_UNAVAILABLE, resp);
       MHD_destroy_response(resp);

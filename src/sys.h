@@ -17,5 +17,5 @@ along with this program; see the file COPYING. If not, see
 #pragma once
 
 int sys_launch_title(const char* title_id, const char* args);
-int sys_launch_homebrew(const char* path, const char* args);
+int sys_launch_homebrew(const char* path, const char* args, const char* env);
 

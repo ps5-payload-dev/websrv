@@ -163,23 +163,22 @@ ps5_find_pid(const char* name) {
 
 
 int
-sys_launch_homebrew(const char* path, const char* args) {
-  char home[PATH_MAX];
-  char pwd[PATH_MAX];
-  char buf[PATH_MAX];
+sys_launch_homebrew(const char* path, const char* args, const char* env) {
   char* argv[255];
+  char* envp[255];
   int optval = 1;
-  char* envp[3];
-  int argc = 0;
   int fds[2];
   pid_t pid;
-  char* dir;
 
   if(!args) {
     args = "";
   }
 
-  printf("launch homebrew: %s %s\n", path, args);
+  if(!env) {
+    env = "";
+  }
+
+  printf("launch homebrew: %s %s %s\n", env, path, args);
 
   if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == -1) {
     perror("socketpair");
@@ -193,24 +192,18 @@ sys_launch_homebrew(const char* path, const char* args) {
     return -11;
   }
 
-  strncpy(buf, path, sizeof(buf));
-  dir = dirname(buf);
-
-  snprintf(pwd, sizeof(pwd), "PWD=%s", dir);
-  snprintf(home, sizeof(home), "HOME=%s", dir);
-
-  envp[0] = pwd;
-  envp[1] = home;
-  envp[2] = 0;
-
-  argc = args_split(args, argv, 255);
+  args_split(args, argv, 255);
+  args_split(env, envp, 255);
   pid = hbldr_launch(path, fds[1], argv, envp);
 
-  close(fds[1]);
-  for(int i=0; i<argc; i++) {
+  for(int i=0; argv[i]; i++) {
     free(argv[i]);
   }
+  for(int i=0; envp[i]; i++) {
+    free(envp[i]);
+  }
 
+  close(fds[1]);
   if(pid < 0) {
     close(fds[0]);
     return -1;

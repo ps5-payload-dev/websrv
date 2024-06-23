@@ -17,6 +17,8 @@ along with this program; see the file COPYING. If not, see
 
 async function main() {
     const PAYLOAD = window.workingDir + '/mednafen.elf';
+    const ENVVARS = {MEDNAFEN_HOME: window.workingDir};
+
     const ROMDIR = window.workingDir + '/roms/';
     const ROMTYPES = ['cue', 'dsk', 'gb', 'gba', 'gbc', 'gen', 'gg', 'lnx',
 		      'nes', 'ngp', 'pce', 'psx', 'sfc', 'smc', 'sms', 'vb',
@@ -92,7 +94,8 @@ async function main() {
 		    onclick: async() => {
 			return {
 			    path: PAYLOAD,
-			    args: ROMDIR + entry.name
+			    args: ROMDIR + entry.name,
+			    env: ENVVARS
 			}
 		    }
 		};
@@ -115,7 +118,8 @@ async function main() {
 		    if(await checkApiVersion()) {
 			return {
 			    path: PAYLOAD,
-			    args: await pickFile(window.workingDir)
+			    args: await pickFile(window.workingDir),
+			    env: ENVVARS
 			};
 		    }
 		}

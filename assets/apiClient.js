@@ -45,9 +45,10 @@ class ApiClient {
     /**
      * @param {string} path
      * @param {(string | string[])?} [args]
+     * @param {(string | string[])?} [env]
      * @returns {Promise<ReadableStream<Uint8Array>?>} only returns true, throws error if not success code
      */
-    static async launchApp(path, args = null) {
+    static async launchApp(path, args = null, env = null) {
         let params = new URLSearchParams({
             "pipe": "1",
             "path": path
@@ -59,6 +60,13 @@ class ApiClient {
         } else if (Array.isArray(args)) {
             // @ts-ignore
             params.append("args", args.map(arg => arg.replaceAll(" ", "\\ ")).join(" "));
+        }
+
+        if (env != null) {
+            // @ts-ignore
+            params.append("env", Object.entries(env).map(([key, val]) =>
+		`${key}=${val}`.replaceAll(" ", "\\ ")
+	    ).join(" "));
         }
 
         let uri = baseURL + "/hbldr?" + params.toString();
