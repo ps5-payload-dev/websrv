@@ -563,7 +563,6 @@ elfldr_exec(pid_t pid, uint8_t* elf) {
   uint8_t privcaps[16] = {0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
                           0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
   uint8_t orgcaps[16];
-  int err = 0;
 
   if(kernel_get_ucred_caps(pid, orgcaps)) {
     puts("kernel_get_ucred_caps failed");
@@ -576,19 +575,19 @@ elfldr_exec(pid_t pid, uint8_t* elf) {
 
   if(elfldr_prepare_exec(pid, elf)) {
     puts("elfldr_prepare_exec failed");
-    err = -1;
+    return -1;
   }
 
   if(kernel_set_ucred_caps(pid, orgcaps)) {
     puts("kernel_set_ucred_caps failed");
-    err = -1;
+    return -1;
   }
 
-  if(pt_detach(pid)) {
+  if(pt_detach(pid, 0)) {
     perror("pt_detach");
-    err = -1;
+    return -1;
   }
 
-  return err;
+  return 0;
 }
 

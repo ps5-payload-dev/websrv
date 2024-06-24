@@ -22,7 +22,7 @@ along with this program; see the file COPYING. If not, see
 
 int pt_trace_me(void);
 int pt_attach(pid_t pid);
-int pt_detach(pid_t pid);
+int pt_detach(pid_t pid, int sig);
 int pt_step(pid_t pid);
 int pt_continue(pid_t pid, int sig);
 

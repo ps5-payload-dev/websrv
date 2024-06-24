@@ -100,8 +100,8 @@ pt_attach(pid_t pid) {
 
 
 int
-pt_detach(pid_t pid) {
-  if(sys_ptrace(PT_DETACH, pid, 0, 0) == -1) {
+pt_detach(pid_t pid, int sig) {
+  if(sys_ptrace(PT_DETACH, pid, 0, sig) == -1) {
     return -1;
   }
 

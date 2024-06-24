@@ -355,46 +355,35 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio,
 
   if(pt_attach(pid) < 0) {
     perror("pt_attach");
+    kill(pid, SIGKILL);
     return -1;
   }
 
   if(!(brkpoint=kernel_dynlib_entry_addr(pid, 0))) {
     puts("kernel_dynlib_entry_addr failed");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
     return -1;
   }
   brkpoint += 58;// offset to invocation of main()
   if(mdbg_copyout(pid, brkpoint, &orginstr, sizeof(orginstr))) {
     perror("mdbg_copyout");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
     return -1;
   }
   if(mdbg_copyin(pid, &int3instr, brkpoint, sizeof(int3instr))) {
     perror("mdbg_copyin");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
     return -1;
   }
 
   // Continue execution until we hit the breakpoint, then remove it.
   if(pt_continue(pid, SIGCONT)) {
     perror("pt_continue");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
     return -1;
   }
   if(waitpid(pid, 0, 0) == -1) {
     perror("waitpid");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
     return -1;
   }
   if(mdbg_copyin(pid, &orginstr, brkpoint, sizeof(orginstr))) {
     perror("mdbg_copyin");
-    kill(pid, SIGKILL);
-    pt_detach(pid);
     return -1;
   }
 
@@ -406,8 +395,6 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio,
 
   // Execute the ELF
   if(elfldr_exec(pid, elf)) {
-    kill(pid, SIGKILL);
-    pt_detach(pid);
     return -1;
   }
 
@@ -457,12 +444,13 @@ hbldr_launch(const char* path, int stdio, char** argv, char** envp) {
   }
 
   if(bigapp_replace(pid, elf, path, stdio, envp) < 0) {
-    free(elf);
-    return -1;
+    if(pt_detach(pid, SIGKILL)) {
+      kill(pid, SIGKILL);
+    }
+    pid = -1;
   }
 
   free(elf);
 
   return pid;
 }
-
