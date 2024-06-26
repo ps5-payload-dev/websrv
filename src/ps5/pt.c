@@ -108,6 +108,71 @@ pt_detach(pid_t pid, int sig) {
   return 0;
 }
 
+int
+pt_follow_fork(pid_t pid) {
+  if(sys_ptrace(PT_FOLLOW_FORK, pid, NULL, 1) == -1) {
+    return -1;
+  }
+
+  if(sys_ptrace(PT_LWP_EVENTS, pid, NULL, 1) == -1) {
+    return -1;
+  }
+
+  return 0;
+}
+
+
+int
+pt_follow_exec(pid_t pid) {
+  if(sys_ptrace(PT_LWP_EVENTS, pid, NULL, 1) == -1) {
+    return -1;
+  }
+
+  return 0;
+}
+
+
+pid_t
+pt_await_child(pid_t pid) {
+  struct ptrace_lwpinfo lwpinfo;
+
+  memset(&lwpinfo, 0, sizeof(lwpinfo));
+  while(!(lwpinfo.pl_flags & PL_FLAG_FORKED)) {
+    if(waitpid(pid, NULL, 0) == -1) {
+      return -1;
+    }
+
+    if(sys_ptrace(PT_LWPINFO, pid, (caddr_t)&lwpinfo, sizeof(lwpinfo)) == -1) {
+      return -1;
+    }
+  }
+
+  if(waitpid(lwpinfo.pl_child_pid, NULL, 0) == -1) {
+    return -1;
+  }
+
+  return lwpinfo.pl_child_pid;
+}
+
+
+int
+pt_await_exec(pid_t pid) {
+  struct ptrace_lwpinfo lwpinfo;
+
+  memset(&lwpinfo, 0, sizeof(lwpinfo));
+  while(!(lwpinfo.pl_flags & PL_FLAG_EXEC)) {
+    if(waitpid(pid, NULL, 0) == -1) {
+      return -1;
+    }
+
+    if(sys_ptrace(PT_LWPINFO, pid, (caddr_t)&lwpinfo, sizeof(lwpinfo)) == -1) {
+      return -1;
+    }
+  }
+
+  return 0;
+}
+
 
 int
 pt_step(int pid) {

@@ -412,10 +412,49 @@ elfldr_prepare_exec(pid_t pid, uint8_t *elf) {
 }
 
 
+int
+elfldr_set_heap_size(pid_t pid, ssize_t size) {
+  intptr_t sceLibcHeapSize;
+  intptr_t sceLibcParam;
+  intptr_t sceProcParam;
+  intptr_t Need_sceLibc;
 
-/**
- * Set the current working directory.
- **/
+  if(!(sceProcParam=pt_sceKernelGetProcParam(pid))) {
+    pt_perror(pid, "pt_sceKernelGetProcParam");
+    return -1;
+  }
+
+  if(mdbg_copyout(pid, sceProcParam+56, &sceLibcParam,
+		  sizeof(sceLibcParam))) {
+    perror("mdbg_copyout");
+    return -1;
+  }
+
+  if(mdbg_copyout(pid, sceLibcParam+16, &sceLibcHeapSize,
+		  sizeof(sceLibcHeapSize))) {
+    perror("mdbg_copyout");
+    return -1;
+  }
+
+  if(mdbg_setlong(pid, sceLibcHeapSize, size)) {
+    perror("mdbg_setlong");
+    return -1;
+  }
+
+  if(size != -1) {
+    return 0;
+  }
+
+  if(mdbg_copyout(pid, sceLibcParam+72, &Need_sceLibc,
+		  sizeof(Need_sceLibc))) {
+    perror("mdbg_copyout");
+    return -1;
+  }
+
+  return mdbg_setlong(pid, sceLibcParam+32, Need_sceLibc);
+}
+
+
 int
 elfldr_set_cwd(pid_t pid, const char* cwd) {
   intptr_t buf;

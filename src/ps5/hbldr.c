@@ -15,6 +15,7 @@ along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
 #include <fcntl.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -71,6 +72,10 @@ typedef struct app_launch_ctx {
   uint32_t app_opt;
   uint64_t crash_report;
   uint32_t check_flag;
+
+  // End of SCE fields, the following fields are just used to
+  // pass arguments to bigapp_launch_thread().
+  char **argv;
 } app_launch_ctx_t;
 
 
@@ -250,56 +255,78 @@ find_pid(const char* name) {
 }
 
 
+static void*
+bigapp_launch_thread(void* args) {
+  app_launch_ctx_t *ctx  = (app_launch_ctx_t *)args;
+
+  sceSystemServiceLaunchApp("FAKE00000", ctx->argv, ctx);
+
+  return 0;
+}
+
+
 static pid_t
 bigapp_launch(uint32_t user_id, char** argv) {
-  app_launch_ctx_t ctx = {.user_id = user_id};
-  struct kevent evt;
-  pid_t pid = -1;
-  int kq;
+  app_launch_ctx_t ctx = {.user_id = user_id, .argv = argv};
+  pthread_t trd;
+  pid_t parent;
+  pid_t child;
 
-  if((pid=find_pid("SceSysCore.elf")) < 0) {
+  if((parent=find_pid("SceSysCore.elf")) < 0) {
     puts("SceSysCore.elf is not running?");
     return -1;
   }
 
-  if((kq=kqueue()) < 0) {
-    perror("kqueue");
+  if(pt_attach(parent) < 0) {
+    perror("pt_attach");
     return -1;
   }
 
-  EV_SET(&evt, pid, EVFILT_PROC, EV_ADD, NOTE_FORK | NOTE_TRACK, 0, NULL);
-  if(kevent(kq, &evt, 1, NULL, 0, NULL) < 0) {
-    perror("kevent");
-    close(kq);
+  if(pt_follow_fork(parent) < 0) {
+    perror("pt_follow_fork");
+    pt_detach(parent, 0);
     return -1;
   }
 
-  if(sceSystemServiceLaunchApp("FAKE00000", argv, &ctx) < 0) {
-    perror("sceSystemServiceLaunchApp");
-    close(kq);
+  if(pt_continue(parent, SIGCONT) < 0) {
+    perror("pt_continue");
+    pt_detach(parent, 0);
     return -1;
   }
 
-  while(1) {
-    if(kevent(kq, NULL, 0, &evt, 1, NULL) < 0) {
-      perror("kevent");
-      break;
-    }
-
-    if(evt.fflags & NOTE_CHILD) {
-      pid = evt.ident;
-      break;
-    }
-  }
-
-  if(kill(pid, SIGSTOP) < 0) {
-    perror("kill");
+  pthread_create(&trd, 0, &bigapp_launch_thread, &ctx);
+  if((child=pt_await_child(parent)) < 0) {
+    perror("pt_await_child");
+    pt_detach(parent, 0);
     return -1;
   }
 
-  close(kq);
+  if(pt_detach(parent, 0) < 0) {
+    perror("pt_detach");
+    return -1;
+  }
 
-  return pid;
+  if(pt_follow_exec(child) < 0) {
+    perror("pt_follow_exec");
+    pt_detach(child, SIGKILL);
+    return -1;
+  }
+
+  if(pt_continue(child, SIGCONT) < 0) {
+    perror("pt_continue");
+    pt_detach(child, SIGKILL);
+    return -1;
+  }
+
+  if(pt_await_exec(child)) {
+    perror("pt_await_exec");
+    pt_detach(child, SIGKILL);
+    return -1;
+  }
+
+  pthread_join(trd, 0);
+
+  return child;
 }
 
 
@@ -349,15 +376,14 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio,
   uint8_t orginstr;
   char* cwd;
 
-  if(!(cwd=getenv("PWD"))) {
-    cwd = getcwd(buf, sizeof(buf));
+  // Let the kernel assign process parameters accessed via sceKernelGetProcParam()
+  if(pt_syscall(pid, 599)) {
+    puts("sys_dynlib_process_needed_and_relocate failed");
+    //return -1;
   }
 
-  if(pt_attach(pid) < 0) {
-    perror("pt_attach");
-    kill(pid, SIGKILL);
-    return -1;
-  }
+  // Allow libc to allocate arbitrary amount of memory.
+  elfldr_set_heap_size(pid, -1);
 
   if(!(brkpoint=kernel_dynlib_entry_addr(pid, 0))) {
     puts("kernel_dynlib_entry_addr failed");
@@ -385,6 +411,10 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio,
   if(mdbg_copyin(pid, &orginstr, brkpoint, sizeof(orginstr))) {
     perror("mdbg_copyin");
     return -1;
+  }
+
+  if(!(cwd=getenv("PWD"))) {
+    cwd = getcwd(buf, sizeof(buf));
   }
 
   bigapp_set_argv0(pid, progname);

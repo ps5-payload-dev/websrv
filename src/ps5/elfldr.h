@@ -42,4 +42,13 @@ int elfldr_set_procname(pid_t pid, const char* name);
 int elfldr_set_stdio(pid_t pid, int stdio);
 
 
+/**
+ * Set the current working directory.
+ **/
 int elfldr_set_cwd(pid_t pid, const char* cwd);
+
+
+/**
+ * Set the heap size for libc.
+ **/
+int elfldr_set_heap_size(pid_t pid, ssize_t size);

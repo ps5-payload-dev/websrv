@@ -26,6 +26,12 @@ int pt_detach(pid_t pid, int sig);
 int pt_step(pid_t pid);
 int pt_continue(pid_t pid, int sig);
 
+int pt_follow_fork(pid_t pid);
+int pt_follow_exec(pid_t pid);
+
+pid_t pt_await_child(pid_t pid);
+int pt_await_exec(pid_t pid);
+
 int pt_getregs(pid_t pid, struct reg *r);
 int pt_setregs(pid_t pid, const struct reg *r);
 
