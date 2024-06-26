@@ -97,3 +97,10 @@ jobs:
         name: SverigesRadio
         path: ./homebrew/SverigesRadio
         if-no-files-found: error
+
+    - name: Upload FBNeo
+      uses: actions/upload-artifact@v3
+      with:
+        name: FBNeo
+        path: ./homebrew/FBNeo
+        if-no-files-found: error
