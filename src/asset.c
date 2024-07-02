@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -48,6 +49,22 @@ typedef struct asset {
 static asset_t* g_asset_head = 0;
 
 
+static  void
+asset_normalize_path(const char *url, char* path) {
+  char* ptr = path;
+
+  for(size_t i=0; i<strlen(url); i++) {
+    if(url[i] == '/' && url[i+1] == '/') {
+      continue;
+    }
+    *ptr = url[i];
+    ptr++;
+  }
+
+  *ptr = '\0';
+}
+
+
 void
 asset_register(const char* path, void* data, size_t size, const char* mime) {
   asset_t* a = calloc(1, sizeof(asset_t));
@@ -70,9 +87,11 @@ asset_request(struct MHD_Connection *conn, const char* url) {
   struct MHD_Response *resp;
   void* data = PAGE_404;
   const char* mime = 0;
+  char path[PATH_MAX];
 
+  asset_normalize_path(url, path);
   for(asset_t* a=g_asset_head; a!=0; a=a->next) {
-    if(!strcmp(url, a->path)) {
+    if(!strcmp(path, a->path)) {
       data = a->data;
       size = a->size;
       mime = a->mime;
