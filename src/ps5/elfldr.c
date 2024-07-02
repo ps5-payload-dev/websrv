@@ -458,6 +458,7 @@ elfldr_set_heap_size(pid_t pid, ssize_t size) {
 int
 elfldr_set_cwd(pid_t pid, const char* cwd) {
   intptr_t buf;
+  int err = 0;
 
   if(!cwd) {
     cwd = "/";
@@ -469,12 +470,19 @@ elfldr_set_cwd(pid_t pid, const char* cwd) {
     return -1;
   }
 
-  mdbg_copyin(pid, cwd, buf, strlen(cwd)+1);
-  pt_syscall(pid, SYS_chdir, -1, buf);
+  if(mdbg_copyin(pid, cwd, buf, strlen(cwd)+1)) {
+    puts("mdbg_copyin() failed");
+    err = -1;
+  }
+  else if (pt_syscall(pid, SYS_chdir, buf) < 0) {
+    pt_perror(pid, "chdir");
+    err = -1;
+  }
+
   pt_msync(pid, buf, PAGE_SIZE, MS_SYNC);
   pt_munmap(pid, buf, PAGE_SIZE);
 
-  return 0;
+  return err;
 }
 
 

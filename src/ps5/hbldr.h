@@ -19,5 +19,6 @@ along with this program; see the file COPYING. If not, see
 #include <unistd.h>
 
 
-pid_t hbldr_launch(const char* path, int stdio, char** argv, char** envp);
+pid_t hbldr_launch(const char* cwd, const char* path, int stdio, char** argv,
+		   char** envp);
 

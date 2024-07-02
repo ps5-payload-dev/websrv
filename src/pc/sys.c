@@ -26,7 +26,8 @@ sys_launch_title(const char* title_id, char* args) {
 
 
 int
-sys_launch_homebrew(const char* path, const char* args, const char* env) {
+sys_launch_homebrew(const char* cwd, const char* path, const char* args,
+		    const char* env) {
   char cmd[255];
   FILE *pf;
 

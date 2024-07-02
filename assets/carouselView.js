@@ -206,7 +206,7 @@ async function renderMainContentCarousel(items, fadeout = true) {
                 let logStream = null;
 
                 if (res && res.path) {
-                    logStream = await ApiClient.launchApp(res.path, res.args, res.env);
+                    logStream = await ApiClient.launchApp(res.path, res.args, res.env, res.cwd);
                     res = logStream != null;
                 }
 

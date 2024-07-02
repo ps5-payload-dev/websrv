@@ -163,7 +163,8 @@ ps5_find_pid(const char* name) {
 
 
 int
-sys_launch_homebrew(const char* path, const char* args, const char* env) {
+sys_launch_homebrew(const char* cwd, const char* path, const char* args,
+		    const char* env) {
   char* argv[255];
   char* envp[255];
   int optval = 1;
@@ -194,7 +195,7 @@ sys_launch_homebrew(const char* path, const char* args, const char* env) {
 
   args_split(args, argv, 255);
   args_split(env, envp, 255);
-  pid = hbldr_launch(path, fds[1], argv, envp);
+  pid = hbldr_launch(cwd, path, fds[1], argv, envp);
 
   for(int i=0; argv[i]; i++) {
     free(argv[i]);

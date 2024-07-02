@@ -369,12 +369,10 @@ bigapp_set_argv0(pid_t pid, const char* argv0) {
  **/
 static pid_t
 bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio,
-	       char** envp) {
+	       const char* cwd, char** envp) {
   uint8_t int3instr = 0xcc;
-  char buf[PATH_MAX];
   intptr_t brkpoint;
   uint8_t orginstr;
-  char* cwd;
 
   // Let the kernel assign process parameters accessed via sceKernelGetProcParam()
   if(pt_syscall(pid, 599)) {
@@ -413,10 +411,6 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio,
     return -1;
   }
 
-  if(!(cwd=getenv("PWD"))) {
-    cwd = getcwd(buf, sizeof(buf));
-  }
-
   bigapp_set_argv0(pid, progname);
   elfldr_set_procname(pid, basename(progname));
   elfldr_set_environ(pid, envp);
@@ -433,7 +427,9 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio,
 
 
 pid_t
-hbldr_launch(const char* path, int stdio, char** argv, char** envp) {
+hbldr_launch(const char*cwd, const char* path, int stdio, char** argv,
+	     char** envp) {
+  char buf[PATH_MAX];
   uint32_t user_id;
   uint8_t* elf;
   int app_id;
@@ -462,6 +458,16 @@ hbldr_launch(const char* path, int stdio, char** argv, char** envp) {
     }
   }
 
+  if(path[0] == '/') {
+    strncpy(buf, path, sizeof(buf));
+  } else {
+    snprintf(buf, sizeof(buf), "%s/%s", cwd, path);
+  }
+
+  if(!(elf=readfile(buf, 0))) {
+    return -1;
+  }
+
   if((pid=bigapp_launch(user_id, argv)) < 0) {
     return -1;
   }
@@ -469,11 +475,7 @@ hbldr_launch(const char* path, int stdio, char** argv, char** envp) {
   kernel_set_proc_rootdir(pid, kernel_get_root_vnode());
   kernel_set_proc_jaildir(pid, 0);
 
-  if(!(elf=readfile(path, 0))) {
-    return -1;
-  }
-
-  if(bigapp_replace(pid, elf, path, stdio, envp) < 0) {
+  if(bigapp_replace(pid, elf, path, stdio, cwd, envp) < 0) {
     if(pt_detach(pid, SIGKILL)) {
       kill(pid, SIGKILL);
     }
