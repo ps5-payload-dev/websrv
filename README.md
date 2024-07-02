@@ -10,7 +10,7 @@ then load the payload as follows:
 
 ```console
 john@localhost:~$ export PS5_HOST=ps5
-john@localhost:~$ wget -q -O - https://github.com/ps5-payload-dev/websrv/releases/download/v0.6/Payload.zip | gunzip -c -d | nc -q0 $PS5_HOST 9021
+john@localhost:~$ wget -q -O - https://github.com/ps5-payload-dev/websrv/releases/download/v0.7/Payload.zip | gunzip -c -d | nc -q0 $PS5_HOST 9021
 ```
 
 To interact with ps5-payload-websrv, either install the [Launcher PKG][launcher]
