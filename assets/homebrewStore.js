@@ -85,7 +85,11 @@ function getHomebrewList() {
             filename: entry.substring(entry.lastIndexOf("/") + 1)
         });
         return acc;
-    }, []);
+    }, []).sort((x, y) => {
+	if (x.dir < y.dir) {
+	    return -1;
+	}
+    });
 }
 
 // TODO: this is currently unused
