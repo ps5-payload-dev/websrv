@@ -86,9 +86,7 @@ function getHomebrewList() {
         });
         return acc;
     }, []).sort((x, y) => {
-	if (x.dir < y.dir) {
-	    return -1;
-	}
+	return x.dir.localeCompare(y.dir);
     });
 }
 
