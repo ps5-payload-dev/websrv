@@ -21,8 +21,8 @@ async function main() {
 
     const ROMDIR = window.workingDir + '/roms/';
     const ROMTYPES = ['cue', 'dsk', 'gb', 'gba', 'gbc', 'gen', 'gg', 'lnx',
-		      'nes', 'ngp', 'pce', 'psx', 'sfc', 'smc', 'sms', 'vb',
-		      'ws', 'wsc', 'zip'];
+		      'm3u', 'nes', 'ngp', 'pce', 'psx', 'sfc', 'smc', 'sms',
+		      'vb', 'ws', 'wsc', 'zip'];
 
     function getRomType(filename) {
 	const dotIndex = filename.lastIndexOf('.');
