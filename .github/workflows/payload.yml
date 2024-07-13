@@ -104,3 +104,10 @@ jobs:
         name: FBNeo
         path: ./homebrew/FBNeo
         if-no-files-found: error
+
+    - name: Upload OffAct
+      uses: actions/upload-artifact@v3
+      with:
+        name: OffAct
+        path: ./homebrew/OffAct
+        if-no-files-found: error
