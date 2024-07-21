@@ -29,7 +29,7 @@ async function main() {
         let data = await response.json();
 	for (const vidref of data.videoReferences) {
 	    if(vidref.format == 'hls') {
-		return vidref.redirect;
+		return ['-fs', vidref.redirect];
 	    }
 	}
 	// throw Exception();
