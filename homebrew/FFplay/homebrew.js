@@ -25,7 +25,7 @@ async function main() {
         onclick: async () => {
 	    return {
 		path: PAYLOAD,
-		args: await pickFile(MEDIADIR)
+		args: ['-fs', await pickFile(MEDIADIR)]
 	    };
         }
     };
