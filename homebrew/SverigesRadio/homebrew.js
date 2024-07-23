@@ -16,53 +16,62 @@ along with this program; see the file COPYING. If not, see
 
 
 async function main() {
-    const BASE_STREAM_URL = 'http://http-live.sr.se/'
-    const BASE_LOGO_URL = '/fs/' + window.workingDir + '/logos/';
+    const BASE_API_URL = "http://api.sr.se/api/v2/";
     const PAYLOAD_PATH = window.workingDir + '/ffplay.elf';
 
+    async function getChannelProgramme(chid) {
+	const params = new URLSearchParams({
+	    "channelid": chid,
+	    "format": "json"
+	});
+
+	try {
+	    let response = await fetch(BASE_API_URL + "/scheduledepisodes/rightnow?" + params.toString());
+	    if (response.ok) {
+		let data = await response.json();
+		return data.channel.currentscheduledepisode;
+            }
+        } catch (error) {
+        }
+    }
+
     async function getChannelList() {
-	return [
-	    {
-		mainText: '',
-		imgPath: BASE_LOGO_URL + 'P1.png',
-		onclick: async() => {
-		    return {
-			path: PAYLOAD_PATH,
-			args: BASE_STREAM_URL + 'p1-aac-192'
-		    };
-		}
-	    },
-	    {
-		mainText: '',
-		imgPath: BASE_LOGO_URL + 'P2.png',
-		onclick: async() => {
-		    return {
-			path: PAYLOAD_PATH,
-			args: BASE_STREAM_URL + 'p2musik-aac-320'
-		    };
-		}
-	    },
-	    {
-		mainText: '',
-		imgPath: '/fs/' + window.workingDir + '/logos/P3.png',
-		onclick: async() => {
-		    return {
-			path: PAYLOAD_PATH,
-			args: BASE_STREAM_URL + 'p3-aac-192'
-		    };
-		}
-	    },
-	    {
-		mainText: '',
-		imgPath: '/fs/' + window.workingDir + '/logos/P4.png',
-		onclick: async() => {
-		    return {
-			path: PAYLOAD_PATH,
-			args: BASE_STREAM_URL + 'p4ostergotland-aac-192'
-		    };
+	const params = new URLSearchParams({
+	    "format": "json",
+            "pagination": "false",
+	    "audioquality": "hi"
+	});
+	let response = await fetch(BASE_API_URL + "/channels?" + params.toString());
+	if (!response.ok) {
+            return [];
+        }
+
+	let data = await response.json();
+
+	return await Promise.all(data.channels.map(async (ch) => {
+	    let img = ch.image;
+	    let title = '';
+	    let proginfo = await getChannelProgramme(ch.id);
+
+	    if(proginfo != undefined) {
+		title = proginfo.title;
+		if(proginfo.socialimage) {
+		    img = proginfo.socialimage;
 		}
 	    }
-	];
+
+	    return {
+		mainText: ch.name,
+		secondaryText: title,
+		imgPath: img,
+		onclick: async () => {
+		    return {
+			path: PAYLOAD_PATH,
+			args: ch.liveaudio.url
+		    };
+		}
+	    };
+	}));
     }
 
     return {
