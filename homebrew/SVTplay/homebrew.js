@@ -16,14 +16,13 @@ along with this program; see the file COPYING. If not, see
 
 
 async function main() {
-    const BASE_API_URL = "https://api.svt.se/video/";
-    const BASE_LOGO_URL = '/fs/' + window.workingDir + '/logos/';
+    const BASE_API_URL = "https://api.svt.se/";
+    const BASE_IMG_URL = 'https://www.svtstatic.se/image/custom/400/';
     const PAYLOAD_PATH = window.workingDir + '/ffplay.elf';
 
     async function resolveStreamURL(channelId) {
-	let response = await fetch(BASE_API_URL + channelId);
+	let response = await fetch(BASE_API_URL + 'video/' + channelId);
         if (!response.ok) {
-	    // throw Exception();
             return '';
         }
         let data = await response.json();
@@ -32,63 +31,40 @@ async function main() {
 		return ['-fs', vidref.redirect];
 	    }
 	}
-	// throw Exception();
+
 	return '';
     }
 
     async function getChannelList() {
-	return [
-	    {
-		mainText: '',
-		imgPath: BASE_LOGO_URL + 'SVT1.png',
-		onclick: async() => {
-		    return {
-			path: PAYLOAD_PATH,
-			args: await resolveStreamURL('ch-svt1')
-		    };
+	const params = new URLSearchParams({
+	    "ua": "svtplaywebb-play-render-produnction-client",
+            "operationName": "ChannelsQuery",
+            "variables": "{}",
+	    "extensions": JSON.stringify({
+		"persistedQuery":{
+		    "sha256Hash":"21da6ea41fa3a9300a7b51071f9dc91317955a7dcddc800ddce58fc708e7c634",
+		    "version" : 1
 		}
-	    },
-	    {
-		mainText: '',
-		imgPath: BASE_LOGO_URL + 'SVT2.png',
-		onclick: async() => {
-		    return {
-			path: PAYLOAD_PATH,
-			args: await resolveStreamURL('ch-svt2')
-		    };
-		}
-	    },
-	    {
-		mainText: '',
-		imgPath: BASE_LOGO_URL + 'SVT24.png',
-		onclick: async() => {
-		    return {
-			path: PAYLOAD_PATH,
-			args: await resolveStreamURL('ch-svt24')
-		    };
-		}
-	    },
-	    {
-		mainText: '',
-		imgPath: BASE_LOGO_URL + 'Kunskapskanalen.png',
-		onclick: async() => {
-		    return {
-			path: PAYLOAD_PATH,
-			args: await resolveStreamURL('ch-kunskapskanalen')
-		    };
-		}
-	    },
-	    {
-		mainText: '',
-		imgPath: BASE_LOGO_URL + 'Barnkanalen.png',
-		onclick: async() => {
-		    return {
-			path: PAYLOAD_PATH,
-			args: await resolveStreamURL('ch-barnkanalen')
-		    };
-		}
+	    })
+	});
+
+	let response = await fetch(BASE_API_URL + "/contento/graphql?" + params.toString());
+	if (!response.ok) {
+            return [];
+        }
+
+	let data = await response.json();
+	return data.data.channels.channels.map((ch) => ({
+	    mainText: ch.name,
+	    secondaryText: ch.running.name,
+	    imgPath:BASE_IMG_URL + ch.running.image.id + '/' + ch.running.image.changed,
+	    onclick: async() => {
+		return {
+		    path: PAYLOAD_PATH,
+		    args: await resolveStreamURL(ch.id)
+		};
 	    }
-	];
+	}));
     }
 
     return {
