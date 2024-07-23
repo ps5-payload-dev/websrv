@@ -52,7 +52,7 @@ john@localhost:ps5-payload-dev/websrv$ make
 ```
 
 ## Known Issues
-- Homebrew sometimes crashes when you run it for the first time after a reboot.
+- Homebrew sometimes crashes when there is already a previous homebrew running.
 - The kernel can panic if you go into restmode and back again while a homebrew is running.
 
 
