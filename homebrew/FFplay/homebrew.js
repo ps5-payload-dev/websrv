@@ -23,9 +23,13 @@ async function main() {
         mainText: "FFplay",
         secondaryText: 'FFmpeg Media Player',
         onclick: async () => {
+	    const file = await pickFile(MEDIADIR);
+	    if(!file) {
+		return;
+	    }
 	    return {
 		path: PAYLOAD,
-		args: ['-fs', await pickFile(MEDIADIR)]
+		args: ['-fs', file]
 	    };
         }
     };
