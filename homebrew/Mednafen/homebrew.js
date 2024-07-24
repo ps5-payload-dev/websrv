@@ -116,9 +116,13 @@ async function main() {
 		text: "Browse ROM...",
 		onclick: async () => {
 		    if(await checkApiVersion()) {
+			const file = await pickFile(window.workingDir);
+			if(!file) {
+			    return;
+			}
 			return {
 			    path: PAYLOAD,
-			    args: await pickFile(window.workingDir),
+			    args: file,
 			    env: ENVVARS
 			};
 		    }
