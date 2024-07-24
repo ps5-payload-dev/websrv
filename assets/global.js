@@ -23,6 +23,7 @@ along with this program; see the file COPYING. If not, see
  * @property {string?} hbApiJs
  * @property {string?} ApiClientJs
  * @property {number?} removeScrollingClassFromCarouselTimeoutId
+ * @property {number} lastCarouselLeftRightKeyDownTimestamp
  */
 
 /** @type {Globals} */
@@ -31,5 +32,6 @@ const Globals = {
     Router: null,
     hbApiJs: null,
     ApiClientJs: null,
-    removeScrollingClassFromCarouselTimeoutId: null
+    removeScrollingClassFromCarouselTimeoutId: null,
+    lastCarouselLeftRightKeyDownTimestamp: 0,
 };

@@ -219,14 +219,32 @@ window.onload = async function () {
 
 	// for home page carousel
 	document.addEventListener("keydown", (event) => {
-		// L1
-		if (event.keyCode === 116) {
+		// L2
+		if (event.keyCode === 118) {
 			// reset hb list
 			if (!confirm("Reset homebrew list?")) {
 				return;
 			}
 			localStorage.removeItem(LOCALSTORE_HOMEBREW_LIST_KEY);
 			window.location.href = "/";
+		}
+
+		// L1 - go to first element in carousel
+		if (event.keyCode === 116) {
+			smoothScrollToElementIndex(0, true); // doesnt do anything if the current view isnt a carouselView
+			event.preventDefault();
+		}
+
+		// R1 - go to last element in carousel
+		if (event.keyCode === 117) {
+			let carouselInfo = getCurrentCarouselSelectionInfo();
+			if (!carouselInfo) {
+				// current view not a carousel
+				return;
+			}
+
+			smoothScrollToElementIndex(carouselInfo.totalEntries - 1, true);
+			event.preventDefault();
 		}
 
 		// carousel left-right dpad
@@ -236,23 +254,42 @@ window.onload = async function () {
 				return;
 			}
 
-			let currentElementIndex = getCurrentSelectedEntryIndex();
+			let carouselInfo = getCurrentCarouselSelectionInfo();
+
+			if (!carouselInfo) {
+				// current view not a carousel
+				return;
+			}
+
+			let currentElementIndex = carouselInfo.selectedIndex;
 			if (!currentElementIndex) {
 				currentElementIndex = 0;
 			}
 
 			if (event.keyCode === 39) {
 				// right
-				currentElementIndex++;
+				// if the current element is the last element, go to the first element
+				if (currentElementIndex === carouselInfo.totalEntries - 1 && 
+					(Date.now() - Globals.lastCarouselLeftRightKeyDownTimestamp) > 200) { // 200ms so holding down the key doesnt keep scrolling
+					currentElementIndex = 0;
+				} else {
+					currentElementIndex++;
+				}
 			} else if (event.keyCode === 37) {
 				// left
-				currentElementIndex--;
+				// if the current element is the first element, go to the last element
+				if (currentElementIndex === 0 && 
+					(Date.now() - Globals.lastCarouselLeftRightKeyDownTimestamp) > 200) { // 200ms so holding down the key doesnt keep scrolling
+					currentElementIndex = carouselInfo.totalEntries - 1;
+				} else {
+					currentElementIndex--;
+				}
 			}
-			smoothScrollToElementIndex(currentElementIndex, true);
+
+			Globals.lastCarouselLeftRightKeyDownTimestamp = Date.now();
+			smoothScrollToElementIndex(currentElementIndex, true); // this checks if new index is out of bounds
 		}
-
 	});
-
 	// this ctor renders the main page
 	Globals.Router = new Router();
 };

@@ -380,17 +380,20 @@ function smoothScrollToElementIndex(index, smooth = true) {
 }
 
 /**
- * @returns {number | null}
+ * Returns null if the current view isnt a carouselView
+ * @returns { {selectedIndex: number?, totalEntries: number}? }
  */
-function getCurrentSelectedEntryIndex() {
+function getCurrentCarouselSelectionInfo() {
     const content = /** @type {HTMLElement} */ (document.getElementById("content"));
     const carousel = content.getElementsByClassName("carousel")[0];
     if (!carousel) {
-        console.error("this shouldnt happen");
         return null;
     }
 
     const entries = carousel.getElementsByClassName("entry-wrapper");
     let currentElementIndex = Array.from(entries).findIndex(entry => entry.classList.contains("selected"));
-    return currentElementIndex;
+    return {
+        selectedIndex: currentElementIndex,
+        totalEntries: entries.length
+    };
 }
