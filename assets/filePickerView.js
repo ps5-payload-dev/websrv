@@ -21,7 +21,7 @@ along with this program; see the file COPYING. If not, see
  * @param {string} path 
  * @returns {Promise<{path: string, finished: boolean}>}
  */
-async function renderBrowsePage(path, fadein = false) {
+async function renderBrowsePage(path, fadein = false, title = 'Select file...') {
     /** @type {Promise<{path: string, finished: boolean}>[]} */
     let result = [];
 
@@ -44,6 +44,11 @@ async function renderBrowsePage(path, fadein = false) {
     // create list div
     const list = document.createElement("div");
     list.classList.add("list");
+
+    let titleElement = document.createElement("div");
+    titleElement.classList.add("list-title");
+    titleElement.innerText = title;
+    list.appendChild(titleElement);
 
     // add back button if needed
     if (path !== "/") {

@@ -211,6 +211,14 @@ div.list {
     align-items: stretch;
 }
 
+div.list-title {
+    padding: 0.5em;
+    margin-top: 1em;
+    font-weight: bold;
+    font-size: larger;
+    text-align: center;
+}
+
 a.list-entry {
     display: flex;
     flex-direction: row;

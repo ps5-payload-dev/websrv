@@ -334,14 +334,14 @@ class Router {
      * @param {string} initialPath 
      * @returns {Promise<string?>}
      */
-    async pickFile(initialPath = "/") {
+    async pickFile(initialPath = "/", title = "Select file...") {
         await this.pushOrReplaceState("/filePicker");
         let navigateAwayPromise = this.getNavigateAwayPromise();
 
         /** @type {{path: string, finished: boolean}?} */
-        let result = await Promise.race([renderBrowsePage(initialPath, true), navigateAwayPromise]);
+        let result = await Promise.race([renderBrowsePage(initialPath, true, title), navigateAwayPromise]);
         while (result && !result.finished) {
-            result = await Promise.race([renderBrowsePage(result.path), navigateAwayPromise]);
+            result = await Promise.race([renderBrowsePage(result.path, false, title), navigateAwayPromise]);
         }
 
         // result is only null if the user already navigated back
