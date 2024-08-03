@@ -116,7 +116,7 @@ async function main() {
 		text: "Browse ROM...",
 		onclick: async () => {
 		    if(await checkApiVersion()) {
-			const file = await pickFile(window.workingDir);
+			const file = await pickFile(window.workingDir, "Select ROM...");
 			if(!file) {
 			    return;
 			}
