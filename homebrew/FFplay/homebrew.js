@@ -18,7 +18,7 @@ along with this program; see the file COPYING. If not, see
 async function main() {
     const PAYLOAD = window.workingDir + '/ffplay.elf';
     const MEDIADIR = window.workingDir + '/media/';
-    
+
     return {
         mainText: "FFplay",
         secondaryText: 'FFmpeg Media Player',
@@ -31,6 +31,30 @@ async function main() {
 		path: PAYLOAD,
 		args: ['-fs', file]
 	    };
-        }
+        },
+	options: [
+	    {
+		text: "Select video + subtitles",
+		onclick: async () => {
+		    const file = await pickFile(MEDIADIR, 'Select video...');
+		    if(!file) {
+			return;
+		    }
+
+		    const folder = file.substring(0, file.lastIndexOf('/'));
+		    const subs = await pickFile(folder, 'Select subtitles...');
+		    if(!subs) {
+			return {
+			    path: PAYLOAD,
+			    args: ['-fs', file]
+			};
+		    }
+		    return {
+			path: PAYLOAD,
+			args: ['-fs', '-vf', 'subtitles=' + subs, file]
+		    };
+		}
+            }
+	]
     };
 }
