@@ -111,3 +111,10 @@ jobs:
         name: OffAct
         path: ./homebrew/OffAct
         if-no-files-found: error
+
+    - name: Upload EDuke32
+      uses: actions/upload-artifact@v3
+      with:
+        name: OffAct
+        path: ./homebrew/EDuke32
+        if-no-files-found: error
