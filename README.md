@@ -5,12 +5,12 @@ It can be used to launch homebrew via the Webkit browser embedded with the PS5,
 or remotely from your PC, phone, etc.
 
 ## Quick-start
-To deploy ps5-payload-websrv, first launch the [ps5-payload-elfldr][elfldr],
-then load the payload as follows:
+To deploy ps5-payload-websrv, first make sure [ps5-payload-elfldr][elfldr] is
+running, then load the payload as follows:
 
 ```console
 john@localhost:~$ export PS5_HOST=ps5
-john@localhost:~$ wget -q -O - https://github.com/ps5-payload-dev/websrv/releases/download/v0.9/Payload.zip | gunzip -c -d | nc -q0 $PS5_HOST 9021
+john@localhost:~$ wget -q -O - https://github.com/ps5-payload-dev/websrv/releases/download/v0.10/Payload.zip | gunzip -c -d | nc -q0 $PS5_HOST 9021
 ```
 
 To interact with ps5-payload-websrv, either install the [Launcher PKG][launcher]
