@@ -35,7 +35,7 @@ tar xf $TEMPDIR/lib.tar.gz -C $TEMPDIR || exit 1
 export CFLAGS="-O1"
 
 cd $TEMPDIR/libmicrohttpd-$LIB_VER
-./configure --prefix="${PS5_SYSROOT}" --host=x86_64 \
+./configure --prefix="${PS5_HBROOT}" --host=x86_64 \
 	    --disable-shared --enable-static \
 	    --disable-curl --disable-examples 
-${MAKE} install DESTDIR="/"
+${MAKE} install DESTDIR="${PS5_SYSROOT}"
