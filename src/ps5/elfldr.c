@@ -348,11 +348,17 @@ elfldr_payload_args(pid_t pid) {
   pipe1 = pt_getint(pid, buf+4);
 
   intptr_t args       = buf;
-  intptr_t dlsym      = pt_resolve(pid, "LwG8g3niqwA");
   intptr_t rwpipe     = buf + 0x100;
   intptr_t rwpair     = buf + 0x200;
   intptr_t kpipe_addr = kernel_get_proc_file(pid, pipe0);
   intptr_t payloadout = buf + 0x300;
+
+  // sys_dynlib_dlsym is invoked at <sceKernelDlsym+4>: e8 xx xx xx xx ; call rel32
+  intptr_t dlsym = pt_resolve(pid, "LwG8g3niqwA") + 4;
+  int32_t  rel32 = 0;
+  mdbg_copyout(pid, dlsym+1, &rel32, sizeof(rel32));
+  dlsym += rel32;
+  dlsym += 5; // length of the call instruction
 
   mdbg_setlong(pid, args + 0x00, dlsym);
   mdbg_setlong(pid, args + 0x08, rwpipe);
