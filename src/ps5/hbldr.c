@@ -472,8 +472,7 @@ hbldr_launch(const char*cwd, const char* path, int stdio, char** argv,
     return -1;
   }
 
-  kernel_set_proc_rootdir(pid, kernel_get_root_vnode());
-  kernel_set_proc_jaildir(pid, 0);
+  elfldr_raise_privileges(pid);
 
   if(bigapp_replace(pid, elf, path, stdio, cwd, envp) < 0) {
     if(pt_detach(pid, SIGKILL)) {

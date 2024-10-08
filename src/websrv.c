@@ -33,6 +33,67 @@ along with this program; see the file COPYING. If not, see
 #include "websrv.h"
 
 
+typedef struct post_data {
+  char *key;
+  uint8_t *val;
+  size_t len;
+  struct post_data *next;
+} post_data_t;
+
+
+typedef struct post_request {
+  struct MHD_PostProcessor* pp;
+  post_data_t* data;
+} post_request_t;
+
+
+static post_data_t*
+post_data_get(post_data_t* data, const char* key) {
+  if(!data) {
+    return 0;
+  }
+
+  if(!strcmp(key, data->key)) {
+    return data;
+  }
+
+  return post_data_get(data->next, key);
+}
+
+
+static const char*
+post_data_val(post_data_t* data, const char* key) {
+  data = post_data_get(data, key);
+  return data ? (const char*)data->val : 0;
+}
+
+
+static enum MHD_Result
+post_iterator(void *cls, enum MHD_ValueKind kind, const char *key,
+               const char *filename, const char *mime, const char *encoding,
+               const char *value, uint64_t off, size_t size) {
+  post_request_t *req = cls;
+  post_data_t *data = post_data_get(req->data, key);
+
+  if(data) {
+    data->val = realloc(data->val, off+size+1);
+  } else {
+    data = malloc(sizeof(post_data_t));
+    data->next = req->data;
+    data->key = strdup(key);
+    data->val = malloc(off+size+1);
+    data->len = 0;
+    req->data = data;
+  }
+
+  memcpy(data->val+off, value, size);
+  data->val[off+size] = 0;
+  data->len += size;
+
+  return MHD_YES;
+}
+
+
 enum MHD_Result
 websrv_queue_response(struct MHD_Connection *conn, unsigned int status,
 		      struct MHD_Response *resp) {
@@ -117,10 +178,6 @@ hbldr_request(struct MHD_Connection *conn) {
   pipe = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "pipe");
   cwd = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "cwd");
 
-  if(!cwd) {
-    cwd = "/";
-  }
-
   if(!path) {
     if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
       ret = websrv_queue_response(conn, MHD_HTTP_BAD_REQUEST, resp);
@@ -150,53 +207,142 @@ hbldr_request(struct MHD_Connection *conn) {
 }
 
 
+
+/**
+ * Respond to a ELF payload loading request.
+ **/
+static enum MHD_Result
+elfldr_request(struct MHD_Connection *conn, post_data_t *data) {
+  enum MHD_Result ret = MHD_NO;
+  struct MHD_Response *resp;
+  post_data_t *elf;
+  const char *args;
+  const char *pipe;
+  const char *env;
+  const char *cwd;
+  int fd;
+
+  if(!(args=MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "args"))) {
+    args = post_data_val(data, "args");
+  }
+  if(!(env=MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "env"))) {
+    env = post_data_val(data, "env");
+  }
+  if(!(pipe=MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "pipe"))) {
+    pipe = post_data_val(data, "pipe");
+  }
+  if(!(cwd=MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "cwd"))) {
+    cwd = post_data_val(data, "cwd");
+  }
+
+  if(!(elf=post_data_get(data, "elf"))) {
+    if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
+      ret = websrv_queue_response(conn, MHD_HTTP_BAD_REQUEST, resp);
+      MHD_destroy_response(resp);
+    }
+
+  } else if((fd=sys_launch_payload(cwd, elf->val, elf->len, args, env)) < 0) {
+    if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
+      ret = websrv_queue_response(conn, MHD_HTTP_SERVICE_UNAVAILABLE, resp);
+      MHD_destroy_response(resp);
+    }
+
+  } else if(pipe && strcmp(pipe, "0")) {
+    if((resp=MHD_create_response_from_pipe(fd))) {
+      ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
+      MHD_destroy_response(resp);
+    }
+  } else {
+    close(fd);
+    if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
+      ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
+      MHD_destroy_response(resp);
+    }
+  }
+
+  return ret;
+}
+
+
+
 /**
  *
  **/
 static enum MHD_Result
-ahc_echo(void *cls, struct MHD_Connection *conn,
-	 const char *url, const char *method,
-	 const char *version, const char *upload_data,
-	 size_t *upload_data_size, void **ptr) {
-  static int aptr;
+websrv_on_request(void *cls, struct MHD_Connection *conn,
+                  const char *url, const char *method,
+                  const char *version, const char *upload_data,
+                  size_t *upload_data_size, void **con_cls) {
+  post_request_t *req = *con_cls;
+  enum MHD_Result ret;
 
-  if(strcmp(method, MHD_HTTP_METHOD_GET)) {
+  if(!strcmp(method, MHD_HTTP_METHOD_GET)) {
+    if(!strcmp("/fs", url)) {
+      return fs_request(conn, url);
+    }
+    if(!strncmp("/fs/", url, 4)) {
+      return fs_request(conn, url);
+    }
+    if(!strcmp("/launch", url)) {
+      return launch_request(conn);
+    }
+    if(!strcmp("/hbldr", url)) {
+      return hbldr_request(conn);
+    }
+    if(!strcmp("/version", url)) {
+      return version_request(conn);
+    }
+    if(!strcmp("/", url) || !url[0]) {
+      return asset_request(conn, "/index.html");
+    }
+    return asset_request(conn, url);
+  }
+
+  if(strcmp(method, MHD_HTTP_METHOD_POST)) {
     return MHD_NO;
   }
 
-  // never respond on first call
-  if(&aptr != *ptr) {
-    *ptr = &aptr;
+  if(!req) {
+    req = *con_cls = malloc(sizeof(post_request_t));
+    req->pp = MHD_create_post_processor(conn, 0x1000, &post_iterator, req);
+    req->data = 0;
     return MHD_YES;
   }
 
-  // reset when done
-  *ptr = NULL;
-
-  if(!strcmp("/fs", url)) {
-    return fs_request(conn, url);
-  }
-  if(!strncmp("/fs/", url, 4)) {
-    return fs_request(conn, url);
+  if(*upload_data_size) {
+    ret = MHD_post_process(req->pp, upload_data, *upload_data_size);
+    *upload_data_size = 0;
+    return ret;
   }
 
-  if(!strcmp("/launch", url)) {
-    return launch_request(conn);
+  if(!strcmp("/elfldr", url)) {
+    return elfldr_request(conn, req->data);
   }
 
-  if(!strcmp("/hbldr", url)) {
-    return hbldr_request(conn);
+  return MHD_NO;
+}
+
+
+
+static void
+websrv_on_completed(void *cls, struct MHD_Connection *connection,
+                    void **con_cls, enum MHD_RequestTerminationCode toe) {
+  post_request_t *req = *con_cls;
+  post_data_t *data;
+
+  if(!req) {
+    return;
   }
 
-  if(!strcmp("/version", url)) {
-    return version_request(conn);
+  while((data=req->data)) {
+    req->data = data->next;
+    free(data->key);
+    free(data->val);
+    free(data);
   }
 
-  if(!strcmp("/", url) || !url[0]) {
-    return asset_request(conn, "/index.html");
-  }
-
-  return asset_request(conn, url);
+  MHD_destroy_post_processor(req->pp);
+  free(req);
 }
 
 
@@ -283,8 +429,9 @@ websrv_listen(unsigned short port) {
   if(!(httpd=MHD_start_daemon(MHD_USE_THREAD_PER_CONNECTION | MHD_USE_ITC |
 			      MHD_USE_NO_LISTEN_SOCKET | MHD_USE_DEBUG |
 			      MHD_USE_INTERNAL_POLLING_THREAD,
-			      0, NULL, NULL,
-			      &ahc_echo, NULL, MHD_OPTION_END))) {
+			      0, NULL, NULL, &websrv_on_request, NULL,
+                              MHD_OPTION_NOTIFY_COMPLETED, &websrv_on_completed,
+                              NULL, MHD_OPTION_END))) {
     perror("MHD_start_daemon");
     close(srvfd);
     return -1;

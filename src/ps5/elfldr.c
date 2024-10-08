@@ -69,6 +69,15 @@ typedef struct elfldr_ctx {
 
 
 /**
+ * Absolute path to the SceSpZeroConf eboot.
+ **/
+static const char* SceSpZeroConf = "/system/vsh/app/NPXS40112/eboot.bin";
+
+
+int sceKernelSpawn(int *pid, int dbg, const char *path, char *root, char** argv);
+
+
+/**
 * Parse a R_X86_64_RELATIVE relocatable.
 **/
 static int
@@ -376,6 +385,32 @@ elfldr_payload_args(pid_t pid) {
 }
 
 
+int
+elfldr_raise_privileges(pid_t pid) {
+  static const uint8_t caps[16] = {0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+				   0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
+  intptr_t vnode;
+
+  if(!(vnode=kernel_get_root_vnode())) {
+    return -1;
+  }
+  if(kernel_set_proc_rootdir(pid, vnode)) {
+    return -1;
+  }
+  if(kernel_set_proc_jaildir(pid, 0)) {
+    return -1;
+  }
+  if(kernel_set_ucred_uid(pid, 0)) {
+    return -1;
+  }
+  if(kernel_set_ucred_caps(pid, caps)) {
+    return -1;
+  }
+
+  return 0;
+}
+
+
 /**
  * Prepare registers of a process for execution of an ELF.
  **/
@@ -642,5 +677,90 @@ elfldr_exec(pid_t pid, uint8_t* elf) {
   }
 
   return 0;
+}
+
+
+/**
+ * Execute an ELF inside a new process.
+ **/
+pid_t
+elfldr_spawn(const char* cwd, int stdio, uint8_t* elf, char** argv,
+             char** envp) {
+  uint8_t int3instr = 0xcc;
+  intptr_t brkpoint;
+  uint8_t orginstr;
+  pid_t pid = -1;
+
+  if(sceKernelSpawn(&pid, 1, SceSpZeroConf, 0, argv)) {
+    perror("sceKernelSpawn");
+    return -1;
+  }
+
+  elfldr_raise_privileges(pid);
+
+  // The proc is now in the STOP state, with the instruction pointer pointing
+  // at the libkernel entry. Let the kernel assign process parameters accessed
+  // via sceKernelGetProcParam()
+  if(pt_syscall(pid, 599)) {
+    puts("sys_dynlib_process_needed_and_relocate failed");
+    pt_detach(pid, SIGKILL);
+    return -1;
+  }
+
+  // Allow libc to allocate arbitrary amount of memory.
+  elfldr_set_heap_size(pid, -1);
+
+  //Insert a breakpoint at the eboot entry.
+  if(!(brkpoint=kernel_dynlib_entry_addr(pid, 0))) {
+    puts("kernel_dynlib_entry_addr failed");
+    pt_detach(pid, SIGKILL);
+    return -1;
+  }
+  brkpoint += 58;// offset to invocation of main()
+  if(mdbg_copyout(pid, brkpoint, &orginstr, sizeof(orginstr))) {
+    perror("mdbg_copyout");
+    pt_detach(pid, SIGKILL);
+    return -1;
+  }
+  if(mdbg_copyin(pid, &int3instr, brkpoint, sizeof(int3instr))) {
+    perror("mdbg_copyin");
+    pt_detach(pid, SIGKILL);
+    return -1;
+  }
+
+  // Continue execution until we hit the breakpoint, then remove it.
+  if(pt_continue(pid, SIGCONT)) {
+    perror("pt_continue");
+    pt_detach(pid, SIGKILL);
+    return -1;
+  }
+  if(waitpid(pid, 0, 0) == -1) {
+    perror("waitpid");
+    pt_detach(pid, SIGKILL);
+    return -1;
+  }
+  if(mdbg_copyin(pid, &orginstr, brkpoint, sizeof(orginstr))) {
+    perror("mdbg_copyin");
+    pt_detach(pid, SIGKILL);
+    return -1;
+  }
+
+  if(argv[0]) {
+    elfldr_set_procname(pid, argv[0]);
+  } else {
+    elfldr_set_procname(pid, "payload");
+  }
+
+  elfldr_set_environ(pid, envp);
+  elfldr_set_cwd(pid, cwd);
+  elfldr_set_stdio(pid, stdio);
+
+  // Execute the ELF
+  if(elfldr_exec(pid, elf)) {
+    kill(pid, SIGKILL);
+    return -1;
+  }
+
+  return pid;
 }
 

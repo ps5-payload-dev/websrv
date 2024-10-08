@@ -16,6 +16,10 @@ along with this program; see the file COPYING. If not, see
 
 #include <stdio.h>
 #include <unistd.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+#include <sys/stat.h>
 
 
 int
@@ -45,3 +49,20 @@ sys_launch_homebrew(const char* cwd, const char* path, const char* args,
 
   return fileno(pf);
 }
+
+
+int
+sys_launch_payload(const char* cwd, uint8_t* elf, size_t elf_size,
+                   const char* args, const char* env) {
+  char filename[] = "/tmp/elfXXXXXX";
+  mktemp(filename);
+
+  FILE *f = fopen(filename, "wx");
+  fwrite(elf, elf_size, 1, f);
+  fclose(f);
+
+  chmod(filename, 0777);
+
+  return sys_launch_homebrew(cwd, filename, args, env);
+}
+

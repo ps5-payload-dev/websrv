@@ -18,6 +18,20 @@ along with this program; see the file COPYING. If not, see
 
 #include <unistd.h>
 
+
+/**
+ * Escape jail and raise privileges.
+ **/
+int elfldr_raise_privileges(pid_t pid);
+
+
+/**
+ * Execute an ELF inside a new process.
+ **/
+int elfldr_spawn(const char* cwd, int stdio, uint8_t* elf, char** argv,
+                 char** envp);
+
+
 /**
  * Execute an ELF inside the process with the given pid.
  **/

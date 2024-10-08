@@ -25,6 +25,7 @@ along with this program; see the file COPYING. If not, see
 #include <sys/sysctl.h>
 #include <sys/syscall.h>
 
+#include "elfldr.h"
 #include "hbldr.h"
 #include "pt.h"
 #include "sys.h"
@@ -171,6 +172,10 @@ sys_launch_homebrew(const char* cwd, const char* path, const char* args,
   int fds[2];
   pid_t pid;
 
+  if(!cwd) {
+    cwd = "/";
+  }
+
   if(!args) {
     args = "";
   }
@@ -179,7 +184,7 @@ sys_launch_homebrew(const char* cwd, const char* path, const char* args,
     env = "";
   }
 
-  printf("launch homebrew: %s %s %s\n", env, path, args);
+  printf("launch homebrew: CWD=%s %s %s %s\n", cwd, env, path, args);
 
   if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == -1) {
     perror("socketpair");
@@ -213,6 +218,61 @@ sys_launch_homebrew(const char* cwd, const char* path, const char* args,
   return fds[0];
 }
 
+
+int
+sys_launch_payload(const char* cwd, uint8_t* elf, size_t elf_size,
+                   const char* args, const char* env) {
+  char* argv[255];
+  char* envp[255];
+  int optval = 1;
+  int fds[2];
+  pid_t pid;
+
+  if(!cwd) {
+    cwd = "/";
+  }
+
+  if(!args) {
+    args = "";
+  }
+
+  if(!env) {
+    env = "";
+  }
+
+  printf("launch payload: CWD=%s %s %s\n", cwd, env, args);
+
+  if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == -1) {
+    perror("socketpair");
+    return 1;
+  }
+
+  if(setsockopt(fds[1], SOL_SOCKET, SO_NOSIGPIPE, &optval, sizeof(optval)) < 0) {
+    perror("setsockopt");
+    close(fds[0]);
+    close(fds[1]);
+    return -11;
+  }
+
+  args_split(args, argv, 255);
+  args_split(env, envp, 255);
+  pid = elfldr_spawn(cwd, fds[1], elf, argv, envp);
+
+  for(int i=0; argv[i]; i++) {
+    free(argv[i]);
+  }
+  for(int i=0; envp[i]; i++) {
+    free(envp[i]);
+  }
+
+  close(fds[1]);
+  if(pid < 0) {
+    close(fds[0]);
+    return -1;
+  }
+
+  return fds[0];
+}
 
 int
 sys_launch_title(const char* title_id, const char* args) {

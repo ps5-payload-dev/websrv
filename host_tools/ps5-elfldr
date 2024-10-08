@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+#   Copyright (C) 2024 John Törnblom
+#
+# This file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; see the file COPYING. If not see
+# <http://www.gnu.org/licenses/>
+
+PS5_HOST=
+
+
+while getopts "h:" opt; do
+    case ${opt} in
+	h) PS5_HOST=$OPTARG;;
+    esac
+done
+shift $((OPTIND -1))
+
+if [[ -z $PS5_HOST || -z $1 ]]; then
+    echo "Usage: $(basename $0) -h HOST PAYLOAD [ARGS...]" >&2
+    exit 1
+fi
+
+PAYLOAD_PATH=$1
+PAYLOAD_NAME=$(basename "$PAYLOAD_PATH")
+shift
+
+PAYLOAD_ARGS=${PAYLOAD_NAME// /\\ }
+for ARG in "$@"; do
+    PAYLOAD_ARGS="${PAYLOAD_ARGS} ${ARG// /\\ }"
+done
+
+curl --form "elf=@${PAYLOAD_PATH}" \
+     --url-query pipe="1" \
+     --url-query args="$PAYLOAD_ARGS" \
+     http://$PS5_HOST:8080/elfldr
