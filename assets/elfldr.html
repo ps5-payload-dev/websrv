@@ -1,23 +1,242 @@
+<!-- Copyright (C) 2024 idlesauce
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 3, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; see the file COPYING. If not, see
+<http://www.gnu.org/licenses/>. -->
+
+
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ELF Launcher</title>
-    <link rel="stylesheet" href="xterm.css">
-</head>
-<body>
-  <script src="xterm.js"></script>
-  
-  <form action="/elfldr" method="POST" enctype="multipart/form-data">
-    <label for="elf">ELF:</label>
-    <input type="file" id="elf" name="elf" required><br>
+    <link rel="icon" href="data:,"> <!-- dont request favicon -->
+    <title>Payload launcher</title>
+    <style>
+      :root {
+          --text-color-primary: #fff;
+          --text-color-secondary: #ccc;
+          --text-color-tertiary: #999;
+          --background-color-primary: #0b0c10;
+          --surface-color-primary: #252737;
+          --surface-color-secondary: #13151d;
+          --surface-color-hover: #a2a2a6;
+          --text-color-primary-hover: #303030;
+          --text-color-secondary-hover: #444;
+          --text-color-tertiary-hover: #555;
+          --btn-transition: background-color 0.3s ease;
+          --vh: 1vh;
+      }
 
-    <label for="args">Args:</label>
-    <input type="text" id="args" name="args"><br>
+      body {
+          font-family: Arial, sans-serif;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: calc(100 * var(--vh) - 10vw);
+          margin: 0;
+          padding: 5vw;
+          background-color: var(--background-color-primary);
+          color: #fff;
+      }
 
-    <input type="submit" value="Deploy">
-  </form>
-</body>
+      .drop-zone {
+          width: 100%;
+          max-width: 400px;
+          height: 200px;
+          border: 2px dashed #ccc;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          margin: 20px auto;
+          padding: 20px;
+          cursor: pointer;
+          box-sizing: border-box;
+      }
+
+      .drop-zone.dragover {
+          border-color: #000;
+      }
+
+      h1 {
+          text-align: center;
+          margin-top: 0;
+      }
+
+      .btn {
+          padding: 1rem 2rem;
+          text-align: center;
+          cursor: pointer;
+          line-height: 1.5rem;
+          border-radius: 1rem;
+          background-color: var(--surface-color-primary);
+          border: none;
+          color: var(--text-color-primary);
+          transition: var(--btn-transition);
+          box-sizing: border-box;
+          width: 100%;
+          max-width: 400px;
+      }
+
+      .btn:hover {
+          background-color: var(--surface-color-hover);
+          color: var(--text-color-primary-hover);
+      }
+
+      .file-name {
+          margin: 10px 0;
+          font-size: 1rem;
+          color: var(--text-color-secondary);
+      }
+
+      .input-box {
+          padding: 1rem;
+          text-align: center;
+          border-radius: 1rem;
+          background-color: var(--surface-color-secondary);
+          border: none;
+          color: var(--text-color-primary);
+          box-sizing: border-box;
+          width: 100%;
+          max-width: 400px;
+          margin: 10px 0;
+      }
+
+      .input-box.invalid {
+          outline: 2px solid red;
+      }
+
+      .checkbox-container {
+          display: flex;
+          align-items: center;
+          /* margin: 10px 0; */
+          margin-top: 10px;
+      }
+
+      .checkbox-container input {
+          margin-right: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>Payload launcher</h1>
+    <div class="drop-zone" id="drop-zone">
+      Drag & drop a payload,
+      or click to select one...
+    </div>
+    <input type="file" id="file-input" style="display: none;" accept=".bin, .elf">
+    <div class="file-name" id="file-name">No file selected</div>
+    <input type="text" id="args-input" class="input-box" placeholder="Optional command line arguments...">
+    <a class="btn" id="send-btn">Send</a>
+    <script>
+      // workaround for mobile browsers reporting vh with the address bar collapsed
+      function setViewportHeight() {
+          let vh = window.innerHeight * 0.01;
+          document.documentElement.style.setProperty('--vh', `${vh}px`);
+      }
+      setViewportHeight();
+
+      window.addEventListener('resize', () => {
+          setViewportHeight();
+      });
+
+      const dropZone = document.getElementById('drop-zone');
+      const fileInput = document.getElementById('file-input');
+      const argsInput = document.getElementById('args-input');
+      const fileNameDisplay = document.getElementById('file-name');
+      const sendBtn = document.getElementById('send-btn');
+      let selectedFile = null;
+
+      dropZone.addEventListener('click', () => fileInput.click());
+
+      dropZone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          dropZone.classList.add('dragover');
+      });
+
+      dropZone.addEventListener('dragleave', () => {
+          dropZone.classList.remove('dragover');
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          dropZone.classList.remove('dragover');
+          const files = e.dataTransfer.files;
+          if (files.length) {
+              fileInput.files = files;
+              if (validateFile(files[0])) {
+                  selectedFile = files[0];
+                  fileNameDisplay.textContent = selectedFile.name;
+              } else {
+                  alert('Invalid file type. Only .bin and .elf files are allowed.');
+                  fileNameDisplay.textContent = 'No file selected';
+                  selectedFile = null;
+              }
+          }
+      });
+
+      fileInput.addEventListener('change', () => {
+          if (fileInput.files.length) {
+              if (validateFile(fileInput.files[0])) {
+                  selectedFile = fileInput.files[0];
+                  fileNameDisplay.textContent = selectedFile.name;
+              } else {
+                  alert('Invalid file type. Only .bin and .elf files are allowed.');
+                  fileNameDisplay.textContent = 'No file selected';
+                  selectedFile = null;
+              }
+          }
+      });
+
+      sendBtn.addEventListener('click', () => {
+          if (!selectedFile) {
+	      alert('No file selected.');
+	      return;
+	  }
+
+	  var args = selectedFile.name.replaceAll(" ", "\\ ");
+	  const regex = /"([^"]+)"|(\S+)/g;
+	  let match;
+	  while((match=regex.exec(argsInput.value)) !== null) {
+              let arg = match[1] || match[2];
+              if (arg.includes(' ')) {
+		  arg = arg.replace(/ /g, '\\ ');
+              }
+	      args = args + " " + arg;
+	  }
+	  
+	  deploy(selectedFile, args);
+      });
+
+      function validateFile(file) {
+          const allowedExtensions = ['.bin', '.elf'];
+          const fileExtension = file.name.split('.').pop().toLowerCase();
+          return allowedExtensions.includes(`.${fileExtension}`);
+      }
+
+      async function deploy(elf, args='') {
+	  let form = new FormData();
+	  form.append('elf', elf);
+	  form.append('args', args);
+	  await fetch('/elfldr', {
+              body: form,
+              method: "post"
+	  });
+      }
+    </script>
+  </body>
 </html>
-
