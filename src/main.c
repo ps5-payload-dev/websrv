@@ -15,6 +15,7 @@ along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
 #include <stdio.h>
+#include <signal.h>
 
 #include "websrv.h"
 
@@ -25,6 +26,7 @@ main(int argc, char** argv) {
 
   printf("Web server was compiled at %s %s\n", __DATE__, __TIME__);
 
+  signal(SIGCHLD, SIG_IGN);
   while(1) {
     websrv_listen(port);
     sleep(3);
