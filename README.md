@@ -20,7 +20,7 @@ below.
 ## Available services
 Examples:
 - http://ps5:8080/index.html - Launch Homebrew
-- http://ps5:8080/elfldr.html - Launch ELF Payloads
+- http://ps5:8080/elfldr - Launch ELF Payloads
 - http://ps5:8080/fs/ - Browser the filesystem (html)
 - http://ps5:8080/fs/?fmt=json - Browser the filesystem (json)
 - http://ps5:8080/fs/system_ex/app/NPXS40028/redis.conf - Download a file
