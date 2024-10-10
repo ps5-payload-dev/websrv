@@ -195,10 +195,34 @@ div.entry-more-button {
     transition: background-color 0.3s;
 }
 
+/*.text-secondary {
+    font-size: 0.85em;
+    color: var(--secondary-text-color);
+}*/
+
 .text-secondary {
     font-size: 0.85em;
     color: var(--secondary-text-color);
+    white-space: nowrap;              /* Prevent text wrapping */
+    display: inline-block;
+    position: relative;
+    max-width: 100%;                  /* Ensure text doesn't exceed container width */
 }
+
+.text-secondary.scroll {
+    animation: scrollText linear infinite;
+}
+
+@keyframes scrollText {
+    0% {
+        transform: translateX(100%);  /* Start off-screen on the right */
+    }
+    100% {
+        transform: translateX(-100%); /* End off-screen on the left */
+    }
+}
+
+
 
 .entry-name {
     font-weight: 700;
