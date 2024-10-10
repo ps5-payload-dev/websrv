@@ -235,6 +235,9 @@ async function renderMainContentCarousel(items, fadeout = true) {
         }
         generateCursorSnapOverlays();
     })));
+    
+    //no idea if this is the best approach or place to call this....seems to work well though.
+    setDynamicScroll();
 }
 
 
@@ -396,4 +399,33 @@ function getCurrentCarouselSelectionInfo() {
         selectedIndex: currentElementIndex,
         totalEntries: entries.length
     };
+}
+
+ // detect and apply scrolling to secondary text of 
+ // carousel entries, only applied if text doesnt fit within the container.
+function setDynamicScroll() {
+    const textElements = document.querySelectorAll('.text-secondary');
+
+    textElements.forEach(textElement => {
+        const textWidth = textElement.scrollWidth;  // Get the actual width of the text
+        const containerWidth = textElement.clientWidth;  // Get the width of the container
+
+        if (textWidth > containerWidth) {
+            const speedFactor = 8;  // A constant value to control the speed
+            const duration = (textWidth / containerWidth) * speedFactor;  // Dynamic duration
+
+            // Ensure the duration is at least 5 seconds to make the scroll readable
+            const minDuration = 5;  // Minimum duration for short texts
+            const finalDuration = Math.max(duration, minDuration);
+
+            // Apply the animation duration to each element
+            textElement.style.animationDuration = `${finalDuration}s`;
+
+            // Trigger the scroll animation
+            textElement.classList.add('scroll');
+        } else {
+            // Remove the animation if the text fits within the container
+            textElement.classList.remove('scroll');
+        }
+    });
 }
