@@ -246,11 +246,6 @@ along with this program; see the file COPYING. If not, see
 	  form.append('args', args);
 	  form.append('pipe', '1');
 
-	  let response = await fetch('/elfldr', {
-              body: form,
-              method: "post"
-	  });
-
 	  const term = new Terminal({
 	      convertEol: true,
 	      altClickMovesCursor: false,
@@ -259,16 +254,20 @@ along with this program; see the file COPYING. If not, see
 	      cols: 132,
 	      rows: 26
 	  });
+	  term.open(stdout);
+	  term.write("$ " + args + "\n");
+
+	  const launcher = document.getElementById('launcher');
+	  launcher.style.display = 'none';
+
+	  let response = await fetch('/elfldr', {
+              body: form,
+              method: "post"
+	  });
 
 	  try {
 	      const reader = response.body.getReader();
-	      const stdout = document.getElementById('stdout');
-	      const launcher = document.getElementById('launcher');
 	      const decoder = new TextDecoder();
-
-	      launcher.style.display = 'none';
-	      document.title = selectedFile.name;
-	      term.open(stdout);
 
 	      while (true) {
 		  const { done, value } = await reader.read();
@@ -276,11 +275,9 @@ along with this program; see the file COPYING. If not, see
 		      break;
 		  }
 		  let decodedValue = decoder.decode(value);
-		  console.log(decodedValue);
 		  term.write(decodedValue);
 	      }
 	  } catch (error) {
-	      console.log(error);
 	  }
       }
     </script>
