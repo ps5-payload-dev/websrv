@@ -289,6 +289,9 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
     if(!strcmp("/hbldr", url)) {
       return hbldr_request(conn);
     }
+    if(!strcmp("/elfldr", url)) {
+      return asset_request(conn, "/elfldr.html");
+    }
     if(!strcmp("/version", url)) {
       return version_request(conn);
     }

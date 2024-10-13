@@ -224,7 +224,7 @@ sys_launch_payload(const char* cwd, uint8_t* elf, size_t elf_size,
                    const char* args, const char* env) {
   char* argv[255];
   char* envp[255];
-  int optval = 1;
+
   int fds[2];
   pid_t pid;
 
@@ -242,16 +242,9 @@ sys_launch_payload(const char* cwd, uint8_t* elf, size_t elf_size,
 
   printf("launch payload: CWD=%s %s %s\n", cwd, env, args);
 
-  if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == -1) {
-    perror("socketpair");
+  if(pipe(fds) == -1) {
+    perror("pipe");
     return 1;
-  }
-
-  if(setsockopt(fds[1], SOL_SOCKET, SO_NOSIGPIPE, &optval, sizeof(optval)) < 0) {
-    perror("setsockopt");
-    close(fds[0]);
-    close(fds[1]);
-    return -11;
   }
 
   args_split(args, argv, 255);

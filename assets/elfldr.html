@@ -21,6 +21,8 @@ along with this program; see the file COPYING. If not, see
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:,"> <!-- dont request favicon -->
+    <link rel="stylesheet" href="xterm.css">
+    <script src="xterm.js"></script>
     <title>Payload launcher</title>
     <style>
       :root {
@@ -49,6 +51,13 @@ along with this program; see the file COPYING. If not, see
           padding: 5vw;
           background-color: var(--background-color-primary);
           color: #fff;
+      }
+
+      #launcher {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
       }
 
       .drop-zone {
@@ -133,15 +142,18 @@ along with this program; see the file COPYING. If not, see
   </head>
 
   <body>
-    <h1>Payload launcher</h1>
-    <div class="drop-zone" id="drop-zone">
-      Drag & drop a payload,
-      or click to select one...
+    <div id="launcher">
+      <h1>Payload launcher</h1>
+      <div class="drop-zone" id="drop-zone">
+	Drag & drop a payload,
+	or click to select one...
+      </div>
+      <input type="file" id="file-input" style="display: none;" accept=".bin, .elf">
+      <div class="file-name" id="file-name">No payload selected</div>
+      <input type="text" id="args-input" class="input-box" placeholder="Optional command line arguments...">
+      <a class="btn" id="send-btn">Send</a>
     </div>
-    <input type="file" id="file-input" style="display: none;" accept=".bin, .elf">
-    <div class="file-name" id="file-name">No file selected</div>
-    <input type="text" id="args-input" class="input-box" placeholder="Optional command line arguments...">
-    <a class="btn" id="send-btn">Send</a>
+    <div id="stdout" class="terminal" style="display: block;"/>
     <script>
       // workaround for mobile browsers reporting vh with the address bar collapsed
       function setViewportHeight() {
@@ -232,10 +244,41 @@ along with this program; see the file COPYING. If not, see
 	  let form = new FormData();
 	  form.append('elf', elf);
 	  form.append('args', args);
-	  await fetch('/elfldr', {
+	  form.append('pipe', '1');
+
+	  const term = new Terminal({
+	      convertEol: true,
+	      altClickMovesCursor: false,
+	      disableStdin: true,
+	      fontSize: 18,
+	      cols: 132,
+	      rows: 26
+	  });
+	  term.open(stdout);
+	  term.write("$ " + args + "\n");
+
+	  const launcher = document.getElementById('launcher');
+	  launcher.style.display = 'none';
+
+	  let response = await fetch('/elfldr', {
               body: form,
               method: "post"
 	  });
+
+	  try {
+	      const reader = response.body.getReader();
+	      const decoder = new TextDecoder();
+
+	      while (true) {
+		  const { done, value } = await reader.read();
+		  if (done) {
+		      break;
+		  }
+		  let decodedValue = decoder.decode(value);
+		  term.write(decodedValue);
+	      }
+	  } catch (error) {
+	  }
       }
     </script>
   </body>
