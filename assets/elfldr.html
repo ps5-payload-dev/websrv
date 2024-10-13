@@ -23,6 +23,7 @@ along with this program; see the file COPYING. If not, see
     <link rel="icon" href="data:,"> <!-- dont request favicon -->
     <link rel="stylesheet" href="xterm.css">
     <script src="xterm.js"></script>
+    <script src="xterm-addon-fit.min.js"></script>
     <title>Payload launcher</title>
     <style>
       :root {
@@ -48,7 +49,7 @@ along with this program; see the file COPYING. If not, see
           justify-content: center;
           min-height: calc(100 * var(--vh) - 10vw);
           margin: 0;
-          padding: 5vw;
+          padding: 0;
           background-color: var(--background-color-primary);
           color: #fff;
       }
@@ -58,6 +59,7 @@ along with this program; see the file COPYING. If not, see
           flex-direction: column;
           align-items: center;
           justify-content: center;
+          padding: 5vw;
       }
 
       .drop-zone {
@@ -153,7 +155,7 @@ along with this program; see the file COPYING. If not, see
       <input type="text" id="args-input" class="input-box" placeholder="Optional command line arguments...">
       <a class="btn" id="send-btn">Send</a>
     </div>
-    <div id="stdout" class="terminal" style="display: block;"/>
+    <div id="stdout" class="terminal" style="display: none; height: 90vh; width: 95vw; padding-top: 5vh;"/>
     <script>
       // workaround for mobile browsers reporting vh with the address bar collapsed
       function setViewportHeight() {
@@ -241,24 +243,29 @@ along with this program; see the file COPYING. If not, see
       }
 
       async function deploy(elf, args='') {
+	  const launcher = document.getElementById('launcher');
+	  launcher.style.display = 'none';
+	  stdout.style.display = 'block';
+
 	  let form = new FormData();
 	  form.append('elf', elf);
 	  form.append('args', args);
 	  form.append('pipe', '1');
 
+	  const fitAddon = new FitAddon.FitAddon();
 	  const term = new Terminal({
 	      convertEol: true,
 	      altClickMovesCursor: false,
 	      disableStdin: true,
 	      fontSize: 18,
-	      cols: 132,
-	      rows: 26
+	      cols: 80,
+	      rows: 30
 	  });
-	  term.open(stdout);
-	  term.write("$ " + args + "\n");
 
-	  const launcher = document.getElementById('launcher');
-	  launcher.style.display = 'none';
+	  term.open(stdout);
+	  term.loadAddon(fitAddon);
+	  fitAddon.fit();
+	  term.write("$ " + args + "\n");
 
 	  let response = await fetch('/elfldr', {
               body: form,
