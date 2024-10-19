@@ -34,15 +34,15 @@ jobs:
         make DESTDIR=${{ runner.tool_cache }}/ps5-payload-sdk clean install
         echo PS5_PAYLOAD_SDK=${{ runner.tool_cache }}/ps5-payload-sdk >> $GITHUB_ENV
 
-    - name: Checkout Payload
+    - name: Checkout
       uses: actions/checkout@v3
 
-    - name: Build Payload
+    - name: Build
       run: |
         bash libmicrohttpd.sh
         make clean all
 
-    - name: Upload Payload
+    - name: Upload
       uses: actions/upload-artifact@v3
       with:
         name: Payload
@@ -75,11 +75,4 @@ jobs:
       with:
         name: OffAct
         path: ./homebrew/OffAct
-        if-no-files-found: error
-
-    - name: Upload EDuke32
-      uses: actions/upload-artifact@v3
-      with:
-        name: EDuke32
-        path: ./homebrew/EDuke32
         if-no-files-found: error

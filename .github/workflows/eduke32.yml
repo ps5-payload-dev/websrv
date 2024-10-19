@@ -39,7 +39,7 @@ jobs:
     - name: Upload
       uses: actions/upload-artifact@v3
       with:
-        name: DevilutionX
+        name: EDuke32
         path: ./homebrew/EDuke32
         if-no-files-found: error
 
