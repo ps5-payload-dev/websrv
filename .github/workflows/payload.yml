@@ -56,32 +56,11 @@ jobs:
         path: ./homebrew/IV9999-FAKE00000_00-HOMEBREWLOADER01.pkg
         if-no-files-found: error
 
-    - name: Upload FFplay
-      uses: actions/upload-artifact@v3
-      with:
-        name: FFplay
-        path: ./homebrew/FFplay
-        if-no-files-found: error
-
     - name: Upload Mednafen
       uses: actions/upload-artifact@v3
       with:
         name: Mednafen
         path: ./homebrew/Mednafen
-        if-no-files-found: error
-
-    - name: Upload SVTplay
-      uses: actions/upload-artifact@v3
-      with:
-        name: SVTplay
-        path: ./homebrew/SVTplay
-        if-no-files-found: error
-
-    - name: Upload SverigesRadio
-      uses: actions/upload-artifact@v3
-      with:
-        name: SverigesRadio
-        path: ./homebrew/SverigesRadio
         if-no-files-found: error
 
     - name: Upload FBNeo
