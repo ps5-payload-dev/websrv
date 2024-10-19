@@ -23,5 +23,7 @@ if [[ -z "$PS5_PAYLOAD_SDK" ]]; then
     exit 1
 fi
 
+source "${PS5_PAYLOAD_SDK}/toolchain/prospero.sh" || exit 1
+
 # ffplay is included with sdk, just copy it
 cp "${PS5_SYSROOT}/${PS5_HBROOT}/bin/ffplay" "${SCRIPT_DIR}/ffplay.elf"
