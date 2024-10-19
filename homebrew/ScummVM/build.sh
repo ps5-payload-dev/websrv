@@ -49,3 +49,8 @@ ${MAKE} dist-generic
 
 cp dist-generic/scummvm/scummvm "${SCRIPT_DIR}/scummvm.elf"
 cp -r dist-generic/scummvm/data "${SCRIPT_DIR}/data"
+mkdir "${SCRIPT_DIR}/extras"
+mkdir "${SCRIPT_DIR}/icons"
+mkdir "${SCRIPT_DIR}/saves"
+mkdir "${SCRIPT_DIR}/screenshots"
+mkdir "${SCRIPT_DIR}/themes"
