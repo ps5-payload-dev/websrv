@@ -2,14 +2,11 @@ name: DevilutionX
 
 on:
   push:
-    paths-ignore:
-      - "**/*.md"
-      - '**/*.txt'
+    paths:
+      - 'homebrew/DevilutionX/**'
   pull_request:
-    paths-ignore:
-      - "**/*.md"
-      - '**/*.txt'
-  workflow_dispatch:
+    paths:
+      - 'homebrew/DevilutionX/**'
 
 concurrency:
   group: ${{ github.ref }}-${{ github.event_name  }}
