@@ -11,10 +11,6 @@ on:
       - '**/*.txt'
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.ref }}-${{ github.event_name  }}
-  cancel-in-progress: false
-
 jobs:
   payload-build:
     runs-on: ubuntu-latest
