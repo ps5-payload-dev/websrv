@@ -25,6 +25,9 @@ fi
 
 source "${PS5_PAYLOAD_SDK}/toolchain/prospero.sh" || exit 1
 
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
+
 TEMPDIR=$(mktemp -d)
 trap 'rm -rf -- "$TEMPDIR"' EXIT
 
@@ -33,8 +36,4 @@ tar xf $TEMPDIR/lakenes.tar.gz -C $TEMPDIR || exit 1
 
 cd $TEMPDIR/LakeSnes-$VER || exit 1
 ${MAKE} -f Makefile.prospero || exit 1
-
-SCRIPT_PATH="${BASH_SOURCE[0]}"
-SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
-
 mv $TEMPDIR/LakeSnes-$VER/lakesnes "${SCRIPT_DIR}/lakesnes.elf" || exit 1

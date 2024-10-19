@@ -15,7 +15,7 @@
 # along with this program; see the file COPYING. If not see
 # <http://www.gnu.org/licenses/>.
 
-SCRIPT_PATH="${BASH_SOURCE[0]}"
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
 
 if [[ -z "$PS5_PAYLOAD_SDK" ]]; then
