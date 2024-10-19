@@ -62,17 +62,3 @@ jobs:
         name: Mednafen
         path: ./homebrew/Mednafen
         if-no-files-found: error
-
-    - name: Upload FBNeo
-      uses: actions/upload-artifact@v3
-      with:
-        name: FBNeo
-        path: ./homebrew/FBNeo
-        if-no-files-found: error
-
-    - name: Upload OffAct
-      uses: actions/upload-artifact@v3
-      with:
-        name: OffAct
-        path: ./homebrew/OffAct
-        if-no-files-found: error
