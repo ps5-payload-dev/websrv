@@ -18,7 +18,7 @@
 VER="master"
 URL="https://github.com/ps5-payload-dev/offact/archive/refs/heads/$VER.tar.gz"
 
-SCRIPT_PATH="${BASH_SOURCE[0]}"
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
 
 if [[ -z "$PS5_PAYLOAD_SDK" ]]; then
@@ -36,13 +36,5 @@ tar xf $TEMPDIR/offact.tar.gz -C $TEMPDIR || exit 1
 
 cd $TEMPDIR/offact-$VER || exit 1
 ${MAKE} || exit 1
-
-SCRIPT_PATH="${BASH_SOURCE[0]}"
-SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
-
-pwd
-sync
-stat $TEMPDIR/offact-$VER/OffAct.elf
-stat "${SCRIPT_DIR}"
 
 mv $TEMPDIR/offact-$VER/OffAct.elf "${SCRIPT_DIR}/OffAct.elf" || exit 1
