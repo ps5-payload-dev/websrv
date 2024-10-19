@@ -19,6 +19,9 @@ VER="1.5.2"
 URL="https://github.com/diasurgical/devilutionX/releases/download/$VER/devilutionx-src.tar.xz"
 MPQ="https://github.com/diasurgical/devilutionx-assets/releases/download/v2/spawn.mpq"
 
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
+
 if [[ -z "$PS5_PAYLOAD_SDK" ]]; then
     echo "error: PS5_PAYLOAD_SDK is not set"
     exit 1
@@ -45,9 +48,6 @@ ${CMAKE} -DCMAKE_BUILD_TYPE=Release \
 	 -B $TEMPDIR/build \
 	 -S $TEMPDIR/devilutionx-src-$VER || exit 1
 ${MAKE} -C $TEMPDIR/build || exit 1
-
-SCRIPT_PATH="${BASH_SOURCE[0]}"
-SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
 
 wget -O "${SCRIPT_DIR}/spawn.mpq" "${MPQ}" || exit 1
 mv $TEMPDIR/build/devilutionx "${SCRIPT_DIR}/devilutionx.elf" || exit 1

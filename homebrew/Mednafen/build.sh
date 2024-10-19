@@ -18,7 +18,7 @@
 VER="1.32.1"
 URL="https://mednafen.github.io/releases/files/mednafen-$VER.tar.xz"
 
-SCRIPT_PATH="${BASH_SOURCE[0]}"
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
 
 if [[ -z "$PS5_PAYLOAD_SDK" ]]; then

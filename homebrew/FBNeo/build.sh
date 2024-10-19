@@ -18,7 +18,7 @@
 VER="ps5"
 URL="https://github.com/ps5-payload-dev/FBNeo/archive/refs/heads/$VER.tar.gz"
 
-SCRIPT_PATH="${BASH_SOURCE[0]}"
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
 
 if [[ -z "$PS5_PAYLOAD_SDK" ]]; then
