@@ -27,7 +27,7 @@ async function main() {
                   '--extrapath=/data/homebrew/ScummVM/extras'];
     return {
         mainText: "ScummVM",
-        secondaryText: 'Script Creation Utility for Maniac Mansion VM',
+        secondaryText: 'VM for classic adventure games',
 	onclick: async () => {
 	    return {
 		path: PAYLOAD,
