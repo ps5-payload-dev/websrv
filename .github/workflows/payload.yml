@@ -55,10 +55,3 @@ jobs:
         name: Launcher
         path: ./homebrew/IV9999-FAKE00000_00-HOMEBREWLOADER01.pkg
         if-no-files-found: error
-
-    - name: Upload Mednafen
-      uses: actions/upload-artifact@v3
-      with:
-        name: Mednafen
-        path: ./homebrew/Mednafen
-        if-no-files-found: error
