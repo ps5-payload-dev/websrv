@@ -36,20 +36,22 @@ async function main() {
         return data.entries[0].title;
     }
 
-    async function getChannelList() {
-	const params = new URLSearchParams({
-	    "sort": "number",
-	    "filter": '[{"type":"boolean","value":true,"field":"enabled"}]'
-	});
-	let response = await fetch(BASE_URL + "/api/channel/grid?" + params.toString());
-	if (!response.ok) {
+    async function getChannelListByTag(tagId) {
+        const params = new URLSearchParams({
+            "sort": "number",
+            "filter": '[{"type":"boolean","value":true,"field":"enabled"}]',
+            "limit": "500" //set to high number as default is 50
+        });
+        let response = await fetch(BASE_URL + "api/channel/grid?" + params.toString());
+        if (!response.ok) {
             return [];
         }
 
-	let data = await response.json();
+        let data = await response.json();
+        const filteredChannels = data.entries.filter(ch => ch.tags.includes(tagId)); // Filter channels to only include those with the selected tag
 
-	return await Promise.all(data.entries.map(async (ch) => {
-	    let proginfo = await getChannelProgramme(ch.uuid);
+        return await Promise.all(filteredChannels.map(async (ch) => {
+            let proginfo = await getChannelProgramme(ch.uuid);
             var icon = ch.icon_public_url;
 
             if(!icon) {
@@ -58,26 +60,93 @@ async function main() {
             if(icon.startsWith('imagecache')) {
                 icon = BASE_URL + icon;
             }
-	    return {
-		mainText: ch.name,
-		secondaryText: proginfo,
-		imgPath: icon,
-		onclick: async () => {
-	            return {
-			path: PAYLOAD_PATH,
-			args: [BASE_URL + '/play/stream/channel/' + ch.uuid,
+            return {
+                mainText: ch.name,
+                secondaryText: proginfo,
+                imgPath: icon,
+                onclick: async () => {
+                    return {
+                        path: PAYLOAD_PATH,
+                        args: [BASE_URL + '/play/stream/channel/' + ch.uuid,
                               '-vf', 'yadif=1:-1', '-sn']
-		    };
-		}
-	    };
-	}));
+                    };
+                }
+            };
+        }));
+    }
+
+    async function getDvrList() {     
+        const params = new URLSearchParams({
+            "sort": "start",
+            "dir": "desc"
+        });
+        let response = await fetch(BASE_URL + "api/dvr/entry/grid_finished?" + params.toString());
+        if (!response.ok) {
+            return [];
+        }
+
+        let data = await response.json();
+
+        return await Promise.all(data.entries.map(async (dvr) => {
+            var icon = dvr.channel_icon;
+
+            if(!icon) {
+                icon = 'default-icon.png';
+            }
+            if(icon.startsWith('imagecache')) {
+                icon = BASE_URL + icon;
+            }
+            return {
+                mainText: dvr.channelname,
+                secondaryText: dvr.disp_title, 
+                imgPath: icon,
+                onclick: async () => {
+                    return {
+                        path: PAYLOAD_PATH,
+                        args: [BASE_URL + '/play/dvrfile/' + dvr.uuid,
+                              '-vf', 'yadif=1:-1', '-sn']
+                    };
+                }
+            };
+        }));
+    }
+
+    async function getSectionList() {
+        const params = new URLSearchParams({
+            "sort": "index"
+        });
+        let response = await fetch(BASE_URL + "api/channeltag/grid?" + params.toString());
+        if (!response.ok) {
+            return [];
+        }
+
+        let data = await response.json();
+        let sections = data.entries.map(tag => ({
+            mainText: tag.name,
+            onclick: async () => {
+                let items = await getChannelListByTag(tag.uuid);
+                showCarousel(items); // Display the available channel sections
+            }
+        }));
+
+        let dvrItems = await getDvrList(); 
+        if(dvrItems.length > 0) {
+            sections.push({
+                mainText: 'DVR',
+                onclick: async () => {
+                    showCarousel(dvrItems); // Display completed DVR entries
+                }
+            });
+        }
+
+        return sections;
     }
 
     return {
         mainText: "TVHeadend",
         secondaryText: 'TV streaming server for Linux',
         onclick: async () => {
-	    let items = await getChannelList();
+            let items = await getSectionList(); //available channel sections + DVR section (if any completed recordings exist)
             showCarousel(items);
         }
     };
