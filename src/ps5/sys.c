@@ -25,6 +25,8 @@ along with this program; see the file COPYING. If not, see
 #include <sys/sysctl.h>
 #include <sys/syscall.h>
 
+#include <ps5/kernel.h>
+
 #include "elfldr.h"
 #include "hbldr.h"
 #include "pt.h"
@@ -325,6 +327,8 @@ ps5_init(void) {
     }
     sleep(1);
   }
+
+  kernel_set_ucred_authid(-1, 0x4800000000000010L);
 }
 
 

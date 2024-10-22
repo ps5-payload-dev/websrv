@@ -88,6 +88,8 @@ int sceSystemServiceKillApp(int app_id, int how, int reason, int core_dump);
 int sceSystemServiceLaunchApp(const char* title_id, char** argv,
 			      app_launch_ctx_t* ctx);
 
+int sceKernelGetAppState(int app_id, int*, int*);
+
 
 static int
 remount_system_ex(void) {
@@ -455,6 +457,11 @@ hbldr_launch(const char*cwd, const char* path, int stdio, char** argv,
     if(sceSystemServiceKillApp(app_id, -1, 0, 0)) {
       perror("sceSystemServiceKillApp");
       return -1;
+    }
+
+    while(!sceKernelGetAppState(app_id, 0, 0)) {
+      printf("Waiting for App with id 0x%x to terminate\n", app_id);
+      sleep(1);
     }
   }
 
