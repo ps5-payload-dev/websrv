@@ -45,12 +45,12 @@ export PKG_CONFIG_PATH=${PKG_CONFIG_SYSROOT_DIR}/user/homebrew/libdata/pkgconfig
 	    --with-libcurl-prefix="${PS5_PAYLOAD_SDK}/target/user/homebrew/bin" \
 	    --with-freetype2-prefix="${PS5_PAYLOAD_SDK}/target/user/homebrew/bin" \
 	    --enable-vkeybd
-${MAKE} dist-generic
+${MAKE} dist-generic || exit 1
 
-cp dist-generic/scummvm/scummvm "${SCRIPT_DIR}/scummvm.elf"
-cp -r dist-generic/scummvm/data "${SCRIPT_DIR}/data"
-mkdir "${SCRIPT_DIR}/extras"
-mkdir "${SCRIPT_DIR}/icons"
-mkdir "${SCRIPT_DIR}/saves"
-mkdir "${SCRIPT_DIR}/screenshots"
-mkdir "${SCRIPT_DIR}/themes"
+cp dist-generic/scummvm/scummvm "${SCRIPT_DIR}/scummvm.elf" || exit 1
+cp -r dist-generic/scummvm/data "${SCRIPT_DIR}/data" || exit 1
+mkdir -p "${SCRIPT_DIR}/extras" && touch "${SCRIPT_DIR}/extras/.keep" || exit 1
+mkdir -p "${SCRIPT_DIR}/icons" && touch "${SCRIPT_DIR}/icons/.keep" || exit 1
+mkdir -p "${SCRIPT_DIR}/saves" && touch "${SCRIPT_DIR}/saves/.keep" || exit 1
+mkdir -p "${SCRIPT_DIR}/screenshots" && touch "${SCRIPT_DIR}/screenshots/.keep" || exit 1
+mkdir -p "${SCRIPT_DIR}/themes" && touch "${SCRIPT_DIR}/themes/keep" || exit 1
