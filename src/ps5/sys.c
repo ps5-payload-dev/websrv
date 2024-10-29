@@ -14,6 +14,11 @@ You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
+#include <arpa/inet.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+
 #include <libgen.h>
 #include <limits.h>
 #include <signal.h>
@@ -29,6 +34,7 @@ along with this program; see the file COPYING. If not, see
 
 #include "elfldr.h"
 #include "hbldr.h"
+#include "notify.h"
 #include "pt.h"
 #include "sys.h"
 #include "websrv.h"
@@ -308,6 +314,48 @@ sys_launch_title(const char* title_id, const char* args) {
 }
 
 
+/**
+ * Serve FTP on a given port.
+ **/
+static int
+ps5_display_server(uint16_t port){
+  struct ifaddrs *ifaddr;
+  char ip[INET_ADDRSTRLEN];
+
+  if(getifaddrs(&ifaddr) == -1) {
+    return -1;
+  }
+
+  // Enumerate all AF_INET IPs
+  for(struct ifaddrs *ifa=ifaddr; ifa!=NULL; ifa=ifa->ifa_next) {
+    if(ifa->ifa_addr == NULL) {
+      continue;
+    }
+
+    if(ifa->ifa_addr->sa_family != AF_INET) {
+      continue;
+    }
+
+    // skip localhost
+    if(!strncmp("lo", ifa->ifa_name, 2)) {
+      continue;
+    }
+
+    struct sockaddr_in *in = (struct sockaddr_in*)ifa->ifa_addr;
+    inet_ntop(AF_INET, &(in->sin_addr), ip, sizeof(ip));
+
+    // skip interfaces without an ip
+    if(!strncmp("0.", ip, 2)) {
+      continue;
+    }
+
+    notify("Serving HTTP on %s:%d (%s)\n", ip, port, ifa->ifa_name);
+  }
+  return 0;
+}
+
+
+
 __attribute__((constructor)) static void
 ps5_init(void) {
   pid_t pid;
@@ -329,6 +377,8 @@ ps5_init(void) {
   }
 
   kernel_set_ucred_authid(-1, 0x4801000000000013L);
+
+  ps5_display_server(8080);
 }
 
 
