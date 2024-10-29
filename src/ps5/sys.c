@@ -349,7 +349,7 @@ ps5_display_server(uint16_t port){
       continue;
     }
 
-    notify("Serving HTTP on %s:%d (%s)\n", ip, port, ifa->ifa_name);
+    notify("Serving HTTP on %s:%d (%s)", ip, port, ifa->ifa_name);
   }
   return 0;
 }
