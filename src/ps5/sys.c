@@ -328,7 +328,7 @@ ps5_init(void) {
     sleep(1);
   }
 
-  kernel_set_ucred_authid(-1, 0x4800000000000010L);
+  kernel_set_ucred_authid(-1, 0x4801000000000013L);
 }
 
 
