@@ -53,4 +53,4 @@ mkdir -p "${SCRIPT_DIR}/extras" && touch "${SCRIPT_DIR}/extras/.keep" || exit 1
 mkdir -p "${SCRIPT_DIR}/icons" && touch "${SCRIPT_DIR}/icons/.keep" || exit 1
 mkdir -p "${SCRIPT_DIR}/saves" && touch "${SCRIPT_DIR}/saves/.keep" || exit 1
 mkdir -p "${SCRIPT_DIR}/screenshots" && touch "${SCRIPT_DIR}/screenshots/.keep" || exit 1
-mkdir -p "${SCRIPT_DIR}/themes" && touch "${SCRIPT_DIR}/themes/keep" || exit 1
+mkdir -p "${SCRIPT_DIR}/themes" && touch "${SCRIPT_DIR}/themes/.keep" || exit 1

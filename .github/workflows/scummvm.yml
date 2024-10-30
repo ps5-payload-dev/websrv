@@ -38,4 +38,4 @@ jobs:
         name: ScummVM
         path: ./homebrew/ScummVM
         if-no-files-found: error
-
+        include-hidden-files: true
