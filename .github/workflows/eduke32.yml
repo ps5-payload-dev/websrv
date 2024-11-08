@@ -21,7 +21,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install bash clang-15 lld-15
-        sudo apt install build-essential cmake pkg-config
+        sudo apt install build-essential cmake pkg-config libarchive-tools
 
     - name: Install toolchain
       run: |
@@ -31,6 +31,9 @@ jobs:
     - name: Build
       run: |
         PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/EDuke32/build.sh
+
+    - name: Install HD pack
+      run: |
         ./homebrew/EDuke32/hdpack.sh
 
     - name: Upload
