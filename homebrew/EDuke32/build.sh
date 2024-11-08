@@ -48,6 +48,7 @@ sed -i 's|-fuse-ld=lld||g' Common.mak
 sed -i 's|-lexecinfo||g' GNUmakefile
 sed -i 's|define PRINTSTACKONSEGV 1||g' source/build/src/sdlayer.cpp
 sed -i 's|pthread_get_name_np|//|g' source/build/src/loguru.cpp
+patch -p0 < $SCRIPT_DIR/eduke32-vfs-without-relative-paths.diff
 
 CFLAGS="$($PS5_PAYLOAD_SDK/bin/prospero-sdl2-config --cflags)"
 LDFLAGS="$($PS5_PAYLOAD_SDK/bin/prospero-sdl2-config --libs)"
