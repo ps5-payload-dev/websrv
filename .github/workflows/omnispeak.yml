@@ -1,0 +1,41 @@
+name: Omnispeak
+
+on:
+  push:
+    paths:
+      - 'homebrew/Omnispeak/**'
+  pull_request:
+    paths:
+      - 'homebrew/Omnispeak/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install bash clang-15 lld-15
+        sudo apt install build-essential cmake pkg-config libarchive-tools
+
+    - name: Install toolchain
+      run: |
+        wget https://github.com/ps5-payload-dev/pacbrew-repo/releases/latest/download/ps5-payload-dev.tar.gz
+        sudo tar xf ps5-payload-dev.tar.gz -C /
+
+    - name: Build
+      run: |
+        PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/Omnispeak/build.sh
+
+    - name: Upload
+      uses: actions/upload-artifact@v3
+      with:
+        name: Omnispeak
+        path: ./homebrew/Omnispeak
+        if-no-files-found: error
+
