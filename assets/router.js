@@ -63,16 +63,13 @@ class Router {
      * @property {boolean} keepInHistory
      */
 
-    /** @type {Semaphore} */
-    navigationLock = new Semaphore(1);
-
-    /** @type {number} */
-    initialHistoryLength;
-
-    /** @type {boolean} */
-    disablePopHandler = false;
-
     constructor() {
+        /** @type {Semaphore} */
+        this.navigationLock = new Semaphore(1);
+
+        /** @type {boolean} */
+        this.disablePopHandler = false;
+
         // save history length on first load (which in first load can only contain backward history)
         if (!sessionStorage.getItem("initialHistoryLength")) {
             sessionStorage.setItem("initialHistoryLength", window.history.length.toString());

@@ -142,7 +142,7 @@ async function renderMainContentCarousel(items, fadeout = true) {
                 entryElementImg.style.display = "block";
                 let imgPath = ((asyncInfo && asyncInfo.result.imgPath) ? asyncInfo.result.imgPath : item.imgPath) || "";
                 // workaround for svgs since the server doesnt return mime
-                if (imgPath.trimEnd().toLowerCase().endsWith(".svg")) {
+                if (imgPath.trim().toLowerCase().endsWith(".svg")) {
                     try {
                         let imgBytes = await (await fetch(imgPath)).arrayBuffer();
                         let imgBase64 = btoa(String.fromCharCode.apply(null, new Uint8Array(imgBytes)));

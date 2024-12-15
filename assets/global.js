@@ -27,7 +27,7 @@ along with this program; see the file COPYING. If not, see
  */
 
 /** @type {Globals} */
-const Globals = {
+var Globals = {
     // @ts-ignore
     Router: null,
     hbApiJs: null,
