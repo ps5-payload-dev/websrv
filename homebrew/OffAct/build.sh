@@ -38,3 +38,5 @@ cd $TEMPDIR/offact-$VER || exit 1
 ${MAKE} || exit 1
 
 mv $TEMPDIR/offact-$VER/OffAct.elf "${SCRIPT_DIR}/OffAct.elf" || exit 1
+mv $TEMPDIR/offact-$VER/homebrew.js "${SCRIPT_DIR}/homebrew.js" || exit 1
+mv $TEMPDIR/offact-$VER/sce_sys "${SCRIPT_DIR}/sce_sys" || exit 1
