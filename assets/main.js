@@ -167,6 +167,7 @@ async function renderLaunchedAppView(hbldrLogStream = null) {
 		wrapper.appendChild(terminal);
 
 		await (async () => {
+			const fitAddon = new FitAddon.FitAddon();
 			const term = new Terminal({
 				convertEol: true,
 				altClickMovesCursor: false,
@@ -181,6 +182,8 @@ async function renderLaunchedAppView(hbldrLogStream = null) {
 				const decoder = new TextDecoder();
 
 				term.open(terminal);
+				term.loadAddon(fitAddon);
+				fitAddon.fit();
 				while (true) {
 					const { done, value } = await reader.read();
 					if (done) {
