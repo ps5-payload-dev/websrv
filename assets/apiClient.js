@@ -57,16 +57,16 @@ class ApiClient {
 
         if (typeof args === "string") {
             // @ts-ignore
-            params.append("args", args.replaceAll(" ", "\\ "));
+            params.append("args", args.replace("/ /g", "\\ "));
         } else if (Array.isArray(args)) {
             // @ts-ignore
-            params.append("args", args.map(arg => arg.replaceAll(" ", "\\ ")).join(" "));
+            params.append("args", args.map(arg => arg.replace("/ /g", "\\ ")).join(" "));
         }
 
         if (env != null) {
             // @ts-ignore
             params.append("env", Object.entries(env).map(([key, val]) =>
-		`${key}=${val}`.replaceAll(" ", "\\ ")
+		`${key}=${val}`.replace("/ /g", "\\ ")
 	    ).join(" "));
         }
 

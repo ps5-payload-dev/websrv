@@ -222,7 +222,7 @@ along with this program; see the file COPYING. If not, see
 	      return;
 	  }
 
-	  var args = selectedFile.name.replaceAll(" ", "\\ ");
+	  var args = selectedFile.name.replace("/ /g", "\\ ");
 	  const regex = /"([^"]+)"|(\S+)/g;
 	  let match;
 	  while((match=regex.exec(argsInput.value)) !== null) {
