@@ -173,8 +173,8 @@ async function renderLaunchedAppView(hbldrLogStream = null) {
 				altClickMovesCursor: false,
 				disableStdin: true,
 				fontSize: 18,
-				cols: 132,
-				rows: 26
+				cols: 90,
+				rows: 25
 			});
 
 			try {
