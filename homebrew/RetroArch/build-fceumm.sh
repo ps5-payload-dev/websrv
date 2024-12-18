@@ -17,6 +17,7 @@
 
 VER="master"
 URL="https://github.com/libretro/libretro-fceumm/archive/refs/heads/master.tar.gz"
+INFO="https://raw.githubusercontent.com/libretro/libretro-core-info/refs/heads/master/fceumm_libretro.info"
 
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
@@ -39,3 +40,4 @@ ${MAKE} || exit 1
 
 mkdir -p "${SCRIPT_DIR}/.config/retroarch/cores" || exit 1
 mv $TEMPDIR/libretro-fceumm-$VER/fceumm_libretro.so "${SCRIPT_DIR}/.config/retroarch/cores/" || exit 1
+wget $INFO -O "${SCRIPT_DIR}/.config/retroarch/cores/fceumm_libretro.info"

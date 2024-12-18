@@ -39,5 +39,5 @@ jobs:
       with:
         name: RetroArch
         path: ./homebrew/RetroArch
+        include-hidden-files: true
         if-no-files-found: error
-
