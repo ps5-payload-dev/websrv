@@ -482,9 +482,8 @@ hbldr_launch(const char*cwd, const char* path, int stdio, char** argv,
   elfldr_raise_privileges(pid);
 
   if(bigapp_replace(pid, elf, path, stdio, cwd, envp) < 0) {
-    if(pt_detach(pid, SIGKILL)) {
-      kill(pid, SIGKILL);
-    }
+    pt_detach(pid, SIGKILL);
+    kill(pid, SIGKILL);
     pid = -1;
   }
 

@@ -671,7 +671,7 @@ elfldr_exec(pid_t pid, uint8_t* elf) {
     return -1;
   }
 
-  if(pt_detach(pid, 0)) {
+  if(pt_detach(pid, SIGCONT)) {
     perror("pt_detach");
     return -1;
   }
