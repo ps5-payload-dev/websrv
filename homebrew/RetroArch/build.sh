@@ -78,7 +78,9 @@ mv $TEMPDIR/RetroArch-$VER/media/icons/playstore/icon.png "${SCRIPT_DIR}/sce_sys
 mv $TEMPDIR/RetroArch-$VER/retroarch.cfg "${SCRIPT_DIR}/retroarch.cfg"
 mv $TEMPDIR/RetroArch-$VER/retroarch "${SCRIPT_DIR}/retroarch.elf" || exit 1
 
+echo 'rgui_aspect_ratio = "1"' > "${SCRIPT_DIR}/retroarch.cfg"
+echo 'rgui_aspect_ratio_lock = "1"' >> "${SCRIPT_DIR}/retroarch.cfg"
 echo 'input_menu_toggle_gamepad_combo = "2"' >> "${SCRIPT_DIR}/retroarch.cfg"
 echo 'menu_swap_ok_cancel_buttons = "true"' >> "${SCRIPT_DIR}/retroarch.cfg"
 echo 'video_threaded = "true"' >> "${SCRIPT_DIR}/retroarch.cfg"
-echo 'video_scale_integer = "true"' >> "${SCRIPT_DIR}/retroarch.cfg"
+echo 'video_scale_integer_overscale = "true"' >> "${SCRIPT_DIR}/retroarch.cfg"
