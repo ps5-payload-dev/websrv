@@ -35,6 +35,7 @@ jobs:
         PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/RetroArch/build-snes9x2010.sh
         PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/RetroArch/build-fbneo.sh
         PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/RetroArch/build-vice.sh
+        PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/RetroArch/build-puae2021.sh
 
     - name: Upload
       uses: actions/upload-artifact@v3
