@@ -113,64 +113,6 @@ pt_load(elfldr_ctx_t *ctx, Elf64_Phdr *phdr) {
 
 
 /**
- * Reload a PT_LOAD program header with executable permissions.
- **/
-static int
-pt_reload(elfldr_ctx_t *ctx, Elf64_Phdr *phdr) {
-  intptr_t addr = ctx->base_addr + phdr->p_vaddr;
-  void* data = ctx->base_mirror + phdr->p_vaddr;
-  size_t memsz = ROUND_PG(phdr->p_memsz);
-  int prot = PFLAGS(phdr->p_flags);
-  int alias_fd = -1;
-  int shm_fd = -1;
-  int error = 0;
-
-  // Create shm with executable permissions.
-  if((shm_fd=pt_jitshm_create(ctx->pid, 0, memsz,
-			      prot | PROT_READ | PROT_WRITE)) < 0) {
-    pt_perror(ctx->pid, "pt_jitshm_create");
-    error = -1;
-  }
-
-  // Map shm into an executable address space.
-  else if((addr=pt_mmap(ctx->pid, addr, memsz, prot,
-			MAP_FIXED | MAP_PRIVATE,
-			shm_fd, 0)) == -1) {
-    pt_perror(ctx->pid, "pt_mmap");
-    error = -1;
-  }
-
-  // Create an shm alias fd with write permissions.
-  else if((alias_fd=pt_jitshm_alias(ctx->pid, shm_fd,
-				    PROT_READ | PROT_WRITE)) < 0) {
-    pt_perror(ctx->pid, "pt_jitshm_alias");
-    error = -1;
-  }
-
-  // Map shm alias into a writable address space.
-  else if((addr=pt_mmap(ctx->pid, 0, memsz, PROT_READ | PROT_WRITE,
-			MAP_SHARED, alias_fd, 0)) == -1) {
-    pt_perror(ctx->pid, "pt_mmap");
-    error = -1;
-  }
-
-  // Resore data
-  else {
-    if(mdbg_copyin(ctx->pid, data, addr, memsz)) {
-      perror("mdbg_copyin");
-      error = -1;
-    }
-    pt_munmap(ctx->pid, addr, memsz);
-  }
-
-  pt_close(ctx->pid, alias_fd);
-  pt_close(ctx->pid, shm_fd);
-
-  return error;
-}
-
-
-/**
  * Load an ELF into the address space of a process with the given pid.
  **/
 static intptr_t
@@ -270,7 +212,12 @@ elfldr_load(pid_t pid, uint8_t *elf) {
     }
 
     if(phdr[i].p_flags & PF_X) {
-      error = pt_reload(&ctx, &phdr[i]);
+      if(kernel_mprotect(pid, ctx.base_addr + phdr[i].p_vaddr,
+                         ROUND_PG(phdr[i].p_memsz),
+                         PFLAGS(phdr[i].p_flags))) {
+	perror("kernel_mprotect");
+        error = 1;
+      }
     } else {
       if(pt_mprotect(pid, ctx.base_addr + phdr[i].p_vaddr,
 		     ROUND_PG(phdr[i].p_memsz),

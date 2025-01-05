@@ -314,18 +314,6 @@ pt_syscall(pid_t pid, int sysno, ...) {
 }
 
 
-int
-pt_jitshm_create(pid_t pid, intptr_t name, size_t size, int flags) {
-  return (int)pt_syscall(pid, 0x215, name, size, flags);
-}
-
-
-int
-pt_jitshm_alias(pid_t pid, int fd, int flags) {
-  return (int)pt_syscall(pid, 0x216, fd, flags);
-}
-
-
 intptr_t
 pt_mmap(pid_t pid, intptr_t addr, size_t len, int prot, int flags,
 	int fd, off_t off) {
