@@ -44,16 +44,25 @@ export CROSS_COMPILE="${PS5_PAYLOAD_SDK}/bin/prospero-"
 export OS="BSD"
 export DISTRO=
 export CFLAGS="-O1"
+export LDFLAGS="-rdynamic"
 ./configure \
     --prefix="${PREFIX}" \
     --enable-sdl2 \
     --enable-ffmpeg \
-    --enable-dylib \
-    --enable-networking \
     --enable-zlib \
     --enable-freetype \
-    --enable-sse \
     --enable-flac \
+    --disable-cdrom \
+    --enable-mmap \
+    --enable-dylib \
+    --enable-networking \
+    --enable-network_video \
+    --disable-update_cores \
+    --disable-update_core_info \
+    --disable-online_updater \
+    --disable-ozone \
+    --disable-xmb \
+    --disable-materialui \
     --disable-builtinflac \
     --disable-builtinmbedtls \
     --disable-builtinbearssl \
@@ -70,7 +79,7 @@ export CFLAGS="-O1"
     --disable-vulkan \
     --disable-opengl_core \
     --disable-microphone
-${MAKE} V=1 || exit 1
+    ${MAKE} V=1 || exit 1
 
 
 mkdir -p "${SCRIPT_DIR}/sce_sys"
@@ -78,9 +87,6 @@ mv $TEMPDIR/RetroArch-$VER/media/icons/playstore/icon.png "${SCRIPT_DIR}/sce_sys
 mv $TEMPDIR/RetroArch-$VER/retroarch.cfg "${SCRIPT_DIR}/retroarch.cfg"
 mv $TEMPDIR/RetroArch-$VER/retroarch "${SCRIPT_DIR}/retroarch.elf" || exit 1
 
-echo 'rgui_aspect_ratio = "1"' > "${SCRIPT_DIR}/retroarch.cfg"
-echo 'rgui_aspect_ratio_lock = "1"' >> "${SCRIPT_DIR}/retroarch.cfg"
 echo 'input_menu_toggle_gamepad_combo = "2"' >> "${SCRIPT_DIR}/retroarch.cfg"
 echo 'menu_swap_ok_cancel_buttons = "true"' >> "${SCRIPT_DIR}/retroarch.cfg"
 echo 'video_threaded = "true"' >> "${SCRIPT_DIR}/retroarch.cfg"
-echo 'video_scale_integer_overscale = "true"' >> "${SCRIPT_DIR}/retroarch.cfg"
