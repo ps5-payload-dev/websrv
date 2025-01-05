@@ -24,9 +24,11 @@ int
 main(int argc, char** argv) {
   const uint16_t port = 8080;
 
+  signal(SIGPIPE, SIG_IGN);
+  signal(SIGCHLD, SIG_IGN);
+
   printf("Web server was compiled at %s %s\n", __DATE__, __TIME__);
 
-  signal(SIGCHLD, SIG_IGN);
   while(1) {
     websrv_listen(port);
     sleep(3);
