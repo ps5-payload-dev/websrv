@@ -55,7 +55,7 @@ LDFLAGS="$($PS5_PAYLOAD_SDK/bin/prospero-sdl2-config --libs)"
 ${MAKE} PRETTY_OUTPUT=0 USE_OPENGL=0 HAVE_GTK2=0 \
 	USE_MIMALLOC=0 PLATFORM=BSD LTO=0 \
 	SDLCONFIG="${PS5_PAYLOAD_SDK}/bin/prospero-sdl2-config" \
-	CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" || exit 1
+	CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" STRIP=$STRP || exit 1
 
 mv eduke32 "${SCRIPT_DIR}/eduke32.elf" || exit 1
 
