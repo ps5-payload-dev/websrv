@@ -15,7 +15,7 @@
 # along with this program; see the file COPYING. If not see
 # <http://www.gnu.org/licenses/>.
 
-VER="2.8.1"
+VER="2.9.0"
 URL="https://downloads.scummvm.org/frs/scummvm/$VER/scummvm-$VER.tar.xz"
 
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
@@ -41,6 +41,7 @@ export PKG_CONFIG_PATH=${PKG_CONFIG_SYSROOT_DIR}/user/homebrew/libdata/pkgconfig
 
 ./configure --prefix="${PREFIX}" --host=x86_64-pc-freebsd \
 	    --enable-static --enable-release --enable-all-engines \
+	    --disable-seq-midi \
 	    --with-sdl-prefix="${PS5_PAYLOAD_SDK}/target/user/homebrew/bin" \
 	    --with-libcurl-prefix="${PS5_PAYLOAD_SDK}/target/user/homebrew/bin" \
 	    --with-freetype2-prefix="${PS5_PAYLOAD_SDK}/target/user/homebrew/bin" \
