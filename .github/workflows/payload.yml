@@ -39,14 +39,14 @@ jobs:
         make clean all
 
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Payload
         path: ./websrv.elf
         if-no-files-found: error
 
     - name: Upload Launcher
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Launcher
         path: ./homebrew/IV9999-FAKE00000_00-HOMEBREWLOADER01.pkg

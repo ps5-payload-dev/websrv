@@ -38,7 +38,7 @@ jobs:
         PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/RetroArch/build-puae2021.sh
 
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: RetroArch
         path: ./homebrew/RetroArch

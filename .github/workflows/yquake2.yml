@@ -33,7 +33,7 @@ jobs:
         PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/YQuake2/build.sh
 
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: YQuake2
         path: ./homebrew/YQuake2

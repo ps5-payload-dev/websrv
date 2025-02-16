@@ -37,7 +37,7 @@ jobs:
         ./homebrew/EDuke32/hdpack.sh
 
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: EDuke32
         path: ./homebrew/EDuke32

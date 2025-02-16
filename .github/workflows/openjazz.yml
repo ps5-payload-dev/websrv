@@ -34,7 +34,7 @@ jobs:
         PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/OpenJazz/build.sh
 
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: OpenJazz
         path: ./homebrew/OpenJazz
