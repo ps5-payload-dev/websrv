@@ -15,7 +15,7 @@
 # along with this program; see the file COPYING. If not see
 # <http://www.gnu.org/licenses/>.
 
-VER="1.5.2"
+VER="1.5.4"
 URL="https://github.com/diasurgical/devilutionX/releases/download/$VER/devilutionx-src.tar.xz"
 MPQ="https://github.com/diasurgical/devilutionx-assets/releases/download/v2/spawn.mpq"
 
