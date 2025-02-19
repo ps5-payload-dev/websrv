@@ -32,7 +32,7 @@ homebrew called MyHomebrew, the loader assumes that the following files exist:
 - /data/homebrew/MyHomebrew/eboot.elf - Payload to run, compiled with [ps5-payload-sdk][sdk].
 - /data/homebrew/MyHomebrew/sce_sys/icon0.png - An icon to be rendered at /index.html.
 
-You can also add your own custom UI extentions by specifying a javascript file named:
+You can also add your own custom UI extensions by specifying a javascript file named:
 - /data/homebrew/MyHomebrew/homebrew.js
 
 This is useful when the payload accepts different command line options, e.g.,
