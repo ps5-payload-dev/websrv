@@ -16,6 +16,7 @@ along with this program; see the file COPYING. If not, see
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <dirent.h>
 
@@ -29,6 +30,11 @@ along with this program; see the file COPYING. If not, see
 
 #include "fs.h"
 #include "websrv.h"
+
+
+#ifndef PAGE_SIZE
+#define PAGE_SIZE 0x4000
+#endif
 
 
 /**
@@ -50,6 +56,7 @@ typedef struct dir_read_sm {
   const char *path;
   DIR* dir;
   int state;
+  char* buf;
 } dir_read_sm_t;
 
 
@@ -91,21 +98,16 @@ file_close(void *cls) {
 
 
 static char
-stat_modeat(const char* folder, const char* filename) {
-  char path[PATH_MAX];
+stat_modeat(const char* path) {
   struct stat st;
 
-  snprintf(path, PATH_MAX, "%s/%s", folder, filename);
-
   if(stat(path, &st)) return '-';
-
   if(S_ISDIR(st.st_mode)) return 'd';
   if(S_ISBLK(st.st_mode)) return 'b';
   if(S_ISCHR(st.st_mode)) return 'c';
   if(S_ISLNK(st.st_mode)) return 'l';
   if(S_ISFIFO(st.st_mode)) return 'p';
   if(S_ISSOCK(st.st_mode)) return 's';
-
   return '-';
 }
 
@@ -136,8 +138,12 @@ dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
       return 0;
     }
 
+    strncpy(sm->buf, sm->path, PATH_MAX);
+    strncat(sm->buf, "/", PATH_MAX);
+    strncat(sm->buf, e->d_name, PATH_MAX);
+
     return snprintf(buf, max, ",{ \"name\": \"%s\", \"mode\": \"%c\"}",
-		    e->d_name, stat_modeat(sm->path, e->d_name));
+		    e->d_name, stat_modeat(sm->buf));
   }
 
   if(sm->state == 2) {
@@ -204,8 +210,13 @@ static void
 dir_close(void *cls) {
   dir_read_sm_t* sm = cls;
 
+  if(sm && sm->buf) {
+    free(sm->buf);
+    sm->buf = 0;
+  }
   if(sm && sm->dir) {
     closedir(sm->dir);
+    sm->dir = 0;
   }
 }
 
@@ -286,6 +297,7 @@ dir_request(struct MHD_Connection *conn, const char* path) {
   sm.dir = dir;
   sm.path = path;
   sm.state = 0;
+  sm.buf = malloc(PATH_MAX+1);
 
   fmt = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "fmt");
   if(fmt && !strcmp(fmt, "json")) {
@@ -306,6 +318,7 @@ dir_request(struct MHD_Connection *conn, const char* path) {
   }
 
   closedir(dir);
+  free(sm.buf);
 
   return MHD_NO;
 }
