@@ -352,3 +352,46 @@ fs_request(struct MHD_Connection *conn, const char* url) {
   return ret;
 }
 
+
+uint8_t*
+fs_readfile(const char* path, size_t* size) {
+  uint8_t* buf;
+  ssize_t len;
+  FILE* file;
+
+  if(!(file=fopen(path, "rb"))) {
+    return 0;
+  }
+
+  if(fseek(file, 0, SEEK_END)) {
+    return 0;
+  }
+
+  if((len=ftell(file)) < 0) {
+    return 0;
+  }
+
+  if(fseek(file, 0, SEEK_SET)) {
+    return 0;
+  }
+
+  if(!(buf=malloc(len))) {
+    return 0;
+  }
+
+  if(fread(buf, 1, len, file) != len) {
+    free(buf);
+    return 0;
+  }
+
+  if(fclose(file)) {
+    free(buf);
+    return 0;
+  }
+
+  if(size) {
+    *size = len;
+  }
+
+  return buf;
+}

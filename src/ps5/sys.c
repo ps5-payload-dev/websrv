@@ -33,6 +33,7 @@ along with this program; see the file COPYING. If not, see
 #include <ps5/kernel.h>
 
 #include "elfldr.h"
+#include "fs.h"
 #include "hbldr.h"
 #include "notify.h"
 #include "pt.h"
@@ -227,6 +228,61 @@ sys_launch_homebrew(const char* cwd, const char* path, const char* args,
 }
 
 
+
+int
+sys_launch_daemon(const char* cwd, const char* path, const char* args,
+		  const char* env) {
+  char* argv[255];
+  char* envp[255];
+  uint8_t* elf;
+  int fds[2];
+  pid_t pid;
+
+  if(!cwd) {
+    cwd = "/";
+  }
+
+  if(!args) {
+    args = "";
+  }
+
+  if(!env) {
+    env = "";
+  }
+
+  printf("launch daemon: CWD=%s %s %s\n", cwd, env, args);
+
+  if(pipe(fds) == -1) {
+    perror("pipe");
+    return 1;
+  }
+
+  if(!(elf=fs_readfile(path, 0))) {
+    return -1;
+  }
+
+  args_split(args, argv, 255);
+  args_split(env, envp, 255);
+  pid = elfldr_spawn(cwd, fds[1], elf, argv, envp);
+
+  free(elf);
+  for(int i=0; argv[i]; i++) {
+    free(argv[i]);
+  }
+  for(int i=0; envp[i]; i++) {
+    free(envp[i]);
+  }
+
+  close(fds[1]);
+  if(pid < 0) {
+    close(fds[0]);
+    return -1;
+  }
+
+  return fds[0];
+}
+
+
 int
 sys_launch_payload(const char* cwd, uint8_t* elf, size_t elf_size,
                    const char* args, const char* env) {
@@ -274,6 +330,7 @@ sys_launch_payload(const char* cwd, uint8_t* elf, size_t elf_size,
 
   return fds[0];
 }
+
 
 int
 sys_launch_title(const char* title_id, const char* args) {

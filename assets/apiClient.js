@@ -47,11 +47,13 @@ class ApiClient {
      * @param {(string | string[])?} [args]
      * @param {(string | string[])?} [env]
      * @param {string} [cwd]
+     * @param {boolean} [daemon]
      * @returns {Promise<ReadableStream<Uint8Array>?>} only returns true, throws error if not success code
      */
-    static async launchApp(path, args = null, env = null, cwd = null) {
+    static async launchApp(path, args = null, env = null, cwd = null, daemon = false) {
         let params = new URLSearchParams({
             "pipe": "1",
+	    "daemon": new Number(daemon).toString(),
             "path": path
         });
 

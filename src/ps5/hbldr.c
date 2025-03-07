@@ -35,6 +35,7 @@ along with this program; see the file COPYING. If not, see
 #include <ps5/kernel.h>
 #include <ps5/mdbg.h>
 
+#include "fs.h"
 #include "elfldr.h"
 #include "hbldr.h"
 #include "pt.h"
@@ -111,58 +112,6 @@ remount_system_ex(void) {
 }
 
 
-/**
- * Read a file from disk at the given path.
- **/
-static uint8_t*
-readfile(const char* path, size_t* size) {
-  uint8_t* buf;
-  ssize_t len;
-  FILE* file;
-
-  if(!(file=fopen(path, "rb"))) {
-    perror(path);
-    return 0;
-  }
-
-  if(fseek(file, 0, SEEK_END)) {
-    perror("fseek");
-    return 0;
-  }
-
-  if((len=ftell(file)) < 0) {
-    perror("ftell");
-    return 0;
-  }
-
-  if(fseek(file, 0, SEEK_SET)) {
-    perror("fseek");
-    return 0;
-  }
-
-  if(!(buf=malloc(len))) {
-    return 0;
-  }
-
-  if(fread(buf, 1, len, file) != len) {
-    perror("fread");
-    free(buf);
-    return 0;
-  }
-
-  if(fclose(file)) {
-    perror("fclose");
-    free(buf);
-    return 0;
-  }
-
-  if(size) {
-    *size = len;
-  }
-
-  return buf;
-}
-
 
 static int
 fakeapp_create_if_missing(void) {
@@ -195,7 +144,7 @@ fakeapp_create_if_missing(void) {
   }
 
   if(stat(FAKE_PATH "/eboot.bin", &info)) {
-    if(!(buf=readfile(PSNOW_EBOOT, &size))) {
+    if(!(buf=fs_readfile(PSNOW_EBOOT, &size))) {
       return -1;
     }
     if((fd=open(FAKE_PATH "/eboot.bin", O_CREAT|O_WRONLY, 0755)) < 0) {
@@ -471,7 +420,7 @@ hbldr_launch(const char*cwd, const char* path, int stdio, char** argv,
     snprintf(buf, sizeof(buf), "%s/%s", cwd, path);
   }
 
-  if(!(elf=readfile(buf, 0))) {
+  if(!(elf=fs_readfile(buf, 0))) {
     return -1;
   }
 

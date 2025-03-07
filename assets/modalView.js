@@ -69,7 +69,7 @@ function renderModalOverlay(items) {
 			let logStream = null;
 
 			if (res && res.path) {
-				logStream = await ApiClient.launchApp(res.path, res.args, res.env, res.cwd);
+				logStream = await ApiClient.launchApp(res.path, res.args, res.env, res.cwd, res.daemon);
 				res = logStream != null;
 			}
 

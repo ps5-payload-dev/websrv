@@ -25,3 +25,8 @@ along with this program; see the file COPYING. If not, see
 enum MHD_Result fs_request(struct MHD_Connection *conn,
 			   const char* url);
 
+
+/**
+ * Read a file from disk at the given path.
+ **/
+uint8_t* fs_readfile(const char* path, size_t* size);

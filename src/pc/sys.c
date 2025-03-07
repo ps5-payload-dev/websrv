@@ -50,6 +50,27 @@ sys_launch_homebrew(const char* cwd, const char* path, const char* args,
   return fileno(pf);
 }
 
+int
+sys_launch_daemon(const char* cwd, const char* path, const char* args,
+		  const char* env) {
+  char cmd[255];
+  FILE *pf;
+
+  if(!args) {
+    args = "";
+  }
+
+  snprintf(cmd, sizeof(cmd), "%s %s", path, args);
+  printf("launch daemon: %s\n", cmd);
+
+  if(!(pf=popen(cmd,"r"))) {
+    perror("popen");
+    return -1;
+  }
+
+  return fileno(pf);
+}
+
 
 int
 sys_launch_payload(const char* cwd, uint8_t* elf, size_t elf_size,

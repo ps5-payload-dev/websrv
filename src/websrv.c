@@ -163,8 +163,10 @@ launch_request(struct MHD_Connection *conn) {
  **/
 static enum MHD_Result
 hbldr_request(struct MHD_Connection *conn) {
+  int (*sys_launch)(const char*, const char*, const char*, const char*) = 0;
   enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
+  const char* daemon;
   const char* path;
   const char *args;
   const char *pipe;
@@ -177,19 +179,24 @@ hbldr_request(struct MHD_Connection *conn) {
   env = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "env");
   pipe = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "pipe");
   cwd = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "cwd");
+  daemon = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "daemon");
+
+  if(daemon && strcmp(daemon, "0")) {
+    sys_launch = sys_launch_daemon;
+  } else {
+    sys_launch = sys_launch_homebrew;
+  }
 
   if(!path) {
     if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
       ret = websrv_queue_response(conn, MHD_HTTP_BAD_REQUEST, resp);
       MHD_destroy_response(resp);
     }
-
-  } else if((fd=sys_launch_homebrew(cwd, path, args, env)) < 0) {
+  } else if((fd=sys_launch(cwd, path, args, env)) < 0) {
     if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
       ret = websrv_queue_response(conn, MHD_HTTP_SERVICE_UNAVAILABLE, resp);
       MHD_destroy_response(resp);
     }
-
   } else if(pipe && strcmp(pipe, "0")) {
     if((resp=MHD_create_response_from_pipe(fd))) {
       ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
