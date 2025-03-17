@@ -38,4 +38,4 @@ cd $TEMPDIR/libmicrohttpd-$LIB_VER
 ./configure --prefix="${PS5_HBROOT}" --host=x86_64 \
 	    --disable-shared --enable-static \
 	    --disable-curl --disable-examples 
-${MAKE} install DESTDIR="${PS5_SYSROOT}"
+${MAKE} install DESTDIR="${PS5_PAYLOAD_SDK}/target"
