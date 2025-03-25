@@ -132,7 +132,7 @@ args_split(const char* args, char** argv, size_t size) {
  * Fint the pid of a process with the given name.
  **/
 static pid_t
-ps5_find_pid(const char* name) {
+sys_find_pid(const char* name) {
   int mib[4] = {1, 14, 8, 0};
   pid_t mypid = getpid();
   pid_t pid = -1;
@@ -370,16 +370,16 @@ sys_launch_title(const char* title_id, const char* args) {
   return err;
 }
 
-
 /**
- * Serve FTP on a given port.
+ *
  **/
 static int
-ps5_display_server(uint16_t port){
+sys_notify_address(const char* prefix, int port) {
+  char ip[INET_ADDRSTRLEN] = "127.0.0.1";
   struct ifaddrs *ifaddr;
-  char ip[INET_ADDRSTRLEN];
 
   if(getifaddrs(&ifaddr) == -1) {
+    perror("getifaddrs");
     return -1;
   }
 
@@ -393,28 +393,21 @@ ps5_display_server(uint16_t port){
       continue;
     }
 
-    // skip localhost
-    if(!strncmp("lo", ifa->ifa_name, 2)) {
-      continue;
-    }
-
     struct sockaddr_in *in = (struct sockaddr_in*)ifa->ifa_addr;
     inet_ntop(AF_INET, &(in->sin_addr), ip, sizeof(ip));
-
-    // skip interfaces without an ip
-    if(!strncmp("0.", ip, 2)) {
-      continue;
-    }
-
-    notify("Serving HTTP on %s:%d (%s)", ip, port, ifa->ifa_name);
   }
+
+  freeifaddrs(ifaddr);
+
+  notify("%s %s:%d", prefix, ip, port);
+  printf("%s %s:%d\n", prefix, ip, port);
+
   return 0;
 }
 
 
-
 __attribute__((constructor)) static void
-ps5_init(void) {
+sys_init(void) {
   pid_t pid;
   int err;
 
@@ -425,7 +418,7 @@ ps5_init(void) {
 
   syscall(SYS_thr_set_name, -1, "websrv.elf");
 
-  while((pid=ps5_find_pid("websrv.elf")) > 0) {
+  while((pid=sys_find_pid("websrv.elf")) > 0) {
     if((err=kill(pid, SIGKILL))) {
       perror("kill");
       exit(err);
@@ -435,11 +428,11 @@ ps5_init(void) {
 
   kernel_set_ucred_authid(-1, 0x4801000000000013L);
 
-  ps5_display_server(8080);
+  sys_notify_address("Serving HTTP on", 8080);
 }
 
 
 __attribute__((destructor)) static void
-ps5_fini(void) {
+sys_fini(void) {
   sceUserServiceTerminate();
 }
