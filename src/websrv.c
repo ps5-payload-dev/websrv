@@ -20,7 +20,6 @@ along with this program; see the file COPYING. If not, see
 #include <string.h>
 
 #include <arpa/inet.h>
-#include <ifaddrs.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -361,52 +360,11 @@ websrv_listen(unsigned short port) {
   struct sockaddr_in server_addr;
   struct sockaddr_in client_addr;
   struct MHD_Daemon *httpd;
-  char ip[INET_ADDRSTRLEN];
-  struct ifaddrs *ifaddr;
-  int ifaddr_wait = 1;
   socklen_t addr_len;
   int connfd;
   int srvfd;
 
-  if(getifaddrs(&ifaddr) == -1) {
-    perror("getifaddrs");
-    exit(EXIT_FAILURE);
-  }
-
   signal(SIGPIPE, SIG_IGN);
-
-  // Enumerate all AF_INET IPs
-  for(struct ifaddrs *ifa=ifaddr; ifa!=NULL; ifa=ifa->ifa_next) {
-    if(ifa->ifa_addr == NULL) {
-      continue;
-    }
-
-    if(ifa->ifa_addr->sa_family != AF_INET) {
-      continue;
-    }
-
-    // skip localhost
-    if(!strncmp("lo", ifa->ifa_name, 2)) {
-      continue;
-    }
-
-    struct sockaddr_in *in = (struct sockaddr_in*)ifa->ifa_addr;
-    inet_ntop(AF_INET, &(in->sin_addr), ip, sizeof(ip));
-
-    // skip interfaces without an ip
-    if(!strncmp("0.", ip, 2)) {
-      continue;
-    }
-
-    printf("Serving on http://%s:%d (%s)\n", ip, port, ifa->ifa_name);
-    ifaddr_wait = 0;
-  }
-
-  freeifaddrs(ifaddr);
-
-  if(ifaddr_wait) {
-    return 0;
-  }
 
   if((srvfd=socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     perror("socket");
