@@ -20,6 +20,7 @@ along with this program; see the file COPYING. If not, see
 async function renderHomePage() {
 	await scanHomebrews();
 	let items = getHomebrewList();
+	items.sort((a, b) => a.dir.split('/').pop().localeCompare(b.dir.split('/').pop()));
 
 	// remove previous extension sandboxes
 	let oldsandbox = document.getElementById("js-extension-sandbox");
