@@ -33,7 +33,7 @@ along with this program; see the file COPYING. If not, see
 
 
 /**
- * Arguments used by the callback function smb_request_shares_cb().
+ * Arguments used by the shares callback function.
  **/
 typedef struct smb_request_shares_args {
   struct MHD_Connection *conn;
@@ -48,18 +48,18 @@ typedef struct smb_request_shares_args {
 typedef struct smb_request_dir_args {
   struct smb2_context *smb2;
   struct smb2dir* dir;
-  const char* path;
+  char* path;
   int state;
-} smb_dir_read_args_t;
+} smb_request_dir_args_t;
 
 
 /**
  * Arguments used by file callback functions.
  **/
-typedef struct smb_file_read_args {
+typedef struct smb_request_file_args {
   struct smb2_context *smb2;
   struct smb2fh* file;
-} smb_file_read_args_t;
+} smb_request_file_args_t;
 
 
 /**
@@ -67,7 +67,7 @@ typedef struct smb_file_read_args {
  **/
 static ssize_t
 smb_request_file_read_cb(void *ctx, uint64_t pos, char *buf, size_t max) {
-  smb_file_read_args_t* args = (smb_file_read_args_t*)ctx;
+  smb_request_file_args_t* args = (smb_request_file_args_t*)ctx;
   int ret = smb2_read(args->smb2, args->file, (uint8_t*)buf, max);
   if(ret < 0) {
     return MHD_CONTENT_READER_END_WITH_ERROR;
@@ -85,9 +85,9 @@ smb_request_file_read_cb(void *ctx, uint64_t pos, char *buf, size_t max) {
  **/
 static void
 smb_request_file_close_cb(void *ctx) {
-  smb_file_read_args_t* args = (smb_file_read_args_t*)ctx;
+  smb_request_file_args_t* args = (smb_request_file_args_t*)ctx;
+
   smb2_close(args->smb2, args->file);
-  smb2_disconnect_share(args->smb2);
   smb2_destroy_context(args->smb2);
   free(args);
 }
@@ -98,7 +98,7 @@ smb_request_file_close_cb(void *ctx) {
  **/
 static ssize_t
 smb_request_dir_read_cb(void *ctx, uint64_t pos, char *buf, size_t max) {
-  smb_dir_read_args_t* args = (smb_dir_read_args_t*)ctx;
+  smb_request_dir_args_t* args = (smb_request_dir_args_t*)ctx;
   struct smb2dirent* ent;
   struct smb2_stat_64 st;
   char path[PATH_MAX];
@@ -154,10 +154,12 @@ smb_request_dir_read_cb(void *ctx, uint64_t pos, char *buf, size_t max) {
  **/
 static void
 smb_request_dir_close_cb(void *ctx) {
-  smb_dir_read_args_t* args = (smb_dir_read_args_t*)ctx;
+  smb_request_dir_args_t* args = (smb_request_dir_args_t*)ctx;
+
   smb2_closedir(args->smb2, args->dir);
-  smb2_disconnect_share(args->smb2);
   smb2_destroy_context(args->smb2);
+  free(args->path);
+  free(args);
 }
 
 
@@ -165,7 +167,7 @@ smb_request_dir_close_cb(void *ctx) {
  * Respond to a http request with an internal error.
  **/
 static enum MHD_Result
-smb2_response_error(struct MHD_Connection *conn, struct smb2_context *smb2) {
+smb_response_error(struct MHD_Connection *conn, struct smb2_context *smb2) {
   const char* smb2_error = smb2_get_error(smb2);
   enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
@@ -180,84 +182,62 @@ smb2_response_error(struct MHD_Connection *conn, struct smb2_context *smb2) {
 
 
 /**
- * Respond to a http request of a remote smb file.
+ * Create a response for a file request.
  **/
-static enum MHD_Result
-smb_request_file(struct MHD_Connection *conn, struct smb2_context *smb2,
-                const char* path) {
-  smb_file_read_args_t* args;
+static struct MHD_Response*
+smb_create_file_response(struct smb2_context *smb2, struct smb2fh* file) {
+  smb_request_file_args_t *args;
   struct MHD_Response *resp;
-  struct smb2_stat_64 st;
-  enum MHD_Result ret;
 
-  if(smb2_stat(smb2, path, &st) < 0) {
-    return smb2_response_error(conn, smb2);
-  }
-
-  if(!(args=malloc(sizeof(smb_file_read_args_t)))) {
-    perror("malloc"); // TODO: output posix error to http response.
-    return MHD_NO;
+  if(!(args=malloc(sizeof(smb_request_file_args_t)))) {
+    return 0;
   }
 
   args->smb2 = smb2;
-  if(!(args->file=smb2_open(smb2, path, O_RDONLY))) {
-    return smb2_response_error(conn, smb2);
+  args->file = file;
+
+  resp = MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, 32*0x1000,
+                                           smb_request_file_read_cb,
+                                           args,
+                                           smb_request_file_close_cb);
+  if(!resp) {
+    free(args);
   }
 
-  if((resp=MHD_create_response_from_callback(st.smb2_size, 32*0x1000,
-					     smb_request_file_read_cb, args,
-					     smb_request_file_close_cb))) {
-    ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
-    MHD_destroy_response(resp);
-    return ret;
-  }
-
-  smb2_close(smb2, args->file);
-  smb2_disconnect_share(smb2);
-  smb2_destroy_context(smb2);
-  free(args);
-
-  return MHD_NO;
+  return resp;
 }
 
 
 /**
- * Resapond to a http request of a remote smb dir.
+ * Create a response for a dir request.
  **/
-static enum MHD_Result
-smb_request_dir(struct MHD_Connection *conn, struct smb2_context *smb2,
-                const char* path) {
-  smb_dir_read_args_t* args;
+static struct MHD_Response*
+smb_create_dir_response(struct smb2_context *smb2, struct smb2dir* dir,
+                        const char* path) {
+  smb_request_dir_args_t *args;
   struct MHD_Response *resp;
-  enum MHD_Result ret;
 
-  if(!(args=malloc(sizeof(smb_dir_read_args_t)))) {
-    perror("malloc"); // TODO: output posix error to http response.
-    return MHD_NO;
+  if(!(args=malloc(sizeof(smb_request_dir_args_t)))) {
+    return 0;
   }
 
-  args->smb2 = smb2;
-  args->path = path;
+  args->smb2  = smb2;
+  args->dir   = dir;
+  args->path  = strdup(path);
   args->state = 0;
-  if(!(args->dir=smb2_opendir(smb2, path))) {
-    return smb2_response_error(conn, smb2);
-  }
 
-  if((resp=MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, 32*0x1000,
-					     smb_request_dir_read_cb, args,
-					     smb_request_dir_close_cb))) {
+  resp = MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, 32*0x1000,
+                                           smb_request_dir_read_cb,
+                                           args,
+                                           smb_request_dir_close_cb);
+  if(resp) {
     MHD_add_response_header(resp, "Content-Type", "application/json");
-    ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
-    MHD_destroy_response(resp);
-    return ret;
+  } else {
+    free(args->path);
+    free(args);
   }
 
-  smb2_closedir(smb2, args->dir);
-  smb2_disconnect_share(smb2);
-  smb2_destroy_context(smb2);
-  free(args);
-
-  return MHD_NO;
+  return resp;
 }
 
 
@@ -267,37 +247,81 @@ smb_request_dir(struct MHD_Connection *conn, struct smb2_context *smb2,
 static enum MHD_Result
 smb_request_path(struct MHD_Connection *conn, const char* uri) {
   enum MHD_Result ret = MHD_NO;
-  struct smb2_context *smb2;
+  struct MHD_Response *resp = 0;
+  struct smb2_context *smb2 = 0;
+  struct smb2_url *url = 0;
+  struct smb2fh* file = 0;
+  struct smb2dir* dir = 0;
   struct smb2_stat_64 st;
-  struct smb2_url *url;
 
   if(!(smb2=smb2_init_context())) {
-    return smb2_response_error(conn, smb2);
-  }
-
-  if(!(url=smb2_parse_url(smb2, uri))) {
-    return smb2_response_error(conn, smb2);
+    return smb_response_error(conn, smb2);
   }
 
   smb2_set_security_mode(smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
-  if(smb2_connect_share(smb2, url->server, url->share, 0) < 0) {
-    ret = smb2_response_error(conn, smb2);
-  } else if(smb2_stat(smb2, url->path, &st) < 0) {
-    ret = smb2_response_error(conn, smb2);
-  } else {
-    switch(st.smb2_type) {
-    case SMB2_TYPE_DIRECTORY:
-      ret = smb_request_dir(conn, smb2, url->path);
-      break;
-    case SMB2_TYPE_FILE:
-      ret = smb_request_file(conn, smb2, url->path);
-      break;
-    case SMB2_TYPE_LINK:
-    default:
-      //TODO: unknown file type
-      break;
-    }
+
+  if(!(url=smb2_parse_url(smb2, uri))) {
+    ret = smb_response_error(conn, smb2);
+    smb2_destroy_context(smb2);
+    return ret;
   }
+
+  if(smb2_connect_share(smb2, url->server, url->share, 0) < 0) {
+    ret = smb_response_error(conn, smb2);
+    smb2_destroy_context(smb2);
+    smb2_destroy_url(url);
+    return ret;
+  }
+
+  if(smb2_stat(smb2, url->path, &st) < 0) {
+    ret = smb_response_error(conn, smb2);
+    smb2_destroy_context(smb2);
+    smb2_destroy_url(url);
+    return ret;
+  }
+
+  switch(st.smb2_type) {
+  case SMB2_TYPE_DIRECTORY:
+    if(!(dir=smb2_opendir(smb2, url->path))) {
+      ret = smb_response_error(conn, smb2);
+      smb2_destroy_context(smb2);
+      smb2_destroy_url(url);
+      return ret;
+    }
+    resp = smb_create_dir_response(smb2, dir, url->path);
+    break;
+
+  case SMB2_TYPE_FILE:
+    if(!(file=smb2_open(smb2, url->path, O_RDONLY))) {
+      ret = smb_response_error(conn, smb2);
+      smb2_destroy_context(smb2);
+      smb2_destroy_url(url);
+      return ret;
+    }
+    resp = smb_create_file_response(smb2, file);
+    break;
+
+  case SMB2_TYPE_LINK:
+  default:
+    break;
+  }
+
+  smb2_destroy_url(url);
+
+  if(resp) {
+    ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
+    MHD_destroy_response(resp);
+    return ret;
+  }
+
+  if(file) {
+    smb2_close(smb2, file);
+  }
+  if(dir) {
+    smb2_closedir(smb2, dir);
+  }
+
+  smb2_destroy_context(smb2);
 
   return ret;
 }
@@ -318,7 +342,7 @@ smb_request_shares_cb(struct smb2_context *smb2, int status, void *data,
   char *ptr;
 
   if(status) {
-    args->result = smb2_response_error(args->conn, smb2);
+    args->result = smb_response_error(args->conn, smb2);
     args->finished = 1;
     return;
   }
@@ -367,19 +391,22 @@ smb_request_shares(struct MHD_Connection *conn, const char* uri) {
   struct pollfd pfd;
 
   if(!(smb2=smb2_init_context())) {
-    return smb2_response_error(conn, smb2);
+    return smb_response_error(conn, smb2);
   }
+  smb2_set_security_mode(smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
 
   if(!(url=smb2_parse_url(smb2, uri))) {
-    return smb2_response_error(conn, smb2);
-  }
+    args.finished = 1;
+    args.result = smb_response_error(conn, smb2);
 
-  smb2_set_security_mode(smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
-  if(smb2_connect_share(smb2, url->server, "IPC$", 0) < 0) {
-    args.result = smb2_response_error(conn, smb2);
+  } else if(smb2_connect_share(smb2, url->server, "IPC$", 0)) {
+    args.finished = 1;
+    args.result = smb_response_error(conn, smb2);
+
   } else if(smb2_share_enum_async(smb2, SHARE_INFO_0,
                                   smb_request_shares_cb, &args)) {
-    args.result = smb2_response_error(conn, smb2);
+    args.finished = 1;
+    args.result = smb_response_error(conn, smb2);
   }
 
   while(!args.finished) {
@@ -395,13 +422,12 @@ smb_request_shares(struct MHD_Connection *conn, const char* uri) {
       continue;
     }
     if(smb2_service(smb2, pfd.revents) < 0) {
-      args.result = smb2_response_error(conn, smb2);
-      break;
+      args.result = smb_response_error(conn, smb2);
+      args.finished = 1;
     }
   }
 
   smb2_destroy_url(url);
-  smb2_disconnect_share(smb2);
   smb2_destroy_context(smb2);
 
   return args.result;
