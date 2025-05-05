@@ -21,9 +21,13 @@ below.
 Examples:
 - http://ps5:8080/index.html - Launch Homebrew
 - http://ps5:8080/elfldr - Launch ELF Payloads
-- http://ps5:8080/fs/ - Browser the filesystem (html)
-- http://ps5:8080/fs/?fmt=json - Browser the filesystem (json)
-- http://ps5:8080/fs/system_ex/app/NPXS40028/redis.conf - Download a file
+- http://ps5:8080/fs/ - Browser the local filesystem (html)
+- http://ps5:8080/fs/?fmt=json - Browser the local filesystem (json)
+- http://ps5:8080/fs/system_ex/app/NPXS40028/redis.conf - Download a local file
+- http://ps5:8080/mdns - List mDNS services discovered by websrv (json)
+- http://ps5:8080/smb?addr=192.168.1.1 - List shares on a remote SMB host (json)
+- http://ps5:8080/smb/share?addr=192.168.1.1 - List files and folders shared by a remote SMB host (json)
+- http://ps5:8080/smb/share/file?addr=192.168.1.1 - Download a remote SMB file via websrv
 
 ## Installing Homebrew
 The web server will search for homebrew in /data/homebrew, /mnt/usb%d/homebrew, /mnt/ext%d/homebrew,
