@@ -48,11 +48,10 @@ For real-world homebrew, checkout the latest release at:
 - https://github.com/ps5-payload-dev/websrv/releases
 
 ## Building
-Assuming you have the [ps5-payload-sdk][sdk] installed on a Debian-flavored
+Assuming you have the [ps5-payload-packbrew][packbrew] SDK installed on a Debian-flavored
 operating system, the payload can be compiled using the following commands:
 ```console
 john@localhost:ps5-payload-dev/websrv$ export PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
-john@localhost:ps5-payload-dev/websrv$ ./libmicrohttpd.sh # build and install libmicrohttpd to $PS5_PAYLOAD_SDK
 john@localhost:ps5-payload-dev/websrv$ make
 ```
 
@@ -75,7 +74,7 @@ code included with ps5-payload-websrv are licensed under the GPLv3+.
 
 
 [bdj]: https://github.com/john-tornblom/bdj-sdk
-[sdk]: https://github.com/ps5-payload-dev/sdk
+[pacbrew]: https://github.com/ps5-payload-dev/pacbrew-repo/releases/latest
 [webkit]: https://github.com/Cryptogenic/PS5-IPV6-Kernel-Exploit
 [issues]: https://github.com/ps5-payload-dev/websrv/issues/new
 [elfldr]: https://github.com/ps5-payload-dev/elfldr

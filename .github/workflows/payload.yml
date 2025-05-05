@@ -16,26 +16,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
-    - name: Checkout SDK
-      uses: actions/checkout@v3
-      with:
-        repository: ps5-payload-dev/sdk
-        path: sdk
-
-    - name: Setup SDK
-      working-directory: sdk
+    - name: Install toolchain
       run: |
-        sudo apt update
-        sudo apt install xxd clang-15 lld-15
-        make DESTDIR=${{ runner.tool_cache }}/ps5-payload-sdk clean install
-        echo PS5_PAYLOAD_SDK=${{ runner.tool_cache }}/ps5-payload-sdk >> $GITHUB_ENV
+        wget https://github.com/ps5-payload-dev/pacbrew-repo/releases/latest/download/ps5-payload-dev.tar.gz
+        sudo tar xf ps5-payload-dev.tar.gz -C /
 
     - name: Checkout
       uses: actions/checkout@v3
 
     - name: Build
       run: |
-        bash libmicrohttpd.sh
         make clean all
 
     - name: Upload
