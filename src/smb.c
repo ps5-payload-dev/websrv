@@ -453,12 +453,15 @@ smb_request(struct MHD_Connection *conn, const char* url) {
   port = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "port");
   path = url+4;
 
-  if(!addr || !port) {
+  if(!addr) {
     if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
       ret = websrv_queue_response(conn, MHD_HTTP_BAD_REQUEST, resp);
       MHD_destroy_response(resp);
     }
     return ret;
+  }
+  if(!port) {
+    port = "445";
   }
 
   if(!path[0]) {
