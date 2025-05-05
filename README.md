@@ -59,7 +59,6 @@ john@localhost:ps5-payload-dev/websrv$ make
 - Homebrew sometimes crashes when there is already a previous homebrew running.
 - The kernel can panic if you go into restmode and back again while a homebrew is running.
 
-
 ## Reporting Bugs
 If you encounter problems with ps5-payload-websrv, please [file a github issue][issues].
 If you plan on sending pull requests which affect more than a few lines of code,
