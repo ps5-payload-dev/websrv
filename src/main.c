@@ -17,6 +17,7 @@ along with this program; see the file COPYING. If not, see
 #include <stdio.h>
 #include <signal.h>
 
+#include "mdns.h"
 #include "websrv.h"
 
 
@@ -30,6 +31,9 @@ main(int argc, char** argv) {
   printf("Web server was compiled at %s %s\n", __DATE__, __TIME__);
 
   while(1) {
+#ifdef __SCE__
+    mdns_discovery_start();
+#endif
     websrv_listen(port);
     sleep(3);
   }
