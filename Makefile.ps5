@@ -28,10 +28,14 @@ VERSION_TAG := $(shell git describe --abbrev=10 --dirty --always --tags)
 PYTHON ?= python3
 
 BIN    := websrv.elf
+
 SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c src/mdns.c src/smb.c
 SRCS   += src/ps5/sys.c src/ps5/pt.c src/ps5/elfldr.c src/ps5/hbldr.c src/ps5/notify.c
+
 CFLAGS := -Wall -Werror -Isrc -DVERSION_TAG=\"$(VERSION_TAG)\"
-LDADD  := -lkernel_sys -lmicrohttpd -lsmb2 -lmicrodns -lSceSystemService -lSceUserService
+
+LDADD  := -lmicrohttpd -lmicrodns -lsmb2
+LDADD  += -lkernel_sys -lSceSystemService -lSceUserService
 
 ASSETS   := $(wildcard assets/*)
 GEN_SRCS := $(patsubst assets/%,gen/%, $(ASSETS:=.c))
