@@ -272,7 +272,6 @@ elfldr_request(struct MHD_Connection *conn, post_data_t *data) {
 }
 
 
-
 /**
  *
  **/
@@ -282,7 +281,19 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
                   const char *version, const char *upload_data,
                   size_t *upload_data_size, void **con_cls) {
   post_request_t *req = *con_cls;
-  enum MHD_Result ret;
+  enum MHD_Result ret = MHD_NO;
+
+  if(strcmp(method, MHD_HTTP_METHOD_GET) &&
+     strcmp(method, MHD_HTTP_METHOD_HEAD)) {
+    return MHD_NO;
+  }
+
+  if(!req) {
+    req = *con_cls = malloc(sizeof(post_request_t));
+    req->pp = MHD_create_post_processor(conn, 0x1000, &post_iterator, req);
+    req->data = 0;
+    return MHD_YES;
+  }
 
   if(!strcmp(method, MHD_HTTP_METHOD_GET)) {
     if(!strcmp("/fs", url)) {
@@ -317,25 +328,15 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
     return asset_request(conn, url);
   }
 
-  if(strcmp(method, MHD_HTTP_METHOD_POST)) {
-    return MHD_NO;
-  }
-
-  if(!req) {
-    req = *con_cls = malloc(sizeof(post_request_t));
-    req->pp = MHD_create_post_processor(conn, 0x1000, &post_iterator, req);
-    req->data = 0;
-    return MHD_YES;
-  }
-
-  if(*upload_data_size) {
-    ret = MHD_post_process(req->pp, upload_data, *upload_data_size);
-    *upload_data_size = 0;
-    return ret;
-  }
-
-  if(!strcmp("/elfldr", url)) {
-    return elfldr_request(conn, req->data);
+  if(!strcmp(method, MHD_HTTP_METHOD_POST)) {
+    if(*upload_data_size) {
+      ret = MHD_post_process(req->pp, upload_data, *upload_data_size);
+      *upload_data_size = 0;
+      return ret;
+    }
+    if(!strcmp("/elfldr", url)) {
+      return elfldr_request(conn, req->data);
+    }
   }
 
   return MHD_NO;
