@@ -26,6 +26,7 @@ jobs:
 
     - name: Build
       run: |
+        export PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
         make clean all
 
     - name: Upload
