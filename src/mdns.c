@@ -178,11 +178,7 @@ mdns_discovery_cb(void *stc, int status, const struct rr_entry *entries) {
  **/
 static void*
 mdns_discovery_thread(void* args) {
-  const char *names[] = {
-    "_smb._tcp.local",
-    "_nfs._tcp.local"
-  };
-  size_t nb_names = 2;
+  const char* proto = (const char*)args;
   struct mdns_ctx *ctx;
   char err[128];
   int r;
@@ -191,7 +187,7 @@ mdns_discovery_thread(void* args) {
     mdns_strerror(r, err, sizeof(err));
     fprintf(stderr, "mdns_init: %s\n", err);
 
-  } else if((r=mdns_listen(ctx, names, nb_names, RR_PTR, 30,
+  } else if((r=mdns_listen(ctx, &proto, 1, RR_PTR, 30,
                            mdns_stop_cb, mdns_discovery_cb, 0)) < 0) {
     mdns_strerror(r, err, sizeof(err));
     fprintf(stderr, "mdns_listen: %s\n", err);
@@ -237,7 +233,7 @@ mdns_discovery_start(void) {
     return -1;
   }
 
-  return pthread_create(&g_thread, 0, mdns_discovery_thread, 0);
+  return pthread_create(&g_thread, 0, mdns_discovery_thread, "_smb._tcp.local");
 }
 
 
