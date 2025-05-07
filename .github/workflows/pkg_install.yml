@@ -30,7 +30,9 @@ jobs:
 
     - name: Build
       run: |
-        PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk make
+        export PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
+        cd ./homebrew/PKGInstall
+        make
 
     - name: Upload
       uses: actions/upload-artifact@v4
