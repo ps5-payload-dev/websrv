@@ -138,12 +138,12 @@ smb_request_dir_read_cb(void *ctx, uint64_t pos, char *buf, size_t max) {
 
   if(args->state == 0) {
     args->state++;
-    return snprintf(buf, max, "[{\"name\":\".\",\"mode\":\"d\"}");
+    return snprintf(buf, max, "[\n  {\"name\":\".\",\"mode\":\"d\"}");
   }
 
   if(args->state == 2) {
     args->state++;
-    return snprintf(buf, max, "]");
+    return snprintf(buf, max, "\n]\n");
   }
 
   if(args->state == 3) {
@@ -175,7 +175,7 @@ smb_request_dir_read_cb(void *ctx, uint64_t pos, char *buf, size_t max) {
     break;
   }
 
-  return snprintf(buf, max, ",{\"name\":\"%s\",\"mode\":\"%c\"}",
+  return snprintf(buf, max, ",\n  {\"name\":\"%s\",\"mode\":\"%c\"}",
                   ent->name, mode);
 }
 
