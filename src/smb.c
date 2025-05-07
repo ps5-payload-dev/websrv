@@ -263,6 +263,9 @@ smb_create_dir_response(struct smb2_context *smb2, struct smb2dir* dir,
     return 0;
   }
 
+  if(!path) {
+    path = "";
+  }
   args->smb2  = smb2;
   args->dir   = dir;
   args->path  = strdup(path);
