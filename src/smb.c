@@ -155,6 +155,9 @@ smb_request_dir_read_cb(void *ctx, uint64_t pos, char *buf, size_t max) {
     return 0;
   }
 
+  if(!strcmp(".", ent->name)) {
+    return 0;
+  }
 
   if(args->path[0]) {
     snprintf(path, PATH_MAX, "%s/%s", args->path, ent->name);
