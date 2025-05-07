@@ -247,6 +247,7 @@ mdns_request(struct MHD_Connection *conn, const char* url) {
   struct MHD_Response *resp;
   service_seq_t* ss;
   size_t size = 0;
+  size_t cnt = 0;
   char *buf;
   char *ptr;
 
@@ -254,9 +255,10 @@ mdns_request(struct MHD_Connection *conn, const char* url) {
 
   // esimate needed memory
   for(ss=g_service_seq; ss; ss=ss->next) {
-    size++;
+    cnt++;
   }
-  size *= (sizeof(service_seq_t) + 100);
+  size = cnt*(sizeof(service_seq_t) + 100);
+  size += 100;
 
   if(!(buf=ptr=malloc(size))) {
     return ret;
