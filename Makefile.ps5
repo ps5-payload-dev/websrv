@@ -32,7 +32,7 @@ BIN    := websrv.elf
 SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c src/mdns.c src/smb.c
 SRCS   += src/ps5/sys.c src/ps5/pt.c src/ps5/elfldr.c src/ps5/hbldr.c src/ps5/notify.c
 
-CFLAGS := -Wall -Werror -Isrc -DVERSION_TAG=\"$(VERSION_TAG)\"
+CFLAGS := -g -O0 -Wall -Werror -Isrc -DVERSION_TAG=\"$(VERSION_TAG)\"
 
 LDADD  := -lmicrohttpd -lmicrodns -lsmb2
 LDADD  += -lkernel_sys -lSceSystemService -lSceUserService
