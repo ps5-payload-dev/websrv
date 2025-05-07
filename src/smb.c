@@ -355,7 +355,8 @@ smb_create_file_response(struct smb2_context *smb2, struct smb2fh* file,
  * Respond to a http request of a remote smb path.
  **/
 static enum MHD_Result
-smb_request_path(struct MHD_Connection *conn, const char* uri) {
+smb_request_path(struct MHD_Connection *conn, const char* user,
+                 const char* pass, const char* uri) {
   enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp = 0;
   struct smb2_context *smb2 = 0;
@@ -369,7 +370,12 @@ smb_request_path(struct MHD_Connection *conn, const char* uri) {
     return smb_response_error(conn, smb2);
   }
 
-  smb2_set_security_mode(smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
+  if(user) {
+    smb2_set_user(smb2, user);
+  }
+  if(pass) {
+    smb2_set_password(smb2, pass);
+  }
 
   if(!(url=smb2_parse_url(smb2, uri))) {
     ret = smb_response_error(conn, smb2);
@@ -377,7 +383,8 @@ smb_request_path(struct MHD_Connection *conn, const char* uri) {
     return ret;
   }
 
-  if(smb2_connect_share(smb2, url->server, url->share, 0) < 0) {
+  smb2_set_security_mode(smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
+  if(smb2_connect_share(smb2, url->server, url->share, url->user) < 0) {
     ret = smb_response_error(conn, smb2);
     smb2_destroy_context(smb2);
     smb2_destroy_url(url);
@@ -505,7 +512,8 @@ smb_request_shares_cb(struct smb2_context *smb2, int status, void *data,
  * Respond to a http request of a remote smb shares listing.
  **/
 static enum MHD_Result
-smb_request_shares(struct MHD_Connection *conn, const char* uri) {
+smb_request_shares(struct MHD_Connection *conn, const char* user,
+                   const char* pass, const char* uri) {
   smb_request_shares_args_t args = {conn, MHD_NO, 0};
   struct smb2_context *smb2;
   struct smb2_url *url;
@@ -515,6 +523,12 @@ smb_request_shares(struct MHD_Connection *conn, const char* uri) {
     return smb_response_error(conn, smb2);
   }
   smb2_set_security_mode(smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
+  if(user) {
+    smb2_set_user(smb2, user);
+  }
+  if(pass) {
+    smb2_set_password(smb2, pass);
+  }
 
   if(!(url=smb2_parse_url(smb2, uri))) {
     args.finished = 1;
@@ -562,14 +576,15 @@ enum MHD_Result
 smb_request(struct MHD_Connection *conn, const char* url) {
   enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
-  //const char* username;
-  //const char* password;
+  const char* user;
+  const char* pass;
   const char* addr;
   const char* port;
   const char* path;
   char uri[PATH_MAX];
 
-  // TODO: smb auth
+  user = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "user");
+  pass = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "pass");
   addr = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "addr");
   port = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "port");
   path = url+4;
@@ -589,10 +604,10 @@ smb_request(struct MHD_Connection *conn, const char* url) {
 
   if(!path[0]) {
     snprintf(uri, PATH_MAX, "smb://%s:%s/%s", addr, port, path);
-    return smb_request_shares(conn, uri);
+    return smb_request_shares(conn, user, pass, uri);
   } else {
     snprintf(uri, PATH_MAX, "smb://%s:%s%s", addr, port, path);
-    return smb_request_path(conn, uri);
+    return smb_request_path(conn, user, pass, uri);
   }
 
   return ret;
