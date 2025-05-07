@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <poll.h>
@@ -30,6 +31,30 @@ along with this program; see the file COPYING. If not, see
 
 #include "smb.h"
 #include "websrv.h"
+
+
+/**
+ * Bad Request (400)
+ **/
+#define PAGE_400                          \
+  "<html>"                                \
+  "  <head>"                              \
+  "    <title>Bad request</title>"        \
+  "  </head>"                             \
+  "  <body>Bad request</body>"            \
+  "</html>"
+
+
+/**
+ * Internal Server Error (500)
+ **/
+#define PAGE_500                                 \
+  "<html>"                                       \
+  "  <head>"                                     \
+  "    <title>Internal server error</title>"     \
+  "  </head>"                                    \
+  "  <body>Internal server error</body>"         \
+  "</html>"
 
 
 /**
@@ -175,15 +200,52 @@ smb_request_dir_close_cb(void *ctx) {
  **/
 static enum MHD_Result
 smb_response_error(struct MHD_Connection *conn, struct smb2_context *smb2) {
-  const char* smb2_error = smb2_get_error(smb2);
+  int nterror = smb2_get_nterror(smb2);
+  int err = nterror_to_errno(nterror);
   enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
+  int http_error;
+  char* buf;
 
-  if((resp=MHD_create_response_from_buffer(strlen(smb2_error), (void*)smb2_error,
-                                           MHD_RESPMEM_PERSISTENT))) {
-    ret = websrv_queue_response(conn, MHD_HTTP_INTERNAL_SERVER_ERROR, resp);
+  switch(err) {
+  case EACCES:
+    buf = strdup(strerror(err));
+    http_error = MHD_HTTP_FORBIDDEN;
+    break;
+
+  case ENOENT:
+    buf = strdup(strerror(err));
+    http_error = MHD_HTTP_NOT_FOUND;
+    break;
+
+  case 0:
+    buf = strdup(smb2_get_error(smb2));
+    http_error = MHD_HTTP_INTERNAL_SERVER_ERROR;
+    break;
+
+  default:
+    buf = strdup(strerror(err));
+    http_error = MHD_HTTP_INTERNAL_SERVER_ERROR;
+    break;
+  }
+
+  if(!buf) {
+    if((resp=MHD_create_response_from_buffer(strlen(PAGE_500), PAGE_500,
+                                             MHD_RESPMEM_PERSISTENT))) {
+      MHD_add_response_header(resp, "Content-Type", "text/html");
+      ret = websrv_queue_response(conn, MHD_HTTP_INTERNAL_SERVER_ERROR, resp);
+      MHD_destroy_response(resp);
+    }
+    return ret;
+  }
+
+  if((resp=MHD_create_response_from_buffer(strlen(buf), buf,
+                                           MHD_RESPMEM_MUST_FREE))) {
+    MHD_add_response_header(resp, "Content-Type", "text/plain");
+    ret = websrv_queue_response(conn, http_error, resp);
     MHD_destroy_response(resp);
   }
+
   return ret;
 }
 
@@ -501,7 +563,9 @@ smb_request(struct MHD_Connection *conn, const char* url) {
   path = url+4;
 
   if(!addr) {
-    if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
+    if((resp=MHD_create_response_from_buffer(strlen(PAGE_400), PAGE_400,
+                                             MHD_RESPMEM_PERSISTENT))) {
+      MHD_add_response_header(resp, "Content-Type", "text/html");
       ret = websrv_queue_response(conn, MHD_HTTP_BAD_REQUEST, resp);
       MHD_destroy_response(resp);
     }
