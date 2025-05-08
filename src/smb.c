@@ -388,7 +388,7 @@ smb_request_path(struct MHD_Connection *conn, const char* user,
   }
 
   smb2_set_security_mode(smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
-  if(smb2_connect_share(smb2, url->server, url->share, url->user) < 0) {
+  if(smb2_connect_share(smb2, url->server, url->share, 0) < 0) {
     ret = smb_response_error(conn, smb2);
     smb2_destroy_context(smb2);
     smb2_destroy_url(url);
