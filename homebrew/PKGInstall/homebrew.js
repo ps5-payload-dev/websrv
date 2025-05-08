@@ -18,16 +18,19 @@ along with this program; see the file COPYING. If not, see
 async function main() {
     const PAYLOAD_NAME = 'pkg_install.elf';
     const PAYLOAD_PATH = window.workingDir + '/' + PAYLOAD_NAME;
-    const HTTP_URL = 'https://pkg-zone.com/download/ps4/CUSA01116/latest';
-    //TODO: use file picker to deduce URL
 
     return {
         mainText: "PKG installer",
-        secondaryText: 'Install PKG files',
+        secondaryText: 'Install a PKG file',
 	onclick: async () => {
+            const file = await pickFile('/');
+            if(!file) {
+                return;
+            }
+            const url = file;
 	    return {
 		path: PAYLOAD_PATH,
-                args: [PAYLOAD_NAME, HTTP_URL],
+                args: [PAYLOAD_NAME, url],
                 daemon: true
 	    };
         }

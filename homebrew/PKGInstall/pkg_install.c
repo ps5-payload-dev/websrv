@@ -16,7 +16,6 @@ along with this program; see the file COPYING. If not, see
 
 #include <stdio.h>
 
-
 typedef struct pkg_metadata {
   const char* uri;
   const char* ex_uri;
@@ -60,7 +59,7 @@ main(int argc, char** argv) {
   };
 
   if(argc < 2) {
-    printf("Usage: %s URI\n", argv[0]);
+    printf("Usage: %s URL\n", argv[0]);
     return -1;
   }
 
@@ -69,11 +68,6 @@ main(int argc, char** argv) {
   }
 
   metainfo.uri = argv[1];
-  for(int i=0; metainfo.uri[i]; i++) {
-    if(metainfo.uri[i] == '/') {
-      metainfo.content_name = metainfo.uri + i + 1;
-    }
-  }
 
   return sceAppInstUtilInstallByPackage(&metainfo, &pkginfo, &playgoinfo);
 }
