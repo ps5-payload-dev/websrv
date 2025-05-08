@@ -217,6 +217,10 @@ smb_response_error(struct MHD_Connection *conn, struct smb2_context *smb2) {
   char* buf;
 
   switch(err) {
+  case ECONNREFUSED:
+    buf = strdup(strerror(err));
+    http_error = MHD_HTTP_UNAUTHORIZED;
+
   case EACCES:
     buf = strdup(strerror(err));
     http_error = MHD_HTTP_FORBIDDEN;
