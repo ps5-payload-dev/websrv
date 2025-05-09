@@ -204,51 +204,43 @@ smb_request_dir_close_cb(void *ctx) {
 }
 
 
+static int
+errno_to_http_error(int err) {
+  switch(err) {
+  case ECONNREFUSED:
+    return MHD_HTTP_UNAUTHORIZED;
+
+  case EACCES:
+    return MHD_HTTP_FORBIDDEN;
+
+  case EINVAL:
+    return MHD_HTTP_BAD_REQUEST;
+
+  case ENOENT:
+    return MHD_HTTP_NOT_FOUND;
+
+  default:
+    return MHD_HTTP_INTERNAL_SERVER_ERROR;
+  }
+}
+
 /**
  * Respond to a http request with an internal error.
  **/
 static enum MHD_Result
-smb_response_error(struct MHD_Connection *conn, struct smb2_context *smb2) {
-  int nterror = smb2_get_nterror(smb2);
-  int err = nterror_to_errno(nterror);
+smb_response_perror(struct MHD_Connection *conn, const char* s) {
   enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
+  const char* msg;
+  int err = errno;
   int http_error;
+  size_t size;
   char* buf;
 
-  switch(err) {
-  case ECONNREFUSED:
-    buf = strdup(strerror(err));
-    http_error = MHD_HTTP_UNAUTHORIZED;
-    break;
+  msg = strerror(err);
+  size = strlen(s) + strlen(msg) + 30;
 
-  case EACCES:
-    buf = strdup(strerror(err));
-    http_error = MHD_HTTP_FORBIDDEN;
-    break;
-
-  case EINVAL:
-    buf = strdup(strerror(err));
-    http_error = MHD_HTTP_BAD_REQUEST;
-    break;
-
-  case ENOENT:
-    buf = strdup(strerror(err));
-    http_error = MHD_HTTP_NOT_FOUND;
-    break;
-
-  case 0:
-    buf = strdup(smb2_get_error(smb2));
-    http_error = MHD_HTTP_INTERNAL_SERVER_ERROR;
-    break;
-
-  default:
-    buf = strdup(strerror(err));
-    http_error = MHD_HTTP_INTERNAL_SERVER_ERROR;
-    break;
-  }
-
-  if(!buf) {
+  if(!(buf=calloc(1, size))) {
     if((resp=MHD_create_response_from_buffer(strlen(PAGE_500), PAGE_500,
                                              MHD_RESPMEM_PERSISTENT))) {
       MHD_add_response_header(resp, "Content-Type", "text/html");
@@ -257,6 +249,49 @@ smb_response_error(struct MHD_Connection *conn, struct smb2_context *smb2) {
     }
     return ret;
   }
+
+  sprintf(buf, "%s: %s (errno: %d)\n", s, msg, err);
+  http_error = errno_to_http_error(err);
+
+  if((resp=MHD_create_response_from_buffer(strlen(buf), buf,
+                                           MHD_RESPMEM_MUST_FREE))) {
+    MHD_add_response_header(resp, "Content-Type", "text/plain");
+    ret = websrv_queue_response(conn, http_error, resp);
+    MHD_destroy_response(resp);
+  }
+
+  return ret;
+}
+
+/**
+ * Respond to a http request with an internal error.
+ **/
+static enum MHD_Result
+smb_response_error(struct MHD_Connection *conn, struct smb2_context *smb2) {
+  int nterr = smb2_get_nterror(smb2);
+  int err = nterror_to_errno(nterr);
+  enum MHD_Result ret = MHD_NO;
+  struct MHD_Response *resp;
+  const char* msg;
+  int http_error;
+  size_t size;
+  char* buf;
+
+  msg = smb2_get_error(smb2);
+  size = strlen(msg) + 30;
+
+  if(!(buf=calloc(1, size))) {
+    if((resp=MHD_create_response_from_buffer(strlen(PAGE_500), PAGE_500,
+                                             MHD_RESPMEM_PERSISTENT))) {
+      MHD_add_response_header(resp, "Content-Type", "text/html");
+      ret = websrv_queue_response(conn, MHD_HTTP_INTERNAL_SERVER_ERROR, resp);
+      MHD_destroy_response(resp);
+    }
+    return ret;
+  }
+
+  sprintf(buf, "%s\n", msg);
+  http_error = errno_to_http_error(err);
 
   if((resp=MHD_create_response_from_buffer(strlen(buf), buf,
                                            MHD_RESPMEM_MUST_FREE))) {
@@ -377,8 +412,7 @@ smb_request_path(struct MHD_Connection *conn, const char* user,
   const char* range;
 
   if(!(smb2=smb2_init_context())) {
-    perror("smb2_init_context"); // TODO: output posix error to http response.
-    return ret;
+    return smb_response_perror(conn, "smb2_init_context");
   }
 
   if(!(url=smb2_parse_url(smb2, uri))) {
@@ -488,7 +522,7 @@ smb_request_shares_cb(struct smb2_context *smb2, int status, void *data,
 
   size = rep->ses.ShareInfo.Level0.EntriesRead * (PATH_MAX + 20);
   if(!(buf=ptr=malloc(size))) {
-    perror("malloc"); // TODO: output posix error to http response.
+    perror("malloc");
     args->result = MHD_NO;
     args->finished = 1;
     return;
@@ -532,8 +566,7 @@ smb_request_shares(struct MHD_Connection *conn, const char* user,
   struct pollfd pfd;
 
   if(!(smb2=smb2_init_context())) {
-    perror("smb2_init_context"); // TODO: output posix error to http response.
-    return ret;
+    return smb_response_perror(conn, "smb2_init_context");
   }
 
   smb2_set_user(smb2, user);
@@ -570,9 +603,8 @@ smb_request_shares(struct MHD_Connection *conn, const char* user,
     pfd.fd = smb2_get_fd(smb2);
     pfd.events = smb2_which_events(smb2);
 
-    if(poll(&pfd, 1, 1000) < 0) {
-      args.result = MHD_NO;
-      perror("poll"); // TODO: output posix error to http response.
+    if(poll(&pfd, 1, 5000) < 0) {
+      args.result = smb_response_perror(conn, "poll");
       break;
     }
     if(pfd.revents == 0) {
