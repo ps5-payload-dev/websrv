@@ -377,14 +377,8 @@ smb_request_path(struct MHD_Connection *conn, const char* user,
   const char* range;
 
   if(!(smb2=smb2_init_context())) {
-    return smb_response_error(conn, smb2);
-  }
-
-  if(user) {
-    smb2_set_user(smb2, user);
-  }
-  if(pass) {
-    smb2_set_password(smb2, pass);
+    perror("smb2_init_context"); // TODO: output posix error to http response.
+    return ret;
   }
 
   if(!(url=smb2_parse_url(smb2, uri))) {
@@ -393,11 +387,18 @@ smb_request_path(struct MHD_Connection *conn, const char* user,
     return ret;
   }
 
+  smb2_set_user(smb2, user);
+  smb2_set_password(smb2, pass);
   smb2_set_security_mode(smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
-  if(smb2_connect_share(smb2, url->server, url->share, 0) < 0) {
-    ret = smb_response_error(conn, smb2);
-    smb2_destroy_context(smb2);
+
+  if(smb2_connect_share(smb2, url->server, url->share, user) < 0) {
+    if(pass && *pass == 0) {
+      ret = smb_request_path(conn, user, 0, uri);
+    } else {
+      ret = smb_response_error(conn, smb2);
+    }
     smb2_destroy_url(url);
+    smb2_destroy_context(smb2);
     return ret;
   }
 
@@ -525,33 +526,44 @@ static enum MHD_Result
 smb_request_shares(struct MHD_Connection *conn, const char* user,
                    const char* pass, const char* uri) {
   smb_request_shares_args_t args = {conn, MHD_NO, 0};
+  enum MHD_Result ret = MHD_NO;
   struct smb2_context *smb2;
   struct smb2_url *url;
   struct pollfd pfd;
 
   if(!(smb2=smb2_init_context())) {
-    return smb_response_error(conn, smb2);
+    perror("smb2_init_context"); // TODO: output posix error to http response.
+    return ret;
   }
+
+  smb2_set_user(smb2, user);
+  smb2_set_password(smb2, pass);
   smb2_set_security_mode(smb2, SMB2_NEGOTIATE_SIGNING_ENABLED);
-  if(user) {
-    smb2_set_user(smb2, user);
-  }
-  if(pass) {
-    smb2_set_password(smb2, pass);
-  }
 
   if(!(url=smb2_parse_url(smb2, uri))) {
-    args.finished = 1;
-    args.result = smb_response_error(conn, smb2);
+    ret = smb_response_error(conn, smb2);
+    smb2_destroy_context(smb2);
+    return ret;
+  }
 
-  } else if(smb2_connect_share(smb2, url->server, "IPC$", 0)) {
-    args.finished = 1;
-    args.result = smb_response_error(conn, smb2);
+  if(smb2_connect_share(smb2, url->server, "IPC$", user)) {
+    if(pass && *pass == 0) {
+      ret = smb_request_shares(conn, user, 0, uri);
+    } else {
+      ret = smb_response_error(conn, smb2);
+    }
+    smb2_destroy_url(url);
+    smb2_destroy_context(smb2);
+    return ret;
+  }
 
-  } else if(smb2_share_enum_async(smb2, SHARE_INFO_0,
-                                  smb_request_shares_cb, &args)) {
-    args.finished = 1;
-    args.result = smb_response_error(conn, smb2);
+  smb2_destroy_url(url);
+
+  if(smb2_share_enum_async(smb2, SHARE_INFO_0,
+                           smb_request_shares_cb, &args)) {
+    ret = smb_response_error(conn, smb2);
+    smb2_destroy_context(smb2);
+    return ret;
   }
 
   while(!args.finished) {
@@ -572,7 +584,6 @@ smb_request_shares(struct MHD_Connection *conn, const char* user,
     }
   }
 
-  smb2_destroy_url(url);
   smb2_destroy_context(smb2);
 
   return args.result;
@@ -607,6 +618,12 @@ smb_request(struct MHD_Connection *conn, const char* url) {
       MHD_destroy_response(resp);
     }
     return ret;
+  }
+  if(!user) {
+    user = "";
+  }
+  if(!pass) {
+    pass = "";
   }
   if(!port) {
     port = "445";
