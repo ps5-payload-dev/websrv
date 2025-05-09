@@ -580,7 +580,8 @@ smb_request_shares(struct MHD_Connection *conn, const char* user,
   }
 
   if(smb2_connect_share(smb2, url->server, "IPC$", user)) {
-    if(pass && *pass == 0) {
+    if(pass && *pass == 0 &&
+       smb2_get_nterror(smb2) != 0xc000006d) {
       ret = smb_request_shares(conn, user, 0, uri);
     } else {
       ret = smb_response_error(conn, smb2);
