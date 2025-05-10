@@ -118,7 +118,8 @@ version_request(struct MHD_Connection *conn) {
 
   if((resp=MHD_create_response_from_buffer(size, data,
 					   MHD_RESPMEM_PERSISTENT))) {
-    MHD_add_response_header(resp, "Content-Type", "application/json");
+    MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE,
+                            "application/json");
     ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
     MHD_destroy_response(resp);
   }

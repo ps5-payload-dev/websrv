@@ -278,7 +278,8 @@ mdns_request(struct MHD_Connection *conn, const char* url) {
   size = ptr-buf;
   if((resp=MHD_create_response_from_buffer(size, buf,
 					   MHD_RESPMEM_MUST_FREE))) {
-    MHD_add_response_header(resp, "Content-Type", "application/json");
+    MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE,
+                            "application/json");
     ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
     MHD_destroy_response(resp);
   }

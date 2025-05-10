@@ -103,7 +103,7 @@ asset_request(struct MHD_Connection *conn, const char* url) {
   if((resp=MHD_create_response_from_buffer(size, data,
 					   MHD_RESPMEM_PERSISTENT))) {
     if(mime) {
-      MHD_add_response_header(resp, "Content-Type", mime);
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, mime);
     }
     ret = websrv_queue_response(conn, status, resp);
     MHD_destroy_response(resp);

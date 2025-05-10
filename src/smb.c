@@ -244,7 +244,7 @@ smb_response_perror(struct MHD_Connection *conn, const char* s) {
   if(!(buf=calloc(1, size))) {
     if((resp=MHD_create_response_from_buffer(strlen(PAGE_500), PAGE_500,
                                              MHD_RESPMEM_PERSISTENT))) {
-      MHD_add_response_header(resp, "Content-Type", "text/html");
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, "text/html");
       ret = websrv_queue_response(conn, MHD_HTTP_INTERNAL_SERVER_ERROR, resp);
       MHD_destroy_response(resp);
     }
@@ -256,7 +256,7 @@ smb_response_perror(struct MHD_Connection *conn, const char* s) {
 
   if((resp=MHD_create_response_from_buffer(strlen(buf), buf,
                                            MHD_RESPMEM_MUST_FREE))) {
-    MHD_add_response_header(resp, "Content-Type", "text/plain");
+    MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, "text/plain");
     ret = websrv_queue_response(conn, http_error, resp);
     MHD_destroy_response(resp);
   }
@@ -284,7 +284,7 @@ smb_response_error(struct MHD_Connection *conn, struct smb2_context *smb2) {
   if(!(buf=calloc(1, size))) {
     if((resp=MHD_create_response_from_buffer(strlen(PAGE_500), PAGE_500,
                                              MHD_RESPMEM_PERSISTENT))) {
-      MHD_add_response_header(resp, "Content-Type", "text/html");
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, "text/html");
       ret = websrv_queue_response(conn, MHD_HTTP_INTERNAL_SERVER_ERROR, resp);
       MHD_destroy_response(resp);
     }
@@ -296,7 +296,7 @@ smb_response_error(struct MHD_Connection *conn, struct smb2_context *smb2) {
 
   if((resp=MHD_create_response_from_buffer(strlen(buf), buf,
                                            MHD_RESPMEM_MUST_FREE))) {
-    MHD_add_response_header(resp, "Content-Type", "text/plain");
+    MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, "text/plain");
     ret = websrv_queue_response(conn, http_error, resp);
     MHD_destroy_response(resp);
   }
@@ -331,7 +331,8 @@ smb_create_dir_response(struct smb2_context *smb2, struct smb2dir* dir,
                                            args,
                                            smb_request_dir_close_cb);
   if(resp) {
-    MHD_add_response_header(resp, "Content-Type", "application/json");
+    MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE,
+                            "application/json");
   } else {
     free(args->path);
     free(args);
@@ -385,7 +386,7 @@ smb_create_file_response(struct smb2_context *smb2, struct smb2fh* file,
   }
 
   if((mime=mime_get_type(path))) {
-    MHD_add_response_header(resp, "Content-Type", mime);
+    MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, mime);
   }
   MHD_add_response_header(resp, MHD_HTTP_HEADER_ACCEPT_RANGES, "bytes");
 
@@ -548,7 +549,8 @@ smb_request_shares_cb(struct smb2_context *smb2, int status, void *data,
   size = ptr-buf;
   if((resp=MHD_create_response_from_buffer(size, buf,
 					   MHD_RESPMEM_MUST_FREE))) {
-    MHD_add_response_header(resp, "Content-Type", "application/json");
+    MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE,
+                            "application/json");
     args->result = websrv_queue_response(args->conn, MHD_HTTP_OK, resp);
     MHD_destroy_response(resp);
   } else {
@@ -651,7 +653,7 @@ smb_request(struct MHD_Connection *conn, const char* url) {
   if(!addr) {
     if((resp=MHD_create_response_from_buffer(strlen(PAGE_400), PAGE_400,
                                              MHD_RESPMEM_PERSISTENT))) {
-      MHD_add_response_header(resp, "Content-Type", "text/html");
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, "text/html");
       ret = websrv_queue_response(conn, MHD_HTTP_BAD_REQUEST, resp);
       MHD_destroy_response(resp);
     }

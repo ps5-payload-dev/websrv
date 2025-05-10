@@ -253,7 +253,7 @@ file_request(struct MHD_Connection *conn, const char* path) {
 					     &file_read, file,
 					     &file_close))) {
     if(mime) {
-      MHD_add_response_header(resp, "Content-Type", mime);
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, mime);
     }
     ret = websrv_queue_response (conn, MHD_HTTP_OK, resp);
     MHD_destroy_response(resp);
@@ -319,7 +319,7 @@ dir_request(struct MHD_Connection *conn, const char* path) {
   if((resp=MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, 32*PAGE_SIZE,
 					     dir_read_cb, &sm,
 					     &dir_close))) {
-    MHD_add_response_header(resp, "Content-Type", mime);
+    MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, mime);
     ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
     MHD_destroy_response(resp);
     return ret;
