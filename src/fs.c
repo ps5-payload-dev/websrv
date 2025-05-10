@@ -28,6 +28,7 @@ along with this program; see the file COPYING. If not, see
 
 #include <microhttpd.h>
 
+
 #include "fs.h"
 #include "mime.h"
 #include "websrv.h"
@@ -59,6 +60,7 @@ typedef struct dir_read_sm {
   int state;
   char* buf;
 } dir_read_sm_t;
+
 
 
 /**
@@ -401,3 +403,5 @@ fs_readfile(const char* path, size_t* size) {
 
   return buf;
 }
+
+
