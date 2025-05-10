@@ -23,7 +23,7 @@ SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c
 SRCS   += src/pc/sys.c
 
 CFLAGS := -Wall -DVERSION_TAG=\"$(VERSION_TAG)\"
-LDADD  := -lmicrohttpd
+LDADD  += `pkg-config libmicrohttpd --libs`
 
 ASSETS   := $(wildcard assets/*)
 GEN_SRCS := $(patsubst assets/%,gen/%, $(ASSETS:=.c))
