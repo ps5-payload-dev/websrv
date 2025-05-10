@@ -29,6 +29,7 @@ along with this program; see the file COPYING. If not, see
 #include <smb2/libsmb2.h>
 #include <smb2/libsmb2-raw.h>
 
+#include "mime.h"
 #include "smb.h"
 #include "websrv.h"
 
@@ -345,9 +346,10 @@ smb_create_dir_response(struct smb2_context *smb2, struct smb2dir* dir,
  **/
 static struct MHD_Response*
 smb_create_file_response(struct smb2_context *smb2, struct smb2fh* file,
-                         const char* range, size_t size) {
+                         const char* path, const char* range, size_t size) {
   smb_request_file_args_t *args;
   struct MHD_Response *resp;
+  const char* mime = 0;
   size_t start = 0;
   size_t end = size - 1;
   char buf[100];
@@ -382,6 +384,9 @@ smb_create_file_response(struct smb2_context *smb2, struct smb2fh* file,
     free(args);
   }
 
+  if((mime=mime_get_type(path))) {
+    MHD_add_response_header(resp, "Content-Type", mime);
+  }
   MHD_add_response_header(resp, MHD_HTTP_HEADER_ACCEPT_RANGES, "bytes");
 
   if(range) {
@@ -467,7 +472,7 @@ smb_request_path(struct MHD_Connection *conn, const char* user,
       smb2_destroy_url(url);
       return ret;
     }
-    resp = smb_create_file_response(smb2, file, range, st.smb2_size);
+    resp = smb_create_file_response(smb2, file, url->path, range, st.smb2_size);
     break;
 
   case SMB2_TYPE_LINK:
