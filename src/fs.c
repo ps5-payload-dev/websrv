@@ -29,6 +29,7 @@ along with this program; see the file COPYING. If not, see
 #include <microhttpd.h>
 
 #include "fs.h"
+#include "mime.h"
 #include "websrv.h"
 
 
@@ -228,10 +229,12 @@ static enum MHD_Result
 file_request(struct MHD_Connection *conn, const char* path) {
   enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
+  const char* mime = 0;
   struct stat st;
   FILE *file = 0;
 
   if(!stat(path, &st)) {
+    mime = mime_get_type(path);
     file = fopen(path, "rb");
   }
 
@@ -247,6 +250,9 @@ file_request(struct MHD_Connection *conn, const char* path) {
   if((resp=MHD_create_response_from_callback(st.st_size, 32 * PAGE_SIZE,
 					     &file_read, file,
 					     &file_close))) {
+    if(mime) {
+      MHD_add_response_header(resp, "Content-Type", mime);
+    }
     ret = websrv_queue_response (conn, MHD_HTTP_OK, resp);
     MHD_destroy_response(resp);
     return ret;
