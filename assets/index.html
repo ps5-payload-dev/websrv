@@ -27,13 +27,104 @@ along with this program; see the file COPYING. If not, see
 </head>
 
 <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
+        <!-- Google Material Symbols Rounded - Folder --> 
+        <symbol id="dir-icon" viewBox="0 -960 960 960">
+            <path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h207q16 0 30.5 6t25.5 17l57 57h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H447l-80-80H160v480Zm0 0v-480 480Z"/>
+        </symbol>
+
+        <!-- Google Material Symbols Rounded - Draft --> 
+        <symbol id="file-icon" viewBox="0 -960 960 960">
+            <path d="M240-80q-33 0-56.5-23.5T160-160v-640q0-33 23.5-56.5T240-880h287q16 0 30.5 6t25.5 17l194 194q11 11 17 25.5t6 30.5v447q0 33-23.5 56.5T720-80H240Zm280-560v-160H240v640h480v-440H560q-17 0-28.5-11.5T520-640ZM240-800v200-200 640-640Z"/>
+        </symbol>
+        
+        <!-- Google Material Symbols Rounded - Arrow Back --> 
+        <symbol id="back-icon" viewBox="0 -960 960 960">
+            <path d="m313-440 196 196q12 12 11.5 28T508-188q-12 11-28 11.5T452-188L188-452q-6-6-8.5-13t-2.5-15q0-8 2.5-15t8.5-13l264-264q11-11 27.5-11t28.5 11q12 12 12 28.5T508-715L313-520h447q17 0 28.5 11.5T800-480q0 17-11.5 28.5T760-440H313Z"/>
+        </symbol>
+        
+        <!-- Google Material Symbols Rounded - Add --> 
+        <symbol id="add-icon" viewBox="0 -960 960 960">
+            <path d="M440-440H240q-17 0-28.5-11.5T200-480q0-17 11.5-28.5T240-520h200v-200q0-17 11.5-28.5T480-760q17 0 28.5 11.5T520-720v200h200q17 0 28.5 11.5T760-480q0 17-11.5 28.5T720-440H520v200q0 17-11.5 28.5T480-200q-17 0-28.5-11.5T440-240v-200Z"/>
+        </symbol>
+
+        <!-- Google Material Symbols Rounded - Hard Drive --> 
+        <symbol id="hdd-icon" viewBox="0 -960 960 960">
+            <path d="M160-280h640v-240H160v240Zm520-60q25 0 42.5-17.5T740-400q0-25-17.5-42.5T680-460q-25 0-42.5 17.5T620-400q0 25 17.5 42.5T680-340Zm200-260H767l-80-80H273l-80 80H80l137-137q11-11 25.5-17t30.5-6h414q16 0 30.5 6t25.5 17l137 137ZM160-200q-33 0-56.5-23.5T80-280v-320h800v320q0 33-23.5 56.5T800-200H160Z"/>
+        </symbol>
+        
+        <!-- Google Material Symbols Rounded - Smb Share --> 
+        <symbol id="smb-share-icon" viewBox="0 -960 960 960">
+            <path d="M485-440h163q26 0 44-18t18-44q0-26-18-44.5T648-565h-2q-5-32-29-53.5T560-640q-26 0-47 13.5T481-590q-30 2-50.5 23.5T410-515q0 30 21.5 52.5T485-440ZM120-120q-33 0-56.5-23.5T40-200v-480q0-17 11.5-28.5T80-720q17 0 28.5 11.5T120-680v480h640q17 0 28.5 11.5T800-160q0 17-11.5 28.5T760-120H120Zm160-160q-33 0-56.5-23.5T200-360v-440q0-33 23.5-56.5T280-880h167q16 0 30.5 6t25.5 17l57 57h280q33 0 56.5 23.5T920-720v360q0 33-23.5 56.5T840-280H280Zm0-80h560v-360H527l-80-80H280v440Zm0 0v-440 440Z"/>
+        </symbol>
+
+        <!-- Google Material Symbols Rounded - Usb --> 
+        <symbol id="usb-icon" viewBox="0 -960 960 960">
+            <path d="M480-80q-33 0-56.5-23.5T400-160q0-21 11-39t29-29v-92H320q-33 0-56.5-23.5T240-400v-92q-18-9-29-27t-11-41q0-33 23.5-56.5T280-640q33 0 56.5 23.5T360-560q0 23-11 40t-29 28v92h120v-320h-40q-12 0-18-11t2-21l80-107q6-8 16-8t16 8l80 107q8 10 2 21t-18 11h-40v320h120v-80h-20q-8 0-14-6t-6-14v-120q0-8 6-14t14-6h120q8 0 14 6t6 14v120q0 8-6 14t-14 6h-20v80q0 33-23.5 56.5T640-320H520v92q19 10 29.5 28t10.5 40q0 33-23.5 56.5T480-80Z"/>
+        </symbol>
+        
+        <!-- Google Material Symbols Rounded - More Horiz --> 
+        <symbol id="more-icon" viewBox="0 -960 960 960">
+            <path d="M240-400q-33 0-56.5-23.5T160-480q0-33 23.5-56.5T240-560q33 0 56.5 23.5T320-480q0 33-23.5 56.5T240-400Zm240 0q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm240 0q-33 0-56.5-23.5T640-480q0-33 23.5-56.5T720-560q33 0 56.5 23.5T800-480q0 33-23.5 56.5T720-400Z"/>
+        </symbol>
+
+        <!-- Google Material Symbols Rounded - Delete Forever --> 
+        <symbol id="delete-icon" viewBox="0 -960 960 960">
+            <path d="M280-120q-33 0-56.5-23.5T200-200v-520q-17 0-28.5-11.5T160-760q0-17 11.5-28.5T200-800h160q0-17 11.5-28.5T400-840h160q17 0 28.5 11.5T600-800h160q17 0 28.5 11.5T800-760q0 17-11.5 28.5T760-720v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520Zm-400 0v520-520Zm200 316 76 76q11 11 28 11t28-11q11-11 11-28t-11-28l-76-76 76-76q11-11 11-28t-11-28q-11-11-28-11t-28 11l-76 76-76-76q-11-11-28-11t-28 11q-11 11-11 28t11 28l76 76-76 76q-11 11-11 28t11 28q11 11 28 11t28-11l76-76Z"/>
+        </symbol>
+
+        <!-- Google Material Symbols Rounded - Edit --> 
+        <symbol id="edit-icon" viewBox="0 -960 960 960">
+            <path d="M200-200h57l391-391-57-57-391 391v57Zm-40 80q-17 0-28.5-11.5T120-160v-97q0-16 6-30.5t17-25.5l505-504q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L313-143q-11 11-25.5 17t-30.5 6h-97Zm600-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/>
+        </symbol>
+
+        <!-- Google Material Symbols Rounded - Lan --> 
+        <symbol id="lan-icon" viewBox="0 -960 960 960">
+            <path d="M120-160v-120q0-33 23.5-56.5T200-360h40v-80q0-33 23.5-56.5T320-520h120v-80h-40q-33 0-56.5-23.5T320-680v-120q0-33 23.5-56.5T400-880h160q33 0 56.5 23.5T640-800v120q0 33-23.5 56.5T560-600h-40v80h120q33 0 56.5 23.5T720-440v80h40q33 0 56.5 23.5T840-280v120q0 33-23.5 56.5T760-80H600q-33 0-56.5-23.5T520-160v-120q0-33 23.5-56.5T600-360h40v-80H320v80h40q33 0 56.5 23.5T440-280v120q0 33-23.5 56.5T360-80H200q-33 0-56.5-23.5T120-160Zm280-520h160v-120H400v120ZM200-160h160v-120H200v120Zm400 0h160v-120H600v120ZM480-680ZM360-280Zm240 0Z"/>
+        </symbol>
+
+
+        <!-- https://commons.wikimedia.org/wiki/File:Tabler-icons_playstation-triangle.svg -->
+        <symbol id="ps-triangle-icon" viewBox="0 0 24 24" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 21a9 9 0 0 0 9 -9a9 9 0 0 0 -9 -9a9 9 0 0 0 -9 9a9 9 0 0 0 9 9z" />
+            <path d="M7.5 15h9l-4.5 -8z" />
+        </symbol>
+
+        <!-- https://commons.wikimedia.org/wiki/File:Tabler-icons_playstation-circle.svg -->
+        <symbol id="ps-circle-icon" viewBox="0 0 24 24" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 21a9 9 0 0 0 9 -9a9 9 0 0 0 -9 -9a9 9 0 0 0 -9 9a9 9 0 0 0 9 9z" />
+            <path d="M12 12m-4.5 0a4.5 4.5 0 1 0 9 0a4.5 4.5 0 1 0 -9 0" />
+        </symbol>
+
+        <!-- https://commons.wikimedia.org/wiki/File:Tabler-icons_playstation-x.svg -->
+        <symbol id="ps-cross-icon" viewBox="0 0 24 24" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 21a9 9 0 0 0 9 -9a9 9 0 0 0 -9 -9a9 9 0 0 0 -9 9a9 9 0 0 0 9 9z"/>
+            <path d="M8.5 8.5l7 7"/>
+            <path d="M8.5 15.5l7 -7"/>
+        </symbol>
+
+        <!-- https://commons.wikimedia.org/wiki/File:Tabler-icons_playstation-square.svg -->
+        <symbol id="ps-square-icon" viewBox="0 0 24 24" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+            <path d="M12 21a9 9 0 0 0 9 -9a9 9 0 0 0 -9 -9a9 9 0 0 0 -9 9a9 9 0 0 0 9 9z" />
+            <path d="M8 8m0 1a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-6a1 1 0 0 1 -1 -1z" />
+        </symbol>
+
+    
+        <!-- https://commons.wikimedia.org/wiki/File:Tabler-icons_playstation-square.svg -->
+        <symbol id="ps-icon" viewBox="0 0 32 32">
+            <path d="M11.979 3.464v23.396l5.219 1.681v-19.624c0-0.923 0.407-1.537 1.063-1.324 0.844 0.245 1.011 1.089 1.011 2.011v7.833c3.256 1.589 5.817-0.005 5.817-4.203 0-4.317-1.5-6.235-5.916-7.771-1.745-0.6-4.975-1.584-7.188-2zM18.188 25.12l8.396-3.037c0.952-0.343 1.099-0.832 0.328-1.088-0.781-0.255-2.183-0.188-3.147 0.161l-5.604 2v-3.183l0.317-0.109c0 0 1.604-0.561 3.885-0.823 2.261-0.239 5.048 0.041 7.251 0.88 2.464 0.803 2.724 1.964 2.099 2.767-0.62 0.796-2.161 1.38-2.161 1.38l-11.391 4.14v-3.063zM2.412 24.803c-2.537-0.729-2.953-2.224-1.803-3.1 1.068-0.776 2.875-1.4 2.875-1.4l7.489-2.683v3.083l-5.364 1.964c-0.943 0.36-1.099 0.844-0.317 1.099 0.781 0.261 2.181 0.204 3.12-0.156l2.583-0.943v2.765c-0.156 0.037-0.339 0.057-0.521 0.099-2.583 0.439-5.323 0.261-8.047-0.64z"/>
+        </symbol>
+    </svg>
+
     <!-- router relies on the div with id="content" -->
     <!-- <div class="container" id="content"> 
     </div> -->
 
-    <!-- https://github.com/iamdustan/smoothscroll -->
-    <script src="smoothscroll.min.js"></script>
-
+    
     <!-- https://cdn.jsdelivr.net/npm/xterm@5.0.0/lib/xterm.min.js -->
     <script src="xterm.min.js"></script> 
 
@@ -44,7 +135,7 @@ along with this program; see the file COPYING. If not, see
     <script src="router.js"></script>
     <script src="global.js"></script>
     <script src="apiClient.js"></script>
-    <script src="homebrewStore.js"></script>
+    <script src="localStore.js"></script>
     <script src="carouselView.js"></script>
     <script src="modalView.js"></script>
     <script src="filePickerView.js"></script>

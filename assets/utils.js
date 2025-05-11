@@ -79,3 +79,79 @@ class Semaphore {
         return Promise.all(promises);
     }
 }
+
+function redactUrlPassword(url) {
+    try {
+        var urlObj = new URL(url);
+    } catch (e) {
+        return url; // invalid URL
+    }
+
+    if (urlObj.username && urlObj.password) {
+        urlObj.password = "*";
+    }
+    return urlObj.toString();
+}
+
+function getFriendlySmbShareName(location) {
+    // sharename (host)
+    const url = new URL(location);
+    const host = url.hostname;
+    let sharename = url.pathname;
+    if (sharename.startsWith("/")) {
+        sharename = sharename.substring(1);
+    }
+    sharename = sharename.split("/")[0];
+    return `${sharename} (${host})`;
+}
+
+function strCountChar(str, char) {
+    let count = 0;
+    for (let i = 0; i < str.length; i++) {
+        if (str[i] === char) {
+            count++;
+        }
+    }
+    return count;
+}
+
+function addTrailingSlashIfNeeded(path) {
+    if (path.endsWith("/")) {
+        return path;
+    }
+    return path + "/";
+}
+
+function createSvgUseElement(href) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    if (!href.startsWith("#")) {
+        href = "#" + href;
+    }
+    use.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", href);
+    use.setAttribute("href", href);
+    svg.appendChild(use);
+
+    return svg;
+}
+
+function protocolToFriendlyName(protocol) {
+    // trim : from the end
+    if (protocol.endsWith(":")) {
+        protocol = protocol.substring(0, protocol.length - 1);
+    }
+
+    // trim everything after .
+    const dotIndex = protocol.indexOf(".");
+    if (dotIndex !== -1) {
+        protocol = protocol.substring(0, dotIndex);
+    }
+
+    switch (protocol) {
+        case "smb":
+        case "_smb":
+            return "SMB Share";
+        default:
+            return protocol.toUpperCase();
+    }
+}

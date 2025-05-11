@@ -59,6 +59,7 @@ typedef struct dir_read_sm {
   DIR* dir;
   int state;
   char* buf;
+  dev_t st_dev;
 } dir_read_sm_t;
 
 
@@ -101,16 +102,14 @@ file_close(void *cls) {
 
 
 static char
-stat_modeat(const char* path) {
-  struct stat st;
-
-  if(stat(path, &st)) return '-';
-  if(S_ISDIR(st.st_mode)) return 'd';
-  if(S_ISBLK(st.st_mode)) return 'b';
-  if(S_ISCHR(st.st_mode)) return 'c';
-  if(S_ISLNK(st.st_mode)) return 'l';
-  if(S_ISFIFO(st.st_mode)) return 'p';
-  if(S_ISSOCK(st.st_mode)) return 's';
+stat_modechar(const struct stat* st, const dev_t parent_dev) {
+  if(S_ISDIR(st->st_mode) && st->st_dev != parent_dev) return 'm'; // quick and dirty way to check if theres another device mounted (didnt want to make another syscall for every item)
+  if(S_ISDIR(st->st_mode)) return 'd';
+  if(S_ISBLK(st->st_mode)) return 'b';
+  if(S_ISCHR(st->st_mode)) return 'c';
+  if(S_ISLNK(st->st_mode)) return 'l';
+  if(S_ISFIFO(st->st_mode)) return 'p';
+  if(S_ISSOCK(st->st_mode)) return 's';
   return '-';
 }
 
@@ -122,6 +121,7 @@ static ssize_t
 dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
   dir_read_sm_t* sm = cls;
   struct dirent *e;
+  struct stat st;
 
   if(max < 512) {
     return 0;
@@ -129,7 +129,7 @@ dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
 
   if(sm->state == 0) {
     sm->state++;
-    return snprintf(buf, max, "[{ \"name\": \".\", \"mode\": \"d\"}");
+    return snprintf(buf, max, "[{ \"name\": \".\", \"mode\": \"d\", \"mtime\": 0, \"size\": 0 }");
   }
 
   if(sm->state == 1) {
@@ -145,8 +145,13 @@ dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
     strncat(sm->buf, "/", PATH_MAX);
     strncat(sm->buf, e->d_name, PATH_MAX);
 
-    return snprintf(buf, max, ",{ \"name\": \"%s\", \"mode\": \"%c\"}",
-		    e->d_name, stat_modeat(sm->buf));
+
+    if(stat(sm->buf, &st)) {
+      return 0;
+    }
+
+    return snprintf(buf, max, ",{ \"name\": \"%s\", \"mode\": \"%c\", \"mtime\": %ld, \"size\": %ld }",
+            e->d_name, stat_modechar(&st, sm->st_dev), st.st_mtim.tv_sec, st.st_size);
   }
 
   if(sm->state == 2) {
@@ -280,6 +285,7 @@ dir_request(struct MHD_Connection *conn, const char* path) {
   const char* mime;
   const char* fmt;
   DIR *dir;
+  struct stat st;
 
   if(!len || path[len-1] != '/') {
     sprintf(url, "/fs%s/", path);
@@ -302,10 +308,16 @@ dir_request(struct MHD_Connection *conn, const char* path) {
     return ret;
   }
 
+  if (stat(path, &st)) {
+    closedir(dir);
+    return MHD_NO;
+  }
+
   sm.dir = dir;
   sm.path = path;
   sm.state = 0;
   sm.buf = malloc(PATH_MAX+1);
+  sm.st_dev = st.st_dev;
 
   fmt = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "fmt");
   if(fmt && !strcmp(fmt, "json")) {

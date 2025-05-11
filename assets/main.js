@@ -109,7 +109,7 @@ async function renderHomePage() {
 		mainText: "+",
 		secondaryText: "Add more...",
 		onclick: async () => {
-			let result = await Globals.Router.pickFile();
+			let result = await Globals.Router.pickFile(undefined, undefined, false);
 
 			if (result) {
 				addToHomebrewStore(result);
@@ -140,16 +140,14 @@ async function renderLaunchedAppView(hbldrLogStream = null) {
 	msgIngress.innerText = "App is running in the background, press ";
 	msgWrapper.appendChild(msgIngress);
 
-	const btnCircle = document.createElement("span");
-	btnCircle.classList.add("ps-circle-icon");
+    const btnCircle = createSvgUseElement(PS_CIRCLE_ICON);
 	msgWrapper.appendChild(btnCircle);
 
 	const textCircle = document.createElement("span");
 	textCircle.innerText = " to close this dialog, or ";
 	msgWrapper.appendChild(textCircle);
 
-	const btnTriangle = document.createElement("span");
-	btnTriangle.classList.add("ps-triangle-icon");
+    const btnTriangle = createSvgUseElement(PS_TRIANGLE_ICON);
 	msgWrapper.appendChild(btnTriangle);
 
 	const textTriangle = document.createElement("span");
@@ -203,12 +201,18 @@ async function renderLaunchedAppView(hbldrLogStream = null) {
 
 window.onload = async function () {
 	window.addEventListener("error", (event) => {
-		alert(event.error);
-		// window.location.href = "/";
-	})
+		let msg = event.message;
+        if (event.filename && event.lineno) {
+            msg += ' (' + event.filename + ':' + event.lineno + ')';
+        }
+        alert(msg);
+	});
 	window.addEventListener("unhandledrejection", (event) => {
-		alert(event.reason);
-		// window.location.href = "/";
+        let msg = "Unhandled rejection: ";
+        msg += event.reason;
+        msg += '\n';
+        msg += event.reason.stack;
+        alert(msg);
 	});
 
 	const ver = await ApiClient.getVersion();

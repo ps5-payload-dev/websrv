@@ -48,37 +48,28 @@ function renderModalOverlay(items) {
 
 	for (let item of items) {
 		const entry = document.createElement("a");
-		entry.classList.add("list-entry");
-		entry.style.transition = "transform 0.3s ease";
+		entry.classList.add("list-entry-btn");
 		entry.style.position = "relative";
 		const textElement = document.createElement("p");
 		textElement.classList.add("text-center");
 		textElement.innerText = item.text;
 		entry.appendChild(textElement);
 
-		// entry.onclick = item.onclick;
 		entry.onclick = async () => {
-
 			entry.classList.add("loading-overlay");
 			entry.classList.add("loading");
-			await sleep(0);
+			entry.offsetHeight;
 
-			let onclickResult = await item.onclick();
-
-			let res = onclickResult;
-			let logStream = null;
-
+			let res = await item.onclick();
 			if (res && res.path) {
-				logStream = await ApiClient.launchApp(res.path, res.args, res.env, res.cwd, res.daemon);
-				res = logStream != null;
-			}
-
-			if (res == true) {
-				entry.style.transform = "scale(2)";
-				setTimeout(() => {
-					entry.style.removeProperty("transform");
-				}, 300);
-				Globals.Router.handleLaunchedAppView(logStream);
+				const launchAppResult = await ApiClient.launchApp(res.path, res.args, res.env, res.cwd, res.daemon);
+                if (launchAppResult.data != null) {
+                    entry.style.transform = "scale(2)";
+                    setTimeout(() => {
+                        entry.style.removeProperty("transform");
+                    }, 300);
+                    Globals.Router.handleLaunchedAppView(launchAppResult.data);
+                }
 			}
 			
 			entry.classList.remove("loading-overlay");

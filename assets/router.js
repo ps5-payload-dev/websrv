@@ -180,7 +180,7 @@ class Router {
         }
 
         await this.navigationLock.acquire();
-        
+
         try {
             window.dispatchEvent(new CustomEvent("popstateHandlerEntered"));
             /** @type {State} */
@@ -327,26 +327,89 @@ class Router {
         // this.disablePopHandler = false;
     }
 
+    createBlockingBackPressPromise() {
+        async function nonLazyHistoryBack() { // without this stuff breaks, history.back() is lazy
+            const backDone = new Promise((resolve) => {
+                function handler(event) {
+                    window.removeEventListener("popstate", handler);
+                    resolve(null);
+                }
+                window.addEventListener("popstate", handler);
+            });
+            window.history.back();
+            await backDone;
+        }
+
+        this.disablePopHandler = true;
+        window.history.pushState({}, "", `#${uuidv4()}`); // dummy
+        let handler = null;
+        let resolveFn = null;
+        let hasCleanedUp = false;
+        const promise = new Promise((resolve) => {
+            resolveFn = resolve;
+            handler = async (event) => {
+                window.removeEventListener("popstate", handler);
+                this.disablePopHandler = false;
+                hasCleanedUp = true;
+                resolve(null);
+            };
+            window.addEventListener("popstate", handler);
+        });
+
+        const cancel = async () => {
+            if (hasCleanedUp) {
+                return;
+            }
+            window.removeEventListener("popstate", handler);
+            await nonLazyHistoryBack();
+            this.disablePopHandler = false;
+            hasCleanedUp = true;
+            resolveFn(null);
+        }
+        return { promise, cancel };
+    }
+
+
     /**
      * @param {string} initialPath 
      * @returns {Promise<string?>}
      */
-    async pickFile(initialPath = "/", title = "Select file...") {
+    async pickFile(initialPath = "", title = "Select file...", allowNetworkLocations = false) {
         await this.pushOrReplaceState("/filePicker");
-        let navigateAwayPromise = this.getNavigateAwayPromise();
 
         /** @type {{path: string, finished: boolean}?} */
-        let result = await Promise.race([renderBrowsePage(initialPath, true, title), navigateAwayPromise]);
-        while (result && !result.finished) {
-            result = await Promise.race([renderBrowsePage(result.path, false, title), navigateAwayPromise]);
-        }
+        let lastPath = { path: initialPath, finished: false };
+        let isFirstRender = true; // dont run fadeout the first time, pushOrReplaceState already did it
+        let rootPath = "";
+        do {
+            let backButtonPressPromise = this.createBlockingBackPressPromise();
+            // if path is empty then render the source selector
+            let newPath = null;
+            if (lastPath.path === "") {
+                newPath = await Promise.race([renderStorageDevicePicker(true, !isFirstRender, undefined, allowNetworkLocations), backButtonPressPromise.promise]);
+                rootPath = newPath ? newPath.path : "";
+            } else {
+                newPath = await Promise.race([renderBrowsePageForPath(lastPath.path, rootPath, true, !isFirstRender, title), backButtonPressPromise.promise]);
+            }
 
-        // result is only null if the user already navigated back
-        if (result) {
-            await this.back();
-        }
+            await backButtonPressPromise.cancel();
 
-        return result ? result.path : null;
+            if (newPath === null) { // user pressed back
+                if (lastPath.path === "") { // exit
+                    newPath = null;
+                } else { // try to go back
+                    newPath = { path: getBackPath(lastPath.path, rootPath), finished: false };
+                }
+            }
+
+            lastPath = newPath;
+
+            isFirstRender = false;
+        } while (lastPath !== null && !lastPath.finished);
+
+        await this.back();
+
+        return lastPath ? lastPath.path : null;
     }
 
     getPath() {
