@@ -23,14 +23,16 @@ async function main() {
         mainText: "PKG installer",
         secondaryText: 'Install a PKG file',
 	onclick: async () => {
-            const file = await pickFile('/');
+            let file = await pickFile('', 'Select PKG...', true);
             if(!file) {
                 return;
             }
-            const url = file;
+            if(!file.startsWith('/')) {
+                file = ApiClient.getNetworkShareHttpProxyUrl(file);
+            }
 	    return {
 		path: PAYLOAD_PATH,
-                args: [PAYLOAD_NAME, url],
+                args: [PAYLOAD_NAME, file],
                 daemon: true
 	    };
         }
