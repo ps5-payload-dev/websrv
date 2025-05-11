@@ -47,7 +47,7 @@ const EXTENSION_MAIN_TIMEOUT_MS = 5000;
 async function loadJsExtension(extensionPath) {
     // load js as raw text
     let hbJs = await ApiClient.fsGetFileText(extensionPath);
-    if (!hbJs) {
+    if (!hbJs.data) {
         // throw new Error("Failed to load extension: " + extensionPath);
         removeFromHomebrewList(extensionPath);
         await Globals.Router.handleHome();
@@ -96,7 +96,7 @@ async function loadJsExtension(extensionPath) {
                 window.workingDir = "${extensionPath.substring(0, extensionPath.lastIndexOf("/"))}";
                 ${Globals.hbApiJs}
                 ${Globals.ApiClientJs}
-                ${hbJs}
+                ${hbJs.data}
                 // register message listener to execute code here in the iframe sandbox
                 window.addEventListener("message", async (event) => {
                     if (event.data.action !== "${EXTENSION_SANDBOX_EXECUTE_ACTION}") {
@@ -230,7 +230,7 @@ function registerExtensionMessagesListener() {
             if (!sandbox || !sandbox.contentWindow) {
                 return;
             }
-            let result = await Globals.Router.pickFile(decodeURIComponent(event.data.initialPath), decodeURIComponent(event.data.title));
+            let result = await Globals.Router.pickFile(decodeURIComponent(event.data.initialPath), decodeURIComponent(event.data.title), decodeURIComponent(event.data.allowNetworkLocations) === "true");
 
             sandbox.contentWindow.postMessage({ extensionId: event.data.extensionId, callback: event.data.callback, result: result }, "*");
         } else if (event.data.action === EXTENSION_API_PARENT_SHOW_CAROUSEL) {

@@ -19,29 +19,33 @@ async function main() {
     const PAYLOAD = window.workingDir + '/lakesnes.elf';
     const ROMDIR = window.workingDir + '/roms/';
     const ROMTYPES = ['smc', 'sfc']
-    
+
     async function getRomList() {
         let listing = await ApiClient.fsListDir(ROMDIR);
-	return listing.filter(entry =>
-	    ROMTYPES.includes(entry.name.slice(-3))).map(entry => {
-		const name = entry.name.slice(0, -4);
-		return {
-		    mainText: name,
-		    imgPath: '/fs/' + ROMDIR + name + '.jpg',
-		    onclick: async() => {
-			return {
-			    path: PAYLOAD,
-			    args: ROMDIR + entry.name
-			}
-		    }
-		};
-	    });
+        if (!listing.data) {
+            throw new Error("Failed to load rom list, error code: " + listing.status);
+        }
+
+        return listing.data.filter(entry =>
+            ROMTYPES.includes(entry.name.slice(-3))).map(entry => {
+                const name = entry.name.slice(0, -4);
+                return {
+                    mainText: name,
+                    imgPath: '/fs/' + ROMDIR + name + '.jpg',
+                    onclick: async () => {
+                        return {
+                            path: PAYLOAD,
+                            args: ROMDIR + entry.name
+                        }
+                    }
+                };
+            });
     }
     return {
         mainText: "LakeSnes",
         secondaryText: 'Super Nintendo Emulator',
         onclick: async () => {
-	    let items = await getRomList();
+            let items = await getRomList();
             showCarousel(items);
         }
     };

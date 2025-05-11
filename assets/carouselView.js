@@ -190,7 +190,8 @@ async function renderMainContentCarousel(items, fadeout = true) {
 
                 entryElementMainButton.classList.add("loading-overlay");
                 entryElementMainButton.classList.add("loading");
-                await sleep(0); // TODO: Didnt test if its needed here, but i think if the asyncInfo.result.onclick isnt async we might need this to trigger a rerender, or ideally something better
+                entryElementMainButton.offsetHeight; // reflow
+                /** @type {any} */
                 let onclickResult = null;
                 if (asyncInfo && asyncInfo.result.onclick) {
                     onclickResult = await asyncInfo.result.onclick();
@@ -201,22 +202,20 @@ async function renderMainContentCarousel(items, fadeout = true) {
                 else {
                     // TODO: invalid item, remove
                 }
-
+                
                 let res = onclickResult;
-                let logStream = null;
-
                 if (res && res.path) {
-                    logStream = await ApiClient.launchApp(res.path, res.args, res.env, res.cwd, res.daemon);
-                    res = logStream != null;
+                    let launchAppResult = await ApiClient.launchApp(res.path, res.args, res.env, res.cwd, res.daemon);
+                    if (launchAppResult.status === HTTP_OK && launchAppResult.data) {
+                        let logStream = launchAppResult.data;
+                        entryElement.style.transform = "scale(2)";
+                        setTimeout(() => {
+                            entryElement.style.removeProperty("transform");
+                        }, 300);
+                        Globals.Router.handleLaunchedAppView(logStream);
+                    }
                 }
 
-                if (res == true) {
-                    entryElement.style.transform = "scale(2)";
-                    setTimeout(() => {
-                        entryElement.style.removeProperty("transform");
-                    }, 300);
-                    Globals.Router.handleLaunchedAppView(logStream);
-                }
 
                 entryElementMainButton.classList.remove("loading-overlay");
                 entryElementMainButton.classList.remove("loading");
@@ -332,15 +331,16 @@ function generateCursorSnapOverlays(entryWrapperIndex = -1) {
  * Only for home page carousel, also sets selected class and creates the cursor snap points
  */
 function smoothScrollToElementIndex(index, smooth = true) {
-    const content = document.getElementById("content");
+    const content = /** @type {HTMLElement?} */ (document.getElementById("content"));
     if (!content) {
         return;
     }
-    const carousel = content.getElementsByClassName("carousel")[0];
-    if (!carousel){
+
+    const carousel = /** @type {HTMLElement?} */ (content.getElementsByClassName("carousel")[0]);
+    if (!carousel) {
         return;
     }
-    const entries = carousel.getElementsByClassName("entry-wrapper");
+    const entries = /** @type {HTMLCollectionOf<HTMLElement>} */ (carousel.getElementsByClassName("entry-wrapper"));
 
     if (index < 0 || index >= entries.length) {
         return;
@@ -348,34 +348,29 @@ function smoothScrollToElementIndex(index, smooth = true) {
 
     const entry = entries[index];
 
+    let newLeft = 0;
+    newLeft = -entry.offsetLeft;
+
+    // center in screen
+    newLeft += window.innerWidth / 2;
+    newLeft -= entry.offsetWidth / 2;
+
     generateCursorSnapOverlays(index);
 
     for (let t_entry of entries) {
         t_entry.classList.remove("selected");
     }
-
     entry.classList.add("selected");
 
-    // webkit doesnt do smooth scrolling and smoothscroll.js cant center the item so we have to do it manually
-    const itemRect = entry.getBoundingClientRect();
-    const containerRect = content.getBoundingClientRect();
-    const targetScrollLeft = itemRect.left - containerRect.left + content.scrollLeft - (containerRect.width - itemRect.width) / 2;
+    if (!smooth) {
+        carousel.style.setProperty("transition", "none"); // style overrides class
+    } 
 
-    if (targetScrollLeft < 1 && targetScrollLeft > -1) {
-        return;
-    }
+    carousel.style.left = `${newLeft}px`;
 
-    if (smooth) {
-        carousel.scrollBy({ left: targetScrollLeft, behavior: "smooth" });
-        carousel.classList.add("scrolling");
-        if (Globals.removeScrollingClassFromCarouselTimeoutId) {
-            clearTimeout(Globals.removeScrollingClassFromCarouselTimeoutId);
-        }
-        Globals.removeScrollingClassFromCarouselTimeoutId = setTimeout(() => {
-            carousel.classList.remove("scrolling");
-        }, 468); // 468 the constant length of the scrolling with smoothscroll.js
-    } else {
-        carousel.scrollLeft = targetScrollLeft;
+    if (!smooth) {
+        carousel.offsetHeight; // hack: force reflow, without this itll end up animating
+        carousel.style.removeProperty("transition");
     }
 }
 

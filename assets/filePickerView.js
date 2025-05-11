@@ -17,118 +17,507 @@ along with this program; see the file COPYING. If not, see
 
 // @ts-check
 
+/** @typedef {Object} BrowsePageCategoryItemSecondaryButton
+ * @property {string} icon
+ * @property {function} onclick
+ */
+
+/** @typedef {Object} BrowsePageCategoryItem
+ * @property {string} primaryText
+ * @property {string?} [secondaryText]
+ * @property {string?} [endTextPrimary]
+ * @property {string?} [endTextSecondary]
+ * @property {string} icon
+ * @property {function} onclick
+ * @property {BrowsePageCategoryItemSecondaryButton[]?} [secondaryButtons]
+ */
+
+/** @typedef {Object} BrowsePageCategory
+ * @property {string?} name
+ * @property {BrowsePageCategoryItem[]} items
+ */
+
 /**
- * @param {string} path 
+ * @param {BrowsePageCategory[]} items
  * @returns {Promise<{path: string, finished: boolean}>}
  */
-async function renderBrowsePage(path, fadein = false, title = 'Select file...') {
+async function renderBrowsePage_internal(items, fadein = false, fadeout = false, title) {
     /** @type {Promise<{path: string, finished: boolean}>[]} */
     let result = [];
 
-    let data = null;
-
-    if (!path.endsWith("/")) {
-        path += "/";
-    }
-
-    data = await ApiClient.fsListDir(path);
-
-    if (!data) {
-        throw new Error("Failed to load directory: " + path);
-    }
-
     // reset content
     const content = /** @type {HTMLElement} */ (document.getElementById("content"));
+
+    content.classList.remove("fadein");
+    content.classList.remove("fadeout");
+    if (fadeout) {
+        content.offsetHeight; // reflow
+        content.classList.add("fadeout");
+        await new Promise((resolve) => {
+            content.addEventListener("animationend", resolve, { once: true });
+        });
+        content.classList.remove("fadeout");
+    }
+
     content.innerHTML = "";
 
     // create list div
     const list = document.createElement("div");
     list.classList.add("list");
 
-    let titleElement = document.createElement("div");
+    let titleElement = document.createElement("p");
     titleElement.classList.add("list-title");
     titleElement.innerText = title;
     list.appendChild(titleElement);
 
-    // add back button if needed
-    if (path !== "/") {
-        let entryElement = document.createElement("a");
-        entryElement.classList.add("list-entry");
+    for (let ci = 0; ci < items.length; ci++) {
+        let category = items[ci];
+        let categoryElement = document.createElement("div");
+        categoryElement.classList.add("list-category");
+        list.appendChild(categoryElement);
 
-        entryElement.tabIndex = 0;
+        if (category.name) {
+            let categoryNameElement = document.createElement("p");
+            categoryNameElement.classList.add("list-category-name");
+            categoryNameElement.innerText = category.name;
+            categoryElement.appendChild(categoryNameElement);
+        }
 
-        result.push(new Promise((resolve, reject) => {
-            entryElement.onclick = () => {
-                let backPath = path.substring(0, path.lastIndexOf("/"));
-                backPath = backPath.substring(0, backPath.lastIndexOf("/") + 1);
-                resolve({ path: backPath, finished: false });
+        for (let item of category.items) {
+            let entryRow = document.createElement("div");
+            entryRow.classList.add("list-entry");
+
+            let entryElement = document.createElement("a");
+            entryElement.classList.add("list-entry-btn");
+            entryElement.classList.add("list-entry-main-button");
+            entryRow.appendChild(entryElement);
+
+            const iconElement = createSvgUseElement(item.icon);
+            iconElement.classList.add("list-entry-icon");
+            entryElement.appendChild(iconElement);
+
+            // make the cursor snap
+            entryElement.tabIndex = 0;
+
+            const primaryInfoColumn = document.createElement("div");
+            primaryInfoColumn.classList.add("list-entry-column");
+            entryElement.appendChild(primaryInfoColumn);
+
+            const nameElement = document.createElement("p");
+            nameElement.classList.add("list-entry-name");
+            nameElement.innerText = item.primaryText;
+            primaryInfoColumn.appendChild(nameElement);
+
+            if (item.secondaryText) {
+                const secondaryTextElement = document.createElement("p");
+                secondaryTextElement.classList.add("list-entry-secondary-text");
+                secondaryTextElement.innerText = item.secondaryText;
+                primaryInfoColumn.appendChild(secondaryTextElement);
             }
-        }));
+
+            if (item.endTextPrimary || item.endTextSecondary) {
+                const endColumn = document.createElement("div");
+                endColumn.classList.add("list-entry-column-end");
+                entryElement.appendChild(endColumn);
+
+                if (item.endTextPrimary) {
+                    const sizeElement = document.createElement("p");
+                    sizeElement.classList.add("list-entry-secondary-text");
+                    sizeElement.innerText = item.endTextPrimary;
+                    endColumn.appendChild(sizeElement);
+                }
+
+                if (item.endTextSecondary) {
+                    const dateElement = document.createElement("p");
+                    dateElement.classList.add("list-entry-secondary-text");
+                    dateElement.innerText = item.endTextSecondary;
+                    endColumn.appendChild(dateElement);
+                }
+            }
+
+            result.push(new Promise((resolve, reject) => {
+                entryElement.onclick = () => {
+                    resolve(item.onclick());
+                }
+            }));
 
 
-        const backIcon = document.createElement("div");
-        backIcon.classList.add("list-entry-icon");
-        backIcon.classList.add("back-icon");
+            if (item.secondaryButtons) {
+                for (let i = 0; i < item.secondaryButtons.length; i++) {
+                    const secondaryButton = document.createElement("a");
+                    secondaryButton.classList.add("list-entry-secondary-button");
+                    secondaryButton.classList.add("list-entry-btn");
+                    secondaryButton.tabIndex = 0;
 
-        entryElement.appendChild(backIcon);
+                    const iconElement = createSvgUseElement(item.secondaryButtons[i].icon);
+                    iconElement.classList.add("list-entry-icon");
+                    secondaryButton.appendChild(iconElement);
 
-        const nameElement = document.createElement("p");
-        nameElement.classList.add("list-entry-name");
-        nameElement.innerText = "..";
-        entryElement.appendChild(nameElement);
+                    if (item.secondaryButtons[i].onclick) {
+                        result.push(new Promise((resolve, reject) => {
+                            secondaryButton.onclick = () => {
+                                // @ts-ignore
+                                resolve(item.secondaryButtons[i].onclick());
+                            }
+                        }));
+                    }
 
-        list.appendChild(entryElement);
+                    entryRow.appendChild(secondaryButton);
+                }
+
+            }
+
+            list.appendChild(entryRow);
+        }
+
+        // if theres another category, add a divider
+        if (ci < items.length - 1) {
+            const separator = document.createElement("div");
+            separator.classList.add("list-category-separator");
+            list.appendChild(separator);
+        }
+
     }
 
 
-    // add entries
-    data.forEach(entry => {
-        let entryElement = document.createElement("a");
-        entryElement.classList.add("list-entry");
-        if (entry.isDir()) {
-            entryElement.classList.add("list-entry-directory");
-            // add dir icon
-            const dirIcon = document.createElement("div");
-            dirIcon.classList.add("list-entry-icon");
-            dirIcon.classList.add("dir-icon");
-
-            entryElement.appendChild(dirIcon);
-        } else {
-            entryElement.classList.add("list-entry-file");
-            // add file icon
-            const fileIcon = document.createElement("div");
-            fileIcon.classList.add("list-entry-icon");
-            fileIcon.classList.add("file-icon");
-
-            entryElement.appendChild(fileIcon);
-        }
-
-        // make the cursor snap
-        entryElement.tabIndex = 0;
-
-        const nameElement = document.createElement("p");
-        nameElement.classList.add("list-entry-name");
-        nameElement.innerText = entry.name;
-        entryElement.appendChild(nameElement);
-
-        result.push(new Promise((resolve, reject) => {
-            entryElement.onclick = () => {
-                if (entry.isDir()) {
-                    resolve({ path: path + entry.name + "/", finished: false });
-                } else {
-                    resolve({ path: path + entry.name, finished: true });
-                }
-            }
-        }));
-
-        list.appendChild(entryElement);
-    });
-
     if (fadein) {
+        content.offsetHeight;
         content.classList.add("fadein");
     }
 
     content.appendChild(list);
 
     return Promise.race(result);
+}
+
+/**
+ * 
+ * @param {string} path 
+ * @returns {string}
+ */
+function getBackPath(path, rootPath = "") {
+    if (path === "") {
+        return "";
+    }
+
+    if (path.startsWith("/")) { // local path
+        if (path.endsWith("/")) { // strip trailing slash
+            path = path.substring(0, path.length - 1);
+        }
+
+        let lastSlashIndex = path.lastIndexOf("/"); // strip actual last part
+        if (lastSlashIndex !== -1) {
+            path = path.substring(0, lastSlashIndex + 1);
+        }
+
+        if (rootPath.length > path.length) { // we must have went back farther than the root, so return to ""
+            path = "";
+        }
+        return path;
+    }
+
+    let rootPathUrlPathname = "";
+    try {
+        const url = new URL(rootPath);
+        rootPathUrlPathname = url.pathname;
+    } catch (error) { }
+
+    try {
+        const url = new URL(path);
+        if (url.pathname === "/") {
+            return "";
+        }
+
+        if (url.pathname.endsWith("/")) { // strip trailing slash
+            url.pathname = url.pathname.substring(0, url.pathname.length - 1);
+        }
+
+        if (url.pathname.indexOf("/") !== -1) { // strip actual last part
+            url.pathname = url.pathname.substring(0, url.pathname.lastIndexOf("/") + 1);
+        }
+
+        if (rootPathUrlPathname.length > url.pathname.length) { // we must have went back farther than the root, so return to ""
+            return "";
+        }
+
+        return url.toString();
+    } catch (e) { }
+
+    return "";
+}
+
+function getNextPath(parentPath, entry, isDir) {
+    parentPath = addTrailingSlashIfNeeded(parentPath);
+
+    let result = parentPath + entry;
+    if (isDir) {
+        result = addTrailingSlashIfNeeded(result);
+    }
+
+    if (result.startsWith("/")) { // local path, were done
+        return result;
+    }
+
+    try {
+        // try to inject credentials from saved network locations if there isnt one set already
+        const url = new URL(result);
+        if (url.username) {
+            return result;
+        }
+
+        // if no port, set to default
+        if (url.protocol === SMB_PROTOCOL && !url.port) {
+            url.port = SMB_PORT.toString();
+        }
+
+        const savedNetworkLocations = getSavedNetworkLocations();
+        for (let i = 0; i < savedNetworkLocations.length; i++) {
+            try {
+                let savedLocation = new URL(savedNetworkLocations[i]);
+
+                if (savedLocation.protocol !== url.protocol ||
+                    savedLocation.hostname !== url.hostname) {
+                    continue;
+                }
+
+                if (savedLocation.protocol === SMB_PROTOCOL && !savedLocation.port) {
+                    savedLocation.port = SMB_PORT.toString();
+                }
+
+                // make sure ports match, if they didnt specify before, we set it to default (just for smb for now)
+                if (savedLocation.port !== url.port) {
+                    continue;
+                }
+
+                // we have the same host and protocol, for smb we need to check the share name too
+                if (savedLocation.protocol === SMB_PROTOCOL && !url.pathname.startsWith(savedLocation.pathname)) {
+                    continue;
+                }
+
+                // ok, we have a match, inject the credentials
+                url.username = savedLocation.username;
+                url.password = savedLocation.password;
+                break;
+            } catch (e) {
+                // invalid url, skip
+                continue;
+            }
+        }
+
+        return url.toString();
+
+    } catch (e) { }
+
+    return result;
+}
+
+async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout = false, title = 'Select file...') {
+    let data = await ApiClient.fsListDir(path);
+    if ((data.status === HTTP_UNAUTHORIZED || data.status === HTTP_FORBIDDEN) && path.startsWith(SMB_SCHEME_PREFIX)) {
+        // credentials are injected into the URL in getNextPath so if we reach this theres no saved entry for this (or there are multiple and the first one is now invalid but thats an edge case so meh)
+        const shouldAuth = confirm("This share requires authentication. Do you want to enter credentials?");
+        if (!shouldAuth) {
+            return { path: getBackPath(path, rootPath), finished: false };
+        }
+        const username = prompt("Enter username");
+        const password = prompt("Enter password");
+        let requestedUrl = new URL(path);
+        requestedUrl.username = username || "";
+        requestedUrl.password = password || "";
+        const authenticatedUrl = requestedUrl.toString();
+        data = await ApiClient.fsListDir(authenticatedUrl);
+        if (data.status !== HTTP_OK) {
+            alert("Failed to authenticate to share: " + redactUrlPassword(path) + "\nError code: " + data.status);
+            return { path: getBackPath(path, rootPath), finished: false };
+        }
+
+        path = authenticatedUrl;
+
+        const shouldSave = confirm("Successfully authenticated. Do you want to save these credentials?");
+        if (shouldSave) {
+            addToSavedNetworkLocations(authenticatedUrl);
+        }
+
+        // we re-fetched the data and added the credentials to the path, go on like nothing happened
+    }
+    if (!data.data) {
+        alert("Failed to load directory: " + redactUrlPassword(path) + "\nError code: " + data.status);
+        return { path: "", finished: false };
+    }
+
+    /** @type {BrowsePageCategoryItem[]} */
+    let items = new Array(data.data.length + 1);
+    items[0] = {
+        primaryText: "..",
+        secondaryText: "",
+        endTextPrimary: "",
+        endTextSecondary: "",
+        icon: BACK_ICON,
+        onclick: () => {
+            return { path: getBackPath(path, rootPath), finished: false };
+        }
+    };
+
+    for (let i = 0; i < data.data.length; i++) {
+        let dirListing = data.data[i];
+
+        /** @type {BrowsePageCategoryItem} */
+        items[i + 1] = {
+            primaryText: dirListing.name,
+            secondaryText: dirListing.getHumanReadableMode(),
+            endTextPrimary: dirListing.isDir() ? "" : dirListing.getHumanReadableSize(),
+            endTextSecondary: dirListing.isDir() ? "" : dirListing.mtime.toLocaleString(),
+            icon: dirListing.getIcon(),
+            onclick: () => {
+                if (dirListing.isDir()) {
+                    return { path: getNextPath(path, dirListing.name, true), finished: false };
+                } else {
+                    return { path: getNextPath(path, dirListing.name, false), finished: true };
+                }
+            }
+        };
+    }
+
+    /** @type {BrowsePageCategory[]} */
+    let categories = [
+        {
+            name: redactUrlPassword(path),
+            items: items
+        }
+    ];
+
+    return renderBrowsePage_internal(categories, fadein, fadeout, title);
+}
+
+async function renderStorageDevicePicker(fadein = false, fadeout = false, title = 'Select Source...', allowNetworkLocations = false) {
+    /** @type {BrowsePageCategory[]} */
+    let categories = [];
+
+    let localStorageCategory = {
+        name: "Local Storage",
+        items: [
+            {
+                primaryText: "Internal Storage",
+                secondaryText: "/",
+                icon: HDD_ICON,
+                onclick: () => { return { path: "/", finished: false }; }
+            }
+        ]
+    };
+
+    const mnt = await ApiClient.fsListDir("/mnt/");
+    if (!mnt.data) {
+        throw new Error("Failed to list /mnt"); // /mnt should always exist 
+    }
+    // get items with mode m with prefix "ext" or "usb"
+    for (let i = 0; i < mnt.data.length; i++) {
+        let dirListing = mnt.data[i];
+        if (dirListing.mode !== "m") {
+            continue;
+        }
+
+        const isUsb = dirListing.name.startsWith("usb");
+        const isExt = dirListing.name.startsWith("ext");
+
+        if (!isUsb && !isExt) {
+            continue;
+        }
+
+        const num = parseInt(dirListing.name.substring(3));
+        if (isNaN(num)) {
+            continue;
+        }
+
+        const icon = isUsb ? USB_ICON : HDD_ICON;
+        const name = (isUsb ? "USB Storage " : "PS Formatted Storage ") + (num + 1).toString();
+        localStorageCategory.items.push({
+            primaryText: name,
+            secondaryText: `/mnt/${dirListing.name}`,
+            icon: icon,
+            onclick: () => { return { path: `/mnt/${dirListing.name}/`, finished: false }; }
+        });
+    }
+
+    categories.push(localStorageCategory);
+
+    if (allowNetworkLocations) {
+        /** @type {BrowsePageCategory} */
+        let networkLocationsCategory = {
+            name: "Network Locations",
+            items: []
+        };
+
+        const savedNetworkLocations = getSavedNetworkLocations();
+        for (let i = 0; i < savedNetworkLocations.length; i++) {
+            const location = savedNetworkLocations[i];
+            networkLocationsCategory.items.push({
+                primaryText: getFriendlySmbShareName(location), // TODO: make getFriendlySmbShareName generic
+                secondaryText: redactUrlPassword(location),
+                icon: SMB_SHARE_ICON,
+                onclick: () => {
+                    return { path: getNextPath(location, "", true), finished: false };
+                },
+                secondaryButtons: [
+                    {
+                        icon: EDIT_ICON,
+                        onclick: () => {
+                            const DEFAULT_TEXT = location;
+                            const promptResult = prompt("Edit url:", DEFAULT_TEXT);
+                            if (promptResult && promptResult !== DEFAULT_TEXT) {
+                                removeFromSavedNetworkLocations(location);
+                                addToSavedNetworkLocations(promptResult);
+                                alert("Updated url has been saved.");
+                            }
+                            return { path: "", finished: false };  // refresh
+                        }
+                    },
+                    {
+                        icon: DELETE_ICON,
+                        onclick: () => {
+                            if (confirm(`Are you sure you want to remove this share?\n${redactUrlPassword(location)}`)) {
+                                removeFromSavedNetworkLocations(location);
+                            }
+                            return { path: "", finished: false };  // refresh
+                        }
+                    }
+                ]
+            });
+        }
+
+        const discoveredLocations = await ApiClient.getMdnsDiscoveredLocations();
+        for (let i = 0; i < discoveredLocations.length; i++) {
+            const location = discoveredLocations[i];
+            networkLocationsCategory.items.push({
+                primaryText: `${location.hostname} (${location.address})`,
+                secondaryText: protocolToFriendlyName(location.protocol),
+                endTextPrimary: "mdns discovered",
+                icon: LAN_ICON,
+                onclick: () => {
+                    return { path: getNextPath(`${SMB_SCHEME_PREFIX}${location.address}:${location.port}`, "", true), finished: false };
+                }
+            });
+        }
+
+        const addNetworkLocationButton = {
+            primaryText: "Add custom share",
+            icon: ADD_ICON,
+            onclick: () => {
+                const DEFAULT_TEXT = SMB_SCHEME_PREFIX;
+                const promptResult = prompt("Enter the path to the share:\nE.g.: `smb://username:password@192.168.1.2/share1`", DEFAULT_TEXT);
+                // for some .. reason the back button acts as if the user pressed OK
+                // so lets double check the user actually want this
+                if (promptResult && promptResult !== DEFAULT_TEXT &&
+                    confirm(`Are you sure you want to add this share?\n${promptResult}`)) {
+                    addToSavedNetworkLocations(promptResult);
+                }
+
+                return { path: "", finished: false };  // refresh
+            }
+        };
+        networkLocationsCategory.items.push(addNetworkLocationButton);
+        categories.push(networkLocationsCategory);
+    }
+
+
+    return renderBrowsePage_internal(categories, fadein, fadeout, title);
 }

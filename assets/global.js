@@ -32,6 +32,24 @@ var Globals = {
     Router: null,
     hbApiJs: null,
     ApiClientJs: null,
-    removeScrollingClassFromCarouselTimeoutId: null,
     lastCarouselLeftRightKeyDownTimestamp: 0,
 };
+
+const DIR_ICON = "dir-icon";
+const FILE_ICON = "file-icon";
+const BACK_ICON = "back-icon";
+const ADD_ICON = "add-icon";
+const HDD_ICON = "hdd-icon";
+const SMB_SHARE_ICON = "smb-share-icon";
+const USB_ICON = "usb-icon";
+const MORE_ICON = "more-icon";
+const DELETE_ICON = "delete-icon";
+const EDIT_ICON = "edit-icon";
+const LAN_ICON = "lan-icon";
+
+const PS_TRIANGLE_ICON = "ps-triangle-icon";
+const PS_CIRCLE_ICON = "ps-circle-icon";
+const PS_CROSS_ICON = "ps-cross-icon";
+const PS_SQUARE_ICON = "ps-square-icon";
+
+const PS_ICON = "ps-icon";
