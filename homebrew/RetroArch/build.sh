@@ -36,6 +36,7 @@ tar xf  $TEMPDIR/RetroArch.tar.gz -C $TEMPDIR || exit 1
 
 cd $TEMPDIR/RetroArch-$VER || exit 1
 sed -i 's|SDL_RENDERER_ACCELERATED|SDL_RENDERER_SOFTWARE|g' gfx/drivers/sdl2_gfx.c
+sed -i 's|$(LIBRETRO_COMM_DIR)/utils/md5.o||g' Makefile.common
 
 export CC
 export CXX
