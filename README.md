@@ -44,8 +44,9 @@ an emulator that expects arguments for loading roms. For an example on
 available capabillitiles, see:
 - https://github.com/ps5-payload-dev/websrv/tree/master/homebrew/demo
 
-For real-world homebrew, checkout the latest release at:
+For real-world homebrew, checkout:
 - https://github.com/ps5-payload-dev/websrv/releases
+- https://github.com/cy33hc/ps5-ezremote-client
 
 ## Building
 Assuming you have the [ps5-payload-packbrew][packbrew] SDK installed on a Debian-flavored
