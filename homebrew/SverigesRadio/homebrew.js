@@ -67,7 +67,7 @@ async function main() {
 		onclick: async () => {
 		    return {
 			path: PAYLOAD_PATH,
-			args: ch.liveaudio.url
+			args: ['-fs', ch.liveaudio.url]
 		    };
 		}
 	    };
