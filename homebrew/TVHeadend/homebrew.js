@@ -68,7 +68,7 @@ async function main() {
                     return {
                         path: PAYLOAD_PATH,
                         args: [BASE_URL + '/play/stream/channel/' + ch.uuid,
-                              '-vf', 'yadif=1:-1', '-sn']
+                               '-vf', 'yadif=1:-1', '-sn', '-fs']
                     };
                 }
             };
@@ -104,7 +104,7 @@ async function main() {
                     return {
                         path: PAYLOAD_PATH,
                         args: [BASE_URL + '/play/dvrfile/' + dvr.uuid,
-                              '-vf', 'yadif=1:-1', '-sn']
+                               '-vf', 'yadif=1:-1', '-sn', '-fs']
                     };
                 }
             };
