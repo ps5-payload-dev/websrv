@@ -205,6 +205,12 @@ pt_getint(pid_t pid, intptr_t addr) {
 
 
 int
+pt_setint(pid_t pid, intptr_t addr, int val) {
+  return sys_ptrace(PT_WRITE_D, pid, (caddr_t)addr, val);
+}
+
+
+int
 pt_getregs(pid_t pid, struct reg *r) {
   return sys_ptrace(PT_GETREGS, pid, (caddr_t)r, 0);
 }
@@ -213,6 +219,76 @@ pt_getregs(pid_t pid, struct reg *r) {
 int
 pt_setregs(pid_t pid, const struct reg *r) {
   return sys_ptrace(PT_SETREGS, pid, (caddr_t)r, 0);
+}
+
+
+int
+pt_copyin(pid_t pid, const void* buf, intptr_t addr, size_t len) {
+  struct ptrace_io_desc iod = {
+    .piod_op = PIOD_WRITE_D,
+    .piod_offs = (void*)addr,
+    .piod_addr = (void*)buf,
+    .piod_len = len};
+  return sys_ptrace(PT_IO, pid, (caddr_t)&iod, 0);
+}
+
+
+int
+pt_setchar(pid_t pid, intptr_t addr, char val) {
+  return pt_copyin(pid, &val, addr, sizeof(val));
+}
+
+
+int
+pt_setshort(pid_t pid, intptr_t addr, short val) {
+  return pt_copyin(pid, &val, addr, sizeof(val));
+}
+
+
+int
+pt_setlong(pid_t pid, intptr_t addr, long val) {
+  return pt_copyin(pid, &val, addr, sizeof(val));
+}
+
+
+int
+pt_copyout(pid_t pid, intptr_t addr, void* buf, size_t len) {
+  struct ptrace_io_desc iod = {
+    .piod_op = PIOD_READ_D,
+    .piod_offs = (void*)addr,
+    .piod_addr = buf,
+    .piod_len = len};
+  return sys_ptrace(PT_IO, pid, (caddr_t)&iod, 0);
+}
+
+
+char
+pt_getchar(pid_t pid, intptr_t addr) {
+  char val = 0;
+
+  pt_copyout(pid, addr, &val, sizeof(val));
+
+  return val;
+}
+
+
+short
+pt_getshort(pid_t pid, intptr_t addr) {
+  short val = 0;
+
+  pt_copyout(pid, addr, &val, sizeof(val));
+
+  return val;
+}
+
+
+long
+pt_getlong(pid_t pid, intptr_t addr) {
+  long val = 0;
+
+  pt_copyout(pid, addr, &val, sizeof(val));
+
+  return val;
 }
 
 

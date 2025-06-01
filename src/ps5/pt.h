@@ -20,7 +20,6 @@ along with this program; see the file COPYING. If not, see
 #include <sys/types.h>
 #include <machine/reg.h>
 
-int pt_trace_me(void);
 int pt_attach(pid_t pid);
 int pt_detach(pid_t pid, int sig);
 int pt_step(pid_t pid);
@@ -35,7 +34,19 @@ int pt_await_exec(pid_t pid);
 int pt_getregs(pid_t pid, struct reg *r);
 int pt_setregs(pid_t pid, const struct reg *r);
 
-int pt_getint(pid_t pid, intptr_t addr);
+
+int pt_copyin(pid_t pid, const void* buf, intptr_t addr, size_t len);
+int pt_copyout(pid_t pid, intptr_t addr, void* buf, size_t len);
+
+int pt_setchar(pid_t pid, intptr_t addr, char val);
+int pt_setshort(pid_t pid, intptr_t addr, short val);
+int pt_setint(pid_t pid, intptr_t addr, int val);
+int pt_setlong(pid_t pid, intptr_t addr, long val);
+
+char  pt_getchar(pid_t pid, intptr_t addr);
+short pt_getshort(pid_t pid, intptr_t addr);
+int   pt_getint(pid_t pid, intptr_t addr);
+long  pt_getlong(pid_t pid, intptr_t addr);
 
 long pt_syscall(pid_t pid, int sysno, ...);
 intptr_t pt_resolve(pid_t pid, const char* nid);
