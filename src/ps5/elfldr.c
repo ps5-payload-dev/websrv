@@ -95,7 +95,7 @@ r_relative(elfldr_ctx_t *ctx, Elf64_Rela* rela) {
  * Parse a PT_LOAD program header.
  **/
 static int
-pt_load(elfldr_ctx_t *ctx, Elf64_Phdr *phdr) {
+data_load(elfldr_ctx_t *ctx, Elf64_Phdr *phdr) {
   void* data = ctx->base_mirror + phdr->p_vaddr;
 
   if(!phdr->p_memsz) {
@@ -179,7 +179,7 @@ elfldr_load(pid_t pid, uint8_t *elf) {
   for(int i=0; i<ehdr->e_phnum && !error; i++) {
     switch(phdr[i].p_type) {
     case PT_LOAD:
-      error = pt_load(&ctx, &phdr[i]);
+      error = data_load(&ctx, &phdr[i]);
       break;
     }
   }
