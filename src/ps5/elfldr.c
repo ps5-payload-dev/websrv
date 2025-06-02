@@ -35,7 +35,6 @@ along with this program; see the file COPYING. If not, see
 
 #include <ps5/kernel.h>
 #include <ps5/klog.h>
-#include <ps5/mdbg.h>
 
 #include "elfldr.h"
 #include "pt.h"
