@@ -15,6 +15,8 @@ along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
 #include <arpa/inet.h>
+#include <execinfo.h>
+#include <fcntl.h>
 #include <ifaddrs.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -406,10 +408,32 @@ sys_notify_address(const char* prefix, int port) {
 }
 
 
+static void
+on_fatal_signal(int sig) {
+  void *buf[0x1000];
+  int nptrs;
+
+  notify("websrv.elf: %s", strsignal(sig));
+
+  nptrs = backtrace(buf, sizeof(buf));
+  backtrace_symbols_fd(buf, nptrs, open("/dev/console", O_WRONLY));
+
+  _exit(EXIT_FAILURE);
+}
+
+
 __attribute__((constructor)) static void
 sys_init(void) {
   pid_t pid;
   int err;
+
+  signal(SIGSEGV, on_fatal_signal);
+  signal(SIGABRT, on_fatal_signal);
+  signal(SIGFPE, on_fatal_signal);
+  signal(SIGILL, on_fatal_signal);
+  signal(SIGBUS, on_fatal_signal);
+  signal(SIGTRAP, on_fatal_signal);
+  signal(SIGSYS, on_fatal_signal);
 
   if((err=sceUserServiceInitialize(0))) {
     perror("sceUserServiceInitialize");
