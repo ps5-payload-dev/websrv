@@ -285,6 +285,7 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
   enum MHD_Result ret = MHD_NO;
 
   if(strcmp(method, MHD_HTTP_METHOD_GET) &&
+     strcmp(method, MHD_HTTP_METHOD_POST) &&
      strcmp(method, MHD_HTTP_METHOD_HEAD)) {
     return MHD_NO;
   }
