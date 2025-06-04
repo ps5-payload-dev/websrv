@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - 'homebrew/LinkDev/**'
+    tags:
+      - '*'
   pull_request:
     paths:
       - 'homebrew/LinkDev/**'
@@ -13,28 +15,54 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-    - name: Checkout
-      uses: actions/checkout@v3
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install bash clang-18 lld-18
+          sudo apt install build-essential
 
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install build-essential bash clang-18 lld-18
+      - name: Install toolchain
+        run: |
+          wget https://github.com/ps5-payload-dev/pacbrew-repo/releases/latest/download/ps5-payload-dev.tar.gz
+          sudo tar xf ps5-payload-dev.tar.gz -C /
 
-    - name: Install toolchain
-      run: |
-        wget https://github.com/ps5-payload-dev/pacbrew-repo/releases/latest/download/ps5-payload-dev.tar.gz
-        sudo tar xf ps5-payload-dev.tar.gz -C /
+      - name: Build
+        run: |
+          PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/LinkDev/build.sh
 
-    - name: Build
-      run: |
-        PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/LinkDev/build.sh
+      - name: Zip build output
+        run: |
+          cd homebrew
+          zip -r ../LinkDev.zip LinkDev
 
-    - name: Upload
-      uses: actions/upload-artifact@v4
-      with:
-        name: LinkDev
-        path: ./homebrew/LinkDev
-        if-no-files-found: error
+      - name: Upload zipped artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LinkDev
+          path: LinkDev.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: LinkDev
+          path: .
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          prerelease: true
+          files: LinkDev.zip
 

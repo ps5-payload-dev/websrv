@@ -4,15 +4,15 @@ on:
   push:
     paths-ignore:
       - "**/*.md"
-      - '**/*.txt'
+      - "**/*.txt"
   pull_request:
     paths-ignore:
       - "**/*.md"
-      - '**/*.txt'
+      - "**/*.txt"
   workflow_dispatch:
 
 jobs:
-  payload-build:
+  build:
     runs-on: ubuntu-latest
     steps:
 
@@ -26,19 +26,33 @@ jobs:
 
     - name: Build
       run: |
-        export PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
-        make clean all
+        make clean all PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
+        zip -r Payload.zip websrv.elf
 
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
         name: Payload
-        path: ./websrv.elf
+        path: Payload.zip
         if-no-files-found: error
 
-    - name: Upload Launcher
-      uses: actions/upload-artifact@v4
-      with:
-        name: Launcher
-        path: ./homebrew/IV9999-FAKE00000_00-HOMEBREWLOADER01.pkg
-        if-no-files-found: error
+  release:
+    needs: build
+    permissions:
+      contents: write
+
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Payload
+          path: .
+
+      - name: Create GitHub Release (pre-release)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          prerelease: true
+          files: Payload.zip

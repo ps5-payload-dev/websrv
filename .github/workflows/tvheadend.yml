@@ -1,14 +1,14 @@
-name: OffAct
+name: TVHeadend
 
 on:
   push:
     paths:
-      - 'homebrew/OffAct/**'
+      - 'homebrew/TVHeadend/**'
     tags:
       - '*'
   pull_request:
     paths:
-      - 'homebrew/OffAct/**'
+      - 'homebrew/TVHeadend/**'
   workflow_dispatch:
 
 jobs:
@@ -31,18 +31,18 @@ jobs:
 
       - name: Build
         run: |
-          PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/OffAct/build.sh
+          PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/TVHeadend/build.sh
 
       - name: Zip build output
         run: |
           cd homebrew
-          zip -r ../OffAct.zip OffAct
+          zip -r ../TVHeadend.zip TVHeadend
 
       - name: Upload zipped artifact
         uses: actions/upload-artifact@v4
         with:
-          name: OffAct
-          path: OffAct.zip
+          name: TVHeadend
+          path: TVHeadend.zip
           if-no-files-found: error
 
   release:
@@ -56,7 +56,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: OffAct
+          name: TVHeadend
           path: .
 
       - name: Create release
@@ -64,5 +64,5 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           prerelease: true
-          files: OffAct.zip
+          files: TVHeadend.zip
 
