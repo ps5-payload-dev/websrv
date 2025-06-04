@@ -33,6 +33,7 @@ jobs:
       - name: Build
         run: |
           PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/EDuke32/build.sh
+          PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/EDuke32/hdpack.sh
 
       - name: Zip build output
         run: |
