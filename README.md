@@ -74,9 +74,10 @@ code included with ps5-payload-websrv are licensed under the GPLv3+.
 
 
 [bdj]: https://github.com/john-tornblom/bdj-sdk
+[sdk]: https://github.com/ps5-payload-dev/sdk
 [pacbrew]: https://github.com/ps5-payload-dev/pacbrew-repo/releases/latest
 [webkit]: https://github.com/Cryptogenic/PS5-IPV6-Kernel-Exploit
 [issues]: https://github.com/ps5-payload-dev/websrv/issues/new
 [elfldr]: https://github.com/ps5-payload-dev/elfldr
 [xterm.js]: https://github.com/xtermjs/xterm.js
-[launcher]: https://github.com/ps5-payload-dev/websrv/blob/master/homebrew/IV9999-FAKE00001_00-HOMEBREWLOADER01.pkg?raw=true
+[launcher]: https://github.com/ps5-payload-dev/websrv/raw/refs/heads/master/homebrew/IV9999-FAKE00000_00-HOMEBREWLOADER01.pkg
