@@ -397,7 +397,7 @@ async function renderStorageDevicePicker(fadein = false, fadeout = false, title 
         name: "Local Storage",
         items: [
             {
-                primaryText: "Internal Storage",
+                primaryText: "Console Storage",
                 secondaryText: "/",
                 icon: HDD_ICON,
                 onclick: () => { return { path: "/", finished: false }; }
@@ -429,7 +429,13 @@ async function renderStorageDevicePicker(fadein = false, fadeout = false, title 
         }
 
         const icon = isUsb ? USB_ICON : HDD_ICON;
-        const name = (isUsb ? "USB Storage " : "PS Formatted Storage ") + (num + 1).toString();
+        let name = (isUsb ? "USB Storage " : "PS Formatted Storage ") + (num + 1).toString();
+        if(dirListing.name == "ext0") {
+	    name = 'USB Extended Storage';
+	} else if(dirListing.name == "ext1") {
+	    name = 'M.2 SSD Storage';
+	}
+
         localStorageCategory.items.push({
             primaryText: name,
             secondaryText: `/mnt/${dirListing.name}`,
