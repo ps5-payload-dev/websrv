@@ -34,7 +34,6 @@ int pt_await_exec(pid_t pid);
 int pt_getregs(pid_t pid, struct reg *r);
 int pt_setregs(pid_t pid, const struct reg *r);
 
-
 int pt_copyin(pid_t pid, const void* buf, intptr_t addr, size_t len);
 int pt_copyout(pid_t pid, intptr_t addr, void* buf, size_t len);
 
