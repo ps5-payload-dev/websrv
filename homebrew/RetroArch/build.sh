@@ -44,7 +44,6 @@ export PKG_CONFIG
 export CROSS_COMPILE="${PS5_PAYLOAD_SDK}/bin/prospero-"
 export OS="BSD"
 export DISTRO=
-export CFLAGS="-O1"
 export LDFLAGS="-rdynamic"
 ./configure \
     --prefix="${PREFIX}" \
