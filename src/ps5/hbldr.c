@@ -438,7 +438,6 @@ hbldr_launch(const char*cwd, const char* path, int stdio, char** argv,
 
   if(bigapp_replace(pid, elf, path, stdio, cwd, envp) < 0) {
     pt_detach(pid, SIGKILL);
-    kill(pid, SIGKILL);
     pid = -1;
   }
 
