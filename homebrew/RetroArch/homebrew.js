@@ -17,7 +17,8 @@ along with this program; see the file COPYING. If not, see
 
 async function main() {
     const PAYLOAD = window.workingDir + '/retroarch.elf';
-    const ENV = {HOME: window.workingDir};
+    const ENV = {HOME: window.workingDir,
+		 LD_LIBRARY_PATH: window.workingDir};
     const ARGS = ['-f', '-c', window.workingDir + '/retroarch.cfg'];
 
     return {
