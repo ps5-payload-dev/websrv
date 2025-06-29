@@ -39,6 +39,7 @@ jobs:
           PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/RetroArch/build-vice.sh
           PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/RetroArch/build-puae2021.sh
           ./homebrew/RetroArch/fetch-assets.sh
+          ./homebrew/RetroArch/fetch-databases.sh
 
       - name: Zip build output
         run: |
