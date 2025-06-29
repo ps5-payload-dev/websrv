@@ -60,7 +60,7 @@ export LDFLAGS="-rdynamic"
     --enable-network_video \
     --disable-update_cores \
     --disable-update_core_info \
-    --disable-online_updater \
+    --enable-online_updater \
     --disable-ozone \
     --disable-xmb \
     --disable-materialui \
