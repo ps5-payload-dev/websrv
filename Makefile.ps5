@@ -27,7 +27,7 @@ VERSION_TAG := $(shell git describe --abbrev=10 --dirty --always --tags)
 
 PYTHON ?= python3
 
-BIN    := websrv.elf
+BIN    := websrv-ps5.elf
 
 SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c src/mime.c
 SRCS   += src/mdns.c src/smb.c
@@ -60,6 +60,3 @@ $(BIN): $(SRCS) $(GEN_SRCS)
 
 test: $(BIN)
 	$(PS5_DEPLOY) -h $(PS5_HOST) -p $(PS5_PORT) $^
-
-websrv.7z: websrv.elf
-	7z a $@ $<

@@ -27,13 +27,12 @@ jobs:
     - name: Build
       run: |
         make clean all PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
-        zip -r Payload.zip websrv.elf
 
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
         name: Payload
-        path: Payload.zip
+        path: websrv-ps5.elf
         if-no-files-found: error
 
   release:
@@ -55,4 +54,4 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           prerelease: true
-          files: Payload.zip
+          files: websrv-ps5.elf
