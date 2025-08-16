@@ -25,10 +25,18 @@ int
 main(int argc, char** argv) {
   const uint16_t port = 8080;
 
+  puts(".-------------------------------------------------------------------.");
+  puts("|                   _                                       _    __ |");
+  puts("|__      __   ___  | |__    ___   _ __  __   __       ___  | |  / _||");
+  puts("|\\ \\ /\\ / /  / _ \\ | '_ \\  / __| | '__| \\ \\ / /      / _ \\ | | | |_ |");
+  puts("| \\ V  V /  |  __/ | |_) | \\__ \\ | |     \\ V /   _  |  __/ | | |  _||");
+  puts("|  \\_/\\_/    \\___| |_.__/  |___/ |_|      \\_/   (_)  \\___| |_| |_|  |");
+  puts("|                                                                   |");
+  printf("| %-30s   Copyright (C) 2025 John Törnblom |\n", VERSION_TAG);
+  puts("'-------------------------------------------------------------------'");
+
   signal(SIGPIPE, SIG_IGN);
   signal(SIGCHLD, SIG_IGN);
-
-  printf("Web server was compiled at %s %s\n", __DATE__, __TIME__);
 
   while(1) {
 #ifdef __SCE__
