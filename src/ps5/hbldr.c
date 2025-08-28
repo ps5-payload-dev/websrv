@@ -374,11 +374,14 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio,
   elfldr_set_cwd(pid, cwd);
   elfldr_set_stdio(pid, stdio);
 
+#if 0
   // invoke sys_set_butget(0)
   // This allow bigapp homebrew to operate on relative paths using
   // open, mkdir, etc.
+  // TODO: this also causes syscore to crash when the bigapp terminates
   pt_syscall(pid, 0x23b, 0);
-
+#endif
+  
   // Execute the ELF
   if(elfldr_exec(pid, elf)) {
     return -1;
