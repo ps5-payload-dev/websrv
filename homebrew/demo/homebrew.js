@@ -40,6 +40,10 @@ async function main() {
                 {
                     mainText: "Pick file...",
                     onclick: async () => { alert("This alert is coming from the extension, path:" + await pickFile(window.workingDir)); } // pickfile arg = initial path, optional
+                },
+                {
+                    mainText: "Pick directory...",
+                    onclick: async () => { alert("This alert is coming from the extension, path:" + await pickDirectory(window.workingDir)); } // pickfile arg = initial path, optional
                 }
             ];
 

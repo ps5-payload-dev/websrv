@@ -374,7 +374,7 @@ class Router {
      * @param {string} initialPath 
      * @returns {Promise<string?>}
      */
-    async pickFile(initialPath = "", title = "Select file...", allowNetworkLocations = false) {
+    async pickPath(initialPath = "", title = "Select file...", allowNetworkLocations = false, selectDirectory = false) {
         await this.pushOrReplaceState("/filePicker");
 
         /** @type {{path: string, finished: boolean}?} */
@@ -389,7 +389,7 @@ class Router {
                 newPath = await Promise.race([renderStorageDevicePicker(true, !isFirstRender, undefined, allowNetworkLocations), backButtonPressPromise.promise]);
                 rootPath = newPath ? newPath.path : "";
             } else {
-                newPath = await Promise.race([renderBrowsePageForPath(lastPath.path, rootPath, true, !isFirstRender, title), backButtonPressPromise.promise]);
+                newPath = await Promise.race([renderBrowsePageForPath(lastPath.path, rootPath, true, !isFirstRender, title, selectDirectory), backButtonPressPromise.promise]);
             }
 
             await backButtonPressPromise.cancel();
@@ -410,6 +410,22 @@ class Router {
         await this.back();
 
         return lastPath ? lastPath.path : null;
+    }
+
+    /**
+     * @param {string} initialPath 
+     * @returns {Promise<string?>}
+     */
+    async pickFile(initialPath = "", title = "Select file...", allowNetworkLocations = false) {
+        return this.pickPath(initialPath, title, allowNetworkLocations, false);
+    }
+
+    /**
+     * @param {string} initialPath 
+     * @returns {Promise<string?>}
+     */
+    async pickDirectory(initialPath = "", title = "Select directory...", allowNetworkLocations = false) {
+        return this.pickPath(initialPath, title, allowNetworkLocations, true);
     }
 
     getPath() {

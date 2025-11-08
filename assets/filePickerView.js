@@ -311,7 +311,7 @@ function getNextPath(parentPath, entry, isDir) {
     return result;
 }
 
-async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout = false, title = 'Select file...') {
+async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout = false, title = 'Select file...', selectDirectory = false) {
     let data = await ApiClient.fsListDir(path);
     if ((data.status === HTTP_UNAUTHORIZED || data.status === HTTP_FORBIDDEN) && path.startsWith(SMB_SCHEME_PREFIX)) {
         // credentials are injected into the URL in getNextPath so if we reach this theres no saved entry for this (or there are multiple and the first one is now invalid but thats an edge case so meh)
@@ -346,8 +346,22 @@ async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout =
     }
 
     /** @type {BrowsePageCategoryItem[]} */
-    let items = new Array(data.data.length + 1);
-    items[0] = {
+    let items = new Array();
+
+    if (selectDirectory) {
+        items.push({
+            primaryText: "[Select this directory]",
+            secondaryText: "",
+            endTextPrimary: "",
+            endTextSecondary: "",
+            icon: FOLDER_CHECK_ICON,
+            onclick: () => {
+                return { path: path, finished: true };
+            }
+        });
+    }
+
+    items.push({
         primaryText: "..",
         secondaryText: "",
         endTextPrimary: "",
@@ -356,13 +370,18 @@ async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout =
         onclick: () => {
             return { path: getBackPath(path, rootPath), finished: false };
         }
-    };
+    });
 
     for (let i = 0; i < data.data.length; i++) {
         let dirListing = data.data[i];
 
+        // if select dir hide files
+        if (selectDirectory && !dirListing.isDir()) {
+            continue;
+        }
+
         /** @type {BrowsePageCategoryItem} */
-        items[i + 1] = {
+        items.push({
             primaryText: dirListing.name,
             secondaryText: dirListing.getHumanReadableMode(),
             endTextPrimary: dirListing.isDir() ? "" : dirListing.getHumanReadableSize(),
@@ -375,7 +394,7 @@ async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout =
                     return { path: getNextPath(path, dirListing.name, false), finished: true };
                 }
             }
-        };
+        });
     }
 
     /** @type {BrowsePageCategory[]} */

@@ -46,6 +46,7 @@ const MORE_ICON = "more-icon";
 const DELETE_ICON = "delete-icon";
 const EDIT_ICON = "edit-icon";
 const LAN_ICON = "lan-icon";
+const FOLDER_CHECK_ICON = "folder-check-2-icon";
 
 const PS_TRIANGLE_ICON = "ps-triangle-icon";
 const PS_CIRCLE_ICON = "ps-circle-icon";

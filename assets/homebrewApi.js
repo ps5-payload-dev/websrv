@@ -63,9 +63,9 @@ function showCarousel(items) {
     window.parent.postMessage({ extensionId: window.extensionId, action: EXTENSION_API_PARENT_SHOW_CAROUSEL, items: encodeURIComponent(JSON.stringify(remapFunctionsToFunctionIds(items))) }, "*");
 }
 
-function pickFile(initialPath = "", title = 'Select file...', allowNetworkLocations = false) {
+function pickPath(initialPath = "", title = 'Select file...', allowNetworkLocations = false, selectDirectory = false) {
     const uuid = uuidv4();
-    window.parent.postMessage({ extensionId: window.extensionId, action: EXTENSION_API_PARENT_FILE_BROWSER, callback: uuid, initialPath: encodeURIComponent(initialPath), title:  encodeURIComponent(title), allowNetworkLocations: encodeURIComponent(allowNetworkLocations)}, "*");
+    window.parent.postMessage({ extensionId: window.extensionId, action: EXTENSION_API_PARENT_FILE_BROWSER, callback: uuid, initialPath: encodeURIComponent(initialPath), title:  encodeURIComponent(title), allowNetworkLocations: encodeURIComponent(allowNetworkLocations), selectDirectory: encodeURIComponent(selectDirectory) }, "*");
 
     // wait for response
     return new Promise((resolve, reject) => {
@@ -78,4 +78,12 @@ function pickFile(initialPath = "", title = 'Select file...', allowNetworkLocati
             resolve(event.data.result);
         });
     });
+}
+
+function pickFile(initialPath = "", title = 'Select file...', allowNetworkLocations = false) {
+    return pickPath(initialPath, title, allowNetworkLocations, false);
+}
+
+function pickDirectory(initialPath = "", title = 'Select directory...', allowNetworkLocations = false) {
+    return pickPath(initialPath, title, allowNetworkLocations, true);
 }
