@@ -287,8 +287,8 @@ dir_request(struct MHD_Connection *conn, const char* path) {
   DIR *dir;
   struct stat st;
 
-  if(!len || path[len-1] != '/') {
-    sprintf(url, "/fs%s/", path);
+  if(!len) {
+    sprintf(url, "/fs/");
     if(!(resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
       return MHD_NO;
     }
