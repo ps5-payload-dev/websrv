@@ -151,7 +151,7 @@ async function scanHomebrews() {
                     let foundExecutableName = null;
                     for (let hbDirEntry of hbDirEntries.data) {
                         for (let allowedName of HOMEBREW_AUTO_SCAN_ALLOWED_EXEC_NAMES) {
-                            if (hbDirEntry.name.toLowerCase() === allowedName.toLowerCase()) {
+                            if (hbDirEntry.name === allowedName) {
                                 foundExecutableName = allowedName;
                                 break;
                             }
