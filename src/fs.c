@@ -351,15 +351,50 @@ fs_request(struct MHD_Connection *conn, const char* url) {
   const char* path = url+3;
   struct stat st;
 
+  /* If the client requested "/fs" (no trailing slash) redirect to "/fs/"
+   * so that relative links in the generated directory listing resolve
+   * under /fs/ rather than the server root. */
+  if(strcmp(url, "/fs") == 0) {
+    if(!(resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
+      return MHD_NO;
+    }
+
+    MHD_add_response_header(resp, MHD_HTTP_HEADER_LOCATION, "/fs/");
+    ret = websrv_queue_response(conn, MHD_HTTP_MOVED_PERMANENTLY, resp);
+    MHD_destroy_response(resp);
+    return ret;
+  }
+
   if(!strlen(path)) {
     return dir_request(conn, "/");
   }
 
   if(!stat(path, &st)) {
-    if(S_ISREG(st.st_mode)) {
-      return file_request(conn, path);
-    } else {
+    /* If this path is a directory but the URL doesn't end with '/'
+     * redirect the client to the trailing-slash version so the browser
+     * resolves relative links correctly (browsers treat a URL without
+     * a trailing slash as a file and will resolve relative paths to the
+     * parent directory). */
+    if(S_ISDIR(st.st_mode)) {
+      size_t url_len = strlen(url);
+      if(url_len == 0 || url[url_len - 1] != '/') {
+        char location[PATH_MAX];
+        if(snprintf(location, PATH_MAX, "%s/", url) >= PATH_MAX) {
+          /* shouldn't happen for reasonable URLs; fall back to no-op */
+          return MHD_NO;
+        }
+        if(!(resp = MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
+          return MHD_NO;
+        }
+        MHD_add_response_header(resp, MHD_HTTP_HEADER_LOCATION, location);
+        ret = websrv_queue_response(conn, MHD_HTTP_MOVED_PERMANENTLY, resp);
+        MHD_destroy_response(resp);
+        return ret;
+      }
+
       return dir_request(conn, path);
+    } else {
+      return file_request(conn, path);
     }
   }
 
