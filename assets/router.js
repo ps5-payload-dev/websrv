@@ -374,7 +374,7 @@ class Router {
      * @param {string} initialPath 
      * @returns {Promise<string?>}
      */
-    async pickPath(initialPath = "", title = "Select file...", allowNetworkLocations = false, selectDirectory = false) {
+    async pickPath(initialPath = "", title = "Select file...", allowNetworkLocations = false, pathType = 'file') {
         await this.pushOrReplaceState("/filePicker");
 
         /** @type {{path: string, finished: boolean}?} */
@@ -383,13 +383,13 @@ class Router {
         let rootPath = "";
         do {
             let backButtonPressPromise = this.createBlockingBackPressPromise();
-            // if path is empty then render the source selector
+            // if path is empty then render the device selector
             let newPath = null;
             if (lastPath.path === "") {
-                newPath = await Promise.race([renderStorageDevicePicker(true, !isFirstRender, undefined, allowNetworkLocations), backButtonPressPromise.promise]);
+                newPath = await Promise.race([renderStorageDevicePicker(true, !isFirstRender, undefined, allowNetworkLocations, pathType), backButtonPressPromise.promise]);
                 rootPath = newPath ? newPath.path : "";
             } else {
-                newPath = await Promise.race([renderBrowsePageForPath(lastPath.path, rootPath, true, !isFirstRender, title, selectDirectory), backButtonPressPromise.promise]);
+                newPath = await Promise.race([renderBrowsePageForPath(lastPath.path, rootPath, true, !isFirstRender, title, pathType), backButtonPressPromise.promise]);
             }
 
             await backButtonPressPromise.cancel();
@@ -417,7 +417,7 @@ class Router {
      * @returns {Promise<string?>}
      */
     async pickFile(initialPath = "", title = "Select file...", allowNetworkLocations = false) {
-        return this.pickPath(initialPath, title, allowNetworkLocations, false);
+        return this.pickPath(initialPath, title, allowNetworkLocations, 'file');
     }
 
     /**
@@ -425,7 +425,15 @@ class Router {
      * @returns {Promise<string?>}
      */
     async pickDirectory(initialPath = "", title = "Select directory...", allowNetworkLocations = false) {
-        return this.pickPath(initialPath, title, allowNetworkLocations, true);
+        return this.pickPath(initialPath, title, allowNetworkLocations, 'dir');
+    }
+
+    /**
+     * @param {string} initialPath 
+     * @returns {Promise<string?>}
+     */
+    async pickDevice(title = "Select device...", allowNetworkLocations = false) {
+        return this.pickPath("", title, allowNetworkLocations, 'dev');
     }
 
     getPath() {

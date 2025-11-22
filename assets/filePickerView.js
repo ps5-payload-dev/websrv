@@ -311,7 +311,7 @@ function getNextPath(parentPath, entry, isDir) {
     return result;
 }
 
-async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout = false, title = 'Select file...', selectDirectory = false) {
+async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout = false, title = 'Select file...', pathType = 'file') {
     let data = await ApiClient.fsListDir(path);
     if ((data.status === HTTP_UNAUTHORIZED || data.status === HTTP_FORBIDDEN) && path.startsWith(SMB_SCHEME_PREFIX)) {
         // credentials are injected into the URL in getNextPath so if we reach this theres no saved entry for this (or there are multiple and the first one is now invalid but thats an edge case so meh)
@@ -348,7 +348,7 @@ async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout =
     /** @type {BrowsePageCategoryItem[]} */
     let items = new Array();
 
-    if (selectDirectory) {
+    if (pathType == 'dir') {
         items.push({
             primaryText: "[Select this directory]",
             secondaryText: "",
@@ -376,7 +376,7 @@ async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout =
         let dirListing = data.data[i];
 
         // if select dir hide files
-        if (selectDirectory && !dirListing.isDir()) {
+        if (pathType == 'dir' && !dirListing.isDir()) {
             continue;
         }
 
@@ -408,7 +408,7 @@ async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout =
     return renderBrowsePage_internal(categories, fadein, fadeout, title);
 }
 
-async function renderStorageDevicePicker(fadein = false, fadeout = false, title = 'Select Source...', allowNetworkLocations = false) {
+async function renderStorageDevicePicker(fadein = false, fadeout = false, title = 'Select Storage Device...', allowNetworkLocations = false, pathType = 'file') {
     /** @type {BrowsePageCategory[]} */
     let categories = [];
 
@@ -419,7 +419,7 @@ async function renderStorageDevicePicker(fadein = false, fadeout = false, title 
                 primaryText: "Console Storage",
                 secondaryText: "/",
                 icon: HDD_ICON,
-                onclick: () => { return { path: "/", finished: false }; }
+                onclick: () => { return { path: "/", finished: pathType == 'dev' }; }
             }
         ]
     };
@@ -459,7 +459,7 @@ async function renderStorageDevicePicker(fadein = false, fadeout = false, title 
             primaryText: name,
             secondaryText: `/mnt/${dirListing.name}`,
             icon: icon,
-            onclick: () => { return { path: `/mnt/${dirListing.name}/`, finished: false }; }
+            onclick: () => { return { path: `/mnt/${dirListing.name}/`, finished: pathType == 'dev' }; }
         });
     }
 
@@ -480,7 +480,7 @@ async function renderStorageDevicePicker(fadein = false, fadeout = false, title 
                 secondaryText: redactUrlPassword(location),
                 icon: SMB_SHARE_ICON,
                 onclick: () => {
-                    return { path: getNextPath(location, "", true), finished: false };
+                    return { path: getNextPath(location, "", true), finished: pathType == 'dev' };
                 },
                 secondaryButtons: [
                     {

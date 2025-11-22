@@ -230,7 +230,7 @@ function registerExtensionMessagesListener() {
             if (!sandbox || !sandbox.contentWindow) {
                 return;
             }
-            let result = await Globals.Router.pickPath(decodeURIComponent(event.data.initialPath), decodeURIComponent(event.data.title), decodeURIComponent(event.data.allowNetworkLocations) === "true", decodeURIComponent(event.data.selectDirectory) === "true");
+            let result = await Globals.Router.pickPath(decodeURIComponent(event.data.initialPath), decodeURIComponent(event.data.title), decodeURIComponent(event.data.allowNetworkLocations) === "true", decodeURIComponent(event.data.pathType));
 
             sandbox.contentWindow.postMessage({ extensionId: event.data.extensionId, callback: event.data.callback, result: result }, "*");
         } else if (event.data.action === EXTENSION_API_PARENT_SHOW_CAROUSEL) {
