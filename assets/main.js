@@ -137,14 +137,14 @@ async function renderLaunchedAppView(hbldrLogStream = null) {
 	wrapper.appendChild(msgWrapper);
 
 	const msgIngress = document.createElement("span");
-	msgIngress.innerText = "App is running in the background, press ";
+	msgIngress.innerText = "The homebrew is running in the background, press ";
 	msgWrapper.appendChild(msgIngress);
 
     const btnCircle = createSvgUseElement(PS_CIRCLE_ICON);
 	msgWrapper.appendChild(btnCircle);
 
 	const textCircle = document.createElement("span");
-	textCircle.innerText = " to close this dialog, or ";
+	textCircle.innerText = " to close this dialog or ";
 	msgWrapper.appendChild(textCircle);
 
     const btnTriangle = createSvgUseElement(PS_TRIANGLE_ICON);
