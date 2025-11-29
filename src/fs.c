@@ -1,4 +1,4 @@
-/* Copyright (C) 2024 John Törnblom
+/* Copyright (C) 2025 John Törnblom
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -52,16 +52,290 @@ along with this program; see the file COPYING. If not, see
 
 
 /**
- * State machine for rendering directory listing.
+ * Internal Server Error (500)
+ **/
+#define PAGE_500                                 \
+  "<html>"                                       \
+  "  <head>"                                     \
+  "    <title>Internal server error</title>"     \
+  "  </head>"                                    \
+  "  <body>Internal server error</body>"         \
+  "</html>"
+
+
+/**
+ * State machine for rendering directory listings.
  **/
 typedef struct dir_read_sm {
-  const char *path;
-  DIR* dir;
-  int state;
-  char* buf;
-  dev_t st_dev;
+  enum {
+    DIR_READ_HEAD,
+    DIR_READ_BODY,
+    DIR_READ_TAIL,
+    DIR_READ_NULL,
+  } state;
+  struct {
+    char path[PATH_MAX];
+    DIR* dir;
+    dev_t dev;
+  } props;
 } dir_read_sm_t;
 
+
+
+/**
+ * Obtain the character encoding for a file mode.
+ **/
+static char
+modechar(const struct stat* st, const dev_t parent_dev) {
+  if(S_ISDIR(st->st_mode) && st->st_dev != parent_dev) {
+    // quick and dirty way to check if theres another device mounted
+    return 'm';
+  }
+  if(S_ISDIR(st->st_mode)) {
+    return 'd';
+  }
+  if(S_ISBLK(st->st_mode)) {
+    return 'b';
+  }
+  if(S_ISCHR(st->st_mode)) {
+    return 'c';
+  }
+  if(S_ISLNK(st->st_mode)) {
+    return 'l';
+  }
+  if(S_ISFIFO(st->st_mode)) {
+    return 'p';
+  }
+  if(S_ISSOCK(st->st_mode)) {
+    return 's';
+  }
+  return '-';
+}
+
+
+/**
+ * Remove superfluous forward slashes from the given path.
+ **/
+static void
+normalize_path(char *path) {
+  char *src = path;
+  char *dst = path;
+  size_t len;
+
+  while(*src) {
+    *dst = *src;
+    if(*src == '/') {
+      while(src[1] == '/') {
+	src++;
+      }
+    }
+    dst++;
+    src++;
+  }
+
+  *dst = 0;
+
+  len = dst - path;
+  if(len > 1 && path[len-1] == '/') {
+    path[len-1] = 0;
+  }
+}
+
+
+/**
+ * Read the contents of a directory, and render it as JSON.
+ *
+ * Implemented as a state machine:
+ *
+ *  ↦ [DIR_READ_HEAD] → [DIR_READ_BODY] → [DIR_READ_TAIL] → [DIR_READ_NULL]
+ *                             ↺                                   ↺
+ **/
+static ssize_t
+dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
+  dir_read_sm_t* sm = (dir_read_sm_t*)cls;
+  struct dirent *entry;
+  struct stat st;
+
+  if(max < 512) {
+    return 0;
+  }
+
+  switch(sm->state) {
+  case DIR_READ_HEAD:
+    sm->state = DIR_READ_BODY;
+    return snprintf(buf, max,
+		    "[{"			\
+		    "\"name\": \".\","		\
+		    "\"mode\": \"d\","		\
+		    "\"mtime\": 0,"		\
+		    "\"size\": 0"		\
+		    "}");
+
+  case DIR_READ_BODY:
+    if(!(entry=readdir(sm->props.dir))) {
+      sm->state = DIR_READ_TAIL;
+      return 0;
+    }
+    if(!strcmp(entry->d_name, ".") ||
+       !strcmp(entry->d_name, "..")) {
+      return 0;
+    }
+
+    if(fstatat(dirfd(sm->props.dir), entry->d_name, &st, 0)) {
+      return 0;
+    }
+
+    return snprintf(buf, max,
+		    ",{"\
+		    "\"name\": \"%s\","\
+		    "\"mode\": \"%c\","\
+		    "\"mtime\": %ld,"\
+		    "\"size\": %ld"\
+		    "}",
+		    entry->d_name, modechar(&st, sm->props.dev),
+		    st.st_mtim.tv_sec, st.st_size);
+
+  case DIR_READ_TAIL:
+    sm->state = DIR_READ_NULL;
+    return snprintf(buf, max, "]");
+
+  case DIR_READ_NULL:
+  default:
+    return MHD_CONTENT_READER_END_OF_STREAM;
+  }
+}
+
+
+/**
+ * Read the contents of a directory, and render it as HTML.
+ *
+ * Implemented as a state machine:
+ *
+ *  ↦ [DIR_READ_HEAD] → [DIR_READ_BODY] → [DIR_READ_TAIL] → [DIR_READ_NULL]
+ *                             ↺                                   ↺
+ **/
+static ssize_t
+dir_read_html(void *cls, uint64_t pos, char *buf, size_t max) {
+  dir_read_sm_t* sm = (dir_read_sm_t*)cls;
+  struct dirent *entry;
+
+  if(max < 512) {
+    return 0;
+  }
+
+  switch(sm->state) {
+  case DIR_READ_HEAD:
+    sm->state = DIR_READ_BODY;
+    return snprintf(buf, max,
+		    "<!DOCTYPE html>"					\
+		    "<html>"						\
+		    "  <head>"						\
+		    "    <title>Index of %s</title>"			\
+		    "  </head>"						\
+		    "  <body>"						\
+		    "    <h1>Index of %s</h1>"				\
+		    "    <ul>"						\
+		    , sm->props.path, sm->props.path);
+
+  case DIR_READ_BODY:
+    if(!(entry=readdir(sm->props.dir))) {
+      sm->state = DIR_READ_TAIL;
+      return 0;
+    }
+    if(!strcmp(entry->d_name, ".") ||
+       !strcmp(entry->d_name, "..")) {
+      return 0;
+    }
+
+    return snprintf(buf, max, "<li><a href=\"/fs%s/%s\">%s</a></li>",
+		    sm->props.path, entry->d_name, entry->d_name);
+
+  case DIR_READ_TAIL:
+    sm->state = DIR_READ_NULL;
+    return snprintf(buf, max, "</ul></body></html>");
+
+  case DIR_READ_NULL:
+  default:
+    return MHD_CONTENT_READER_END_OF_STREAM;
+  }
+}
+
+
+/**
+ * Close a directory.
+ **/
+static void
+dir_close(void *cls) {
+  dir_read_sm_t* sm = (dir_read_sm_t*)cls;
+  closedir(sm->props.dir);
+  free(sm);
+}
+
+
+/**
+ * Respond to a directory listing request.
+ **/
+static enum MHD_Result
+dir_request(struct MHD_Connection *conn, const char* path) {
+  MHD_ContentReaderCallback dir_read_cb = &dir_read_html;
+  const char* mime = "text/html";
+  enum MHD_Result ret = MHD_NO;
+  struct MHD_Response *resp;
+  dir_read_sm_t* sm;
+  const char* fmt;
+  struct stat st;
+  DIR *dir = 0;
+
+  fmt = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "fmt");
+  if(fmt && !strcmp(fmt, "json")) {
+    dir_read_cb = &dir_read_json;
+    mime = "application/json";
+  }
+
+  if(!stat(path, &st)) {
+    dir = opendir(path);
+  }
+
+  if(!dir) {
+    if((resp=MHD_create_response_from_buffer(strlen(PAGE_404), PAGE_404,
+					     MHD_RESPMEM_PERSISTENT))) {
+      ret = websrv_queue_response(conn, MHD_HTTP_NOT_FOUND, resp);
+      MHD_destroy_response(resp);
+    }
+    return ret;
+  }
+
+  if(!(sm=calloc(1, sizeof(dir_read_sm_t)))) {
+    closedir(dir);
+    if((resp=MHD_create_response_from_buffer(strlen(PAGE_500), PAGE_500,
+                                             MHD_RESPMEM_PERSISTENT))) {
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, "text/html");
+      ret = websrv_queue_response(conn, MHD_HTTP_INTERNAL_SERVER_ERROR, resp);
+      MHD_destroy_response(resp);
+    }
+    return ret;
+  }
+
+  sm->state = DIR_READ_HEAD;
+  sm->props.dir = dir;
+  sm->props.dev = st.st_dev;
+  strncpy(sm->props.path, path, sizeof(sm->props.path));
+  normalize_path(sm->props.path);
+
+  if((resp=MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, 32 * PAGE_SIZE,
+					     dir_read_cb, sm,
+					     &dir_close))) {
+    MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, mime);
+    ret = websrv_queue_response (conn, MHD_HTTP_OK, resp);
+    MHD_destroy_response(resp);
+    return ret;
+  }
+
+  closedir(dir);
+  free(sm);
+
+  return MHD_NO;
+}
 
 
 /**
@@ -94,138 +368,7 @@ file_read(void *cls, uint64_t pos, char *buf, size_t max) {
 static void
 file_close(void *cls) {
   FILE *file = cls;
-
-  if(file) {
-    fclose(file);
-  }
-}
-
-
-static char
-stat_modechar(const struct stat* st, const dev_t parent_dev) {
-  if(S_ISDIR(st->st_mode) && st->st_dev != parent_dev) return 'm'; // quick and dirty way to check if theres another device mounted (didnt want to make another syscall for every item)
-  if(S_ISDIR(st->st_mode)) return 'd';
-  if(S_ISBLK(st->st_mode)) return 'b';
-  if(S_ISCHR(st->st_mode)) return 'c';
-  if(S_ISLNK(st->st_mode)) return 'l';
-  if(S_ISFIFO(st->st_mode)) return 'p';
-  if(S_ISSOCK(st->st_mode)) return 's';
-  return '-';
-}
-
-
-/**
- * Read the contents of a directory, and render it as json.
- **/
-static ssize_t
-dir_read_json(void *cls, uint64_t pos, char *buf, size_t max) {
-  dir_read_sm_t* sm = cls;
-  struct dirent *e;
-  struct stat st;
-
-  if(max < 512) {
-    return 0;
-  }
-
-  if(sm->state == 0) {
-    sm->state++;
-    return snprintf(buf, max, "[{ \"name\": \".\", \"mode\": \"d\", \"mtime\": 0, \"size\": 0 }");
-  }
-
-  if(sm->state == 1) {
-    if(!(e=readdir(sm->dir))) {
-      sm->state++;
-      return 0;
-    }
-    if(e->d_name[0] == '.') {
-      return 0;
-    }
-
-    strncpy(sm->buf, sm->path, PATH_MAX);
-    strncat(sm->buf, "/", PATH_MAX);
-    strncat(sm->buf, e->d_name, PATH_MAX);
-
-
-    if(stat(sm->buf, &st)) {
-      return 0;
-    }
-
-    return snprintf(buf, max, ",{ \"name\": \"%s\", \"mode\": \"%c\", \"mtime\": %ld, \"size\": %ld }",
-            e->d_name, stat_modechar(&st, sm->st_dev), st.st_mtim.tv_sec, st.st_size);
-  }
-
-  if(sm->state == 2) {
-    sm->state++;
-    return snprintf(buf, max, "]");
-  }
-
-  return MHD_CONTENT_READER_END_OF_STREAM;
-}
-
-
-/**
- * Read the contents of a directory, and render it as html.
- **/
-static ssize_t
-dir_read_html(void *cls, uint64_t pos, char *buf, size_t max) {
-  dir_read_sm_t* sm = cls;
-  struct dirent *e;
-
-  if(max < 512) {
-    return 0;
-  }
-
-  if(sm->state == 0) {
-    sm->state++;
-    return snprintf(buf, max,
-		    "<!DOCTYPE html>"					\
-		    "<html>"						\
-		    "  <head>"						\
-		    "    <title>Index of %s</title>"			\
-		    "  </head>"						\
-		    "  <body>"						\
-		    "    <h1>Index of %s</h1>"				\
-		    "    <ul>"						\
-		    ,
-		    sm->path, sm->path);
-  }
-
-  if(sm->state == 1) {
-    if(!(e=readdir(sm->dir))) {
-      sm->state++;
-      return 0;
-    }
-    if(e->d_name[0] == '.') {
-      return 0;
-    }
-    return snprintf(buf, max, "<li><a href=\"%s\">%s</a></li>",
-		    e->d_name, e->d_name);
-  }
-
-  if(sm->state == 2) {
-    sm->state++;
-    return snprintf(buf, max, "</ul></body></html>");
-  }
-
-  return MHD_CONTENT_READER_END_OF_STREAM;
-}
-
-
-/**
- * Close a directory.
- **/
-static void
-dir_close(void *cls) {
-  dir_read_sm_t* sm = cls;
-
-  if(sm && sm->buf) {
-    free(sm->buf);
-    sm->buf = 0;
-  }
-  if(sm && sm->dir) {
-    closedir(sm->dir);
-    sm->dir = 0;
-  }
+  fclose(file);
 }
 
 
@@ -266,80 +409,6 @@ file_request(struct MHD_Connection *conn, const char* path) {
   }
 
   fclose(file);
-
-  return MHD_NO;
-}
-
-
-/**
- * Respond to a directory request.
- **/
-static enum MHD_Result
-dir_request(struct MHD_Connection *conn, const char* path) {
-  MHD_ContentReaderCallback dir_read_cb;
-  enum MHD_Result ret = MHD_NO;
-  size_t len = strlen(path);
-  struct MHD_Response *resp;
-  char url[PATH_MAX];
-  dir_read_sm_t sm;
-  const char* mime;
-  const char* fmt;
-  DIR *dir;
-  struct stat st;
-
-  if(!len) {
-    sprintf(url, "/fs/");
-    if(!(resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
-      return MHD_NO;
-    }
-
-    MHD_add_response_header(resp, MHD_HTTP_HEADER_LOCATION, url);
-    ret = websrv_queue_response(conn, MHD_HTTP_MOVED_PERMANENTLY, resp);
-    MHD_destroy_response(resp);
-    return ret;
-  }
-
-  if(!(dir=opendir(path))) {
-    if((resp=MHD_create_response_from_buffer(strlen(PAGE_404), PAGE_404,
-					     MHD_RESPMEM_PERSISTENT))) {
-      ret = websrv_queue_response(conn, MHD_HTTP_NOT_FOUND, resp);
-      MHD_destroy_response(resp);
-    }
-    return ret;
-  }
-
-  if (stat(path, &st)) {
-    closedir(dir);
-    return MHD_NO;
-  }
-
-  sm.dir = dir;
-  sm.path = path;
-  sm.state = 0;
-  sm.buf = malloc(PATH_MAX+1);
-  sm.st_dev = st.st_dev;
-
-  fmt = MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "fmt");
-  if(fmt && !strcmp(fmt, "json")) {
-    dir_read_cb = &dir_read_json;
-    mime = "application/json";
-  } else {
-    dir_read_cb = &dir_read_html;
-    mime = "text/html";
-  }
-
-  if((resp=MHD_create_response_from_callback(MHD_SIZE_UNKNOWN, 32*PAGE_SIZE,
-					     dir_read_cb, &sm,
-					     &dir_close))) {
-    MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, mime);
-    ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
-    MHD_destroy_response(resp);
-    return ret;
-  }
-
-  closedir(dir);
-  free(sm.buf);
-
   return MHD_NO;
 }
 
@@ -349,62 +418,26 @@ fs_request(struct MHD_Connection *conn, const char* url) {
   enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
   const char* path = url+3;
-  struct stat st;
-
-  /* If the client requested "/fs" (no trailing slash) redirect to "/fs/"
-   * so that relative links in the generated directory listing resolve
-   * under /fs/ rather than the server root. */
-  if(strcmp(url, "/fs") == 0) {
-    if(!(resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
-      return MHD_NO;
-    }
-
-    MHD_add_response_header(resp, MHD_HTTP_HEADER_LOCATION, "/fs/");
-    ret = websrv_queue_response(conn, MHD_HTTP_MOVED_PERMANENTLY, resp);
-    MHD_destroy_response(resp);
-    return ret;
-  }
+  struct stat st = {0};
 
   if(!strlen(path)) {
     return dir_request(conn, "/");
   }
 
-  if(!stat(path, &st)) {
-    /* If this path is a directory but the URL doesn't end with '/'
-     * redirect the client to the trailing-slash version so the browser
-     * resolves relative links correctly (browsers treat a URL without
-     * a trailing slash as a file and will resolve relative paths to the
-     * parent directory). */
-    if(S_ISDIR(st.st_mode)) {
-      size_t url_len = strlen(url);
-      if(url_len == 0 || url[url_len - 1] != '/') {
-        char location[PATH_MAX];
-        if(snprintf(location, PATH_MAX, "%s/", url) >= PATH_MAX) {
-          /* shouldn't happen for reasonable URLs; fall back to no-op */
-          return MHD_NO;
-        }
-        if(!(resp = MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
-          return MHD_NO;
-        }
-        MHD_add_response_header(resp, MHD_HTTP_HEADER_LOCATION, location);
-        ret = websrv_queue_response(conn, MHD_HTTP_MOVED_PERMANENTLY, resp);
-        MHD_destroy_response(resp);
-        return ret;
-      }
-
-      return dir_request(conn, path);
-    } else {
-      return file_request(conn, path);
+  if(stat(path, &st)) {
+    if((resp=MHD_create_response_from_buffer(strlen(PAGE_404), PAGE_404,
+					     MHD_RESPMEM_PERSISTENT))) {
+      ret = websrv_queue_response(conn, MHD_HTTP_NOT_FOUND, resp);
+      MHD_destroy_response(resp);
     }
+    return ret;
   }
 
-  if((resp=MHD_create_response_from_buffer(strlen(PAGE_404), PAGE_404,
-					   MHD_RESPMEM_PERSISTENT))) {
-    ret = websrv_queue_response(conn, MHD_HTTP_NOT_FOUND, resp);
-    MHD_destroy_response(resp);
+  if(S_ISDIR(st.st_mode)) {
+    return dir_request(conn, path);
+  } else {
+    return file_request(conn, path);
   }
-
-  return ret;
 }
 
 
@@ -450,5 +483,3 @@ fs_readfile(const char* path, size_t* size) {
 
   return buf;
 }
-
-
