@@ -157,12 +157,6 @@ async function renderLaunchedAppView(hbldrLogStream = null) {
 	if (hbldrLogStream) {
 		const terminal = document.createElement("div");
 		terminal.classList.add("terminal");
-
-		terminal.style.display = "block";
-		terminal.style.alignItems = "unset";
-		terminal.style.justifyContent = "unset";
-		terminal.style.borderWidth = "2px";
-		terminal.style.padding = "5px";
 		wrapper.appendChild(terminal);
 
 		await (async () => {
@@ -172,8 +166,6 @@ async function renderLaunchedAppView(hbldrLogStream = null) {
 				altClickMovesCursor: false,
 				disableStdin: true,
 				fontSize: 18,
-				cols: 90,
-				rows: 25
 			});
 
 			try {
@@ -189,7 +181,6 @@ async function renderLaunchedAppView(hbldrLogStream = null) {
 						break;
 					}
 					let decodedValue = decoder.decode(value);
-					// alert(decodedValue);
 					term.write(decodedValue);
 				}
 			} catch (error) {
