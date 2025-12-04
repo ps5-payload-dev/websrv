@@ -395,8 +395,18 @@ sys_notify_address(const char* prefix, int port) {
       continue;
     }
 
+    // skip localhost
+    if(!strncmp("lo", ifa->ifa_name, 2)) {
+      continue;
+    }
+
     struct sockaddr_in *in = (struct sockaddr_in*)ifa->ifa_addr;
     inet_ntop(AF_INET, &(in->sin_addr), ip, sizeof(ip));
+
+    // skip interfaces without an ip
+    if(!strncmp("0.", ip, 2)) {
+      continue;
+    }
   }
 
   freeifaddrs(ifaddr);
