@@ -218,6 +218,7 @@ static ssize_t
 dir_read_html(void *cls, uint64_t pos, char *buf, size_t max) {
   dir_read_sm_t* sm = (dir_read_sm_t*)cls;
   struct dirent *entry;
+  size_t len = strlen(sm->props.path);
 
   if(max < 512) {
     return 0;
@@ -247,8 +248,9 @@ dir_read_html(void *cls, uint64_t pos, char *buf, size_t max) {
       return 0;
     }
 
-    return snprintf(buf, max, "<li><a href=\"/fs%s/%s\">%s</a></li>",
-		    sm->props.path, entry->d_name, entry->d_name);
+    return snprintf(buf, max, "<li><a href=\"/fs%s%s%s\">%s</a></li>",
+		    sm->props.path, (sm->props.path[len - 1] == '/') ? "" : "/",
+            entry->d_name, entry->d_name);
 
   case DIR_READ_TAIL:
     sm->state = DIR_READ_NULL;
