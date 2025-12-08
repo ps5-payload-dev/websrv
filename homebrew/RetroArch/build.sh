@@ -78,6 +78,8 @@ export LDFLAGS="-rdynamic"
     --disable-cg \
     --disable-vulkan \
     --disable-opengl_core \
+    --disable-opengl1 \
+    --disable-opengl \
     --disable-microphone
     ${MAKE} V=1 || exit 1
 
