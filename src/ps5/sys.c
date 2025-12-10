@@ -61,6 +61,8 @@ int sceSystemServiceKillApp(int app_id, int how, int reason, int core_dump);
 int sceSystemServiceLaunchApp(const char* title_id, char** argv,
 			      app_launch_ctx_t* ctx);
 
+int sceKernelGetCpuTemperature(int *);
+int sceKernelGetSocSensorTemperature(int, int *);
 
 /**
  * Decode an escaped argument.
@@ -371,6 +373,19 @@ sys_launch_title(const char* title_id, const char* args) {
 
   return err;
 }
+
+
+int
+sys_get_cpu_temperature(int* temperature) {
+  return sceKernelGetCpuTemperature(temperature);
+}
+
+
+int
+sys_get_soc_temperature(int index, int* temperature) {
+  return sceKernelGetSocSensorTemperature(index, temperature);
+}
+
 
 /**
  *

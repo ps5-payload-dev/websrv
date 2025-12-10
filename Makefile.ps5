@@ -29,7 +29,7 @@ PYTHON ?= python3
 
 BIN    := websrv-ps5.elf
 
-SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c src/mime.c
+SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c src/mime.c src/hwmonitor.c
 SRCS   += src/mdns.c src/smb.c
 SRCS   += src/ps5/sys.c src/ps5/pt.c src/ps5/elfldr.c src/ps5/hbldr.c src/ps5/notify.c
 
