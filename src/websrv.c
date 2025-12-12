@@ -31,6 +31,7 @@ along with this program; see the file COPYING. If not, see
 #include "smb.h"
 #include "sys.h"
 #include "version.h"
+#include "hwmonitor.h"
 #include "websrv.h"
 
 
@@ -323,6 +324,9 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
     }
     if(!strcmp("/version", url)) {
       return version_request(conn);
+    }
+    if(!strcmp("/hwmonitor", url)) {
+      return hwmonitor_request(conn);
     }
     if(!strcmp("/", url) || !url[0]) {
       return asset_request(conn, "/index.html");

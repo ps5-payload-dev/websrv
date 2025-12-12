@@ -28,6 +28,7 @@ Examples:
 - http://ps5:8080/smb?addr=192.168.1.1 - List shares on a remote SMB host (json)
 - http://ps5:8080/smb/share?addr=192.168.1.1 - List files and folders shared by a remote SMB host (json)
 - http://ps5:8080/smb/share/file?addr=192.168.1.1 - Download a remote SMB file via websrv
+- http://ps5:8080/hwmonitor - Monitor CPU and SOC temperatures
 
 ## Installing Homebrew
 The web server will search for homebrew in /data/homebrew, /mnt/usb%d/homebrew, /mnt/ext%d/homebrew,
