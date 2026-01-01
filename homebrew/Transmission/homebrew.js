@@ -25,8 +25,12 @@ async function main() {
 
     async function isRunning() {
 	const webIfUrl = window.location.origin == "null" ? "http://127.0.0.1:9091" : window.location.origin.replace(":8080", ":9091");
-	let response = await fetch(webIfUrl);
-	return response.ok;
+	try {
+	    let response = await fetch(webIfUrl);
+	    return response.ok;
+	} catch(err) {
+	    return false;
+	}
     }
 
     return {
