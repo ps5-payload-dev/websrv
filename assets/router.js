@@ -386,7 +386,7 @@ class Router {
             // if path is empty then render the device selector
             let newPath = null;
             if (lastPath.path === "") {
-                newPath = await Promise.race([renderStorageDevicePicker(true, !isFirstRender, undefined, allowNetworkLocations, pathType), backButtonPressPromise.promise]);
+                newPath = await Promise.race([renderStorageDevicePicker(true, !isFirstRender, title, allowNetworkLocations, pathType), backButtonPressPromise.promise]);
                 rootPath = newPath ? newPath.path : "";
             } else {
                 newPath = await Promise.race([renderBrowsePageForPath(lastPath.path, rootPath, true, !isFirstRender, title, pathType), backButtonPressPromise.promise]);
