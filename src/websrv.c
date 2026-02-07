@@ -225,12 +225,12 @@ static enum MHD_Result
 elfldr_request(struct MHD_Connection *conn, post_data_t *data) {
   enum MHD_Result ret = MHD_NO;
   struct MHD_Response *resp;
-  post_data_t *elf;
   const char *args;
   const char *pipe;
   const char *env;
   const char *cwd;
-  int fd;
+  const char *uri;
+  int fd = -1;
 
   if(!(args=MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "args"))) {
     args = post_data_val(data, "args");
@@ -245,19 +245,23 @@ elfldr_request(struct MHD_Connection *conn, post_data_t *data) {
     cwd = post_data_val(data, "cwd");
   }
 
-  if(!(elf=post_data_get(data, "elf"))) {
+  if((uri=MHD_lookup_connection_value(conn, MHD_GET_ARGUMENT_KIND, "elf"))) {
+    fd = sys_launch_daemon(cwd, uri, args, env);
+  } else if((data=post_data_get(data, "elf"))) {
+    fd = sys_launch_payload(cwd, data->val, data->len, args, env);
+  } else {
+    return asset_request(conn, "/elfldr.html");
+  }
+
+  if(fd < 0) {
     if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
       ret = websrv_queue_response(conn, MHD_HTTP_BAD_REQUEST, resp);
       MHD_destroy_response(resp);
     }
+    return ret;
+  }
 
-  } else if((fd=sys_launch_payload(cwd, elf->val, elf->len, args, env)) < 0) {
-    if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
-      ret = websrv_queue_response(conn, MHD_HTTP_SERVICE_UNAVAILABLE, resp);
-      MHD_destroy_response(resp);
-    }
-
-  } else if(pipe && strcmp(pipe, "0")) {
+  if(pipe && strcmp(pipe, "0")) {
     if((resp=MHD_create_response_from_pipe(fd))) {
       ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
       MHD_destroy_response(resp);
@@ -320,7 +324,7 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
       return hbldr_request(conn);
     }
     if(!strcmp("/elfldr", url)) {
-      return asset_request(conn, "/elfldr.html");
+      return elfldr_request(conn, 0);
     }
     if(!strcmp("/version", url)) {
       return version_request(conn);

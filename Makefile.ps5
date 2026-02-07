@@ -31,11 +31,13 @@ BIN    := websrv-ps5.elf
 
 SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c src/mime.c
 SRCS   += src/mdns.c src/smb.c
-SRCS   += src/ps5/sys.c src/ps5/pt.c src/ps5/elfldr.c src/ps5/hbldr.c src/ps5/notify.c
+SRCS   += src/ps5/sys.c src/ps5/pt.c src/ps5/elfldr.c src/ps5/hbldr.c
+SRCS   += src/ps5/notify.c src/ps5/http2.c
 
 CFLAGS := -g -O0 -Wall -Werror -Isrc -DVERSION_TAG=\"$(VERSION_TAG)\"
 
 LDADD  := -lkernel_sys -lSceSystemService -lSceUserService
+LDADD  += -lSceSsl -lSceHttp2
 LDADD  += `$(PS5_PAYLOAD_SDK)/bin/prospero-pkg-config libmicrohttpd --libs`
 LDADD  += `$(PS5_PAYLOAD_SDK)/bin/prospero-pkg-config microdns --libs`
 LDADD  += `$(PS5_PAYLOAD_SDK)/bin/prospero-pkg-config libsmb2 --libs`

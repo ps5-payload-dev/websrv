@@ -37,6 +37,7 @@ along with this program; see the file COPYING. If not, see
 #include "elfldr.h"
 #include "fs.h"
 #include "hbldr.h"
+#include "http2.h"
 #include "notify.h"
 #include "pt.h"
 #include "sys.h"
@@ -232,35 +233,50 @@ sys_launch_homebrew(const char* cwd, const char* path, const char* args,
 
 
 int
-sys_launch_daemon(const char* cwd, const char* path, const char* args,
+sys_launch_daemon(const char* cwd, const char* uri, const char* args,
 		  const char* env) {
+  uint8_t* elf = 0;
   char* argv[255];
   char* envp[255];
-  uint8_t* elf;
   int fds[2];
   pid_t pid;
 
   if(!cwd) {
     cwd = "/";
   }
-
   if(!args) {
     args = "";
   }
-
   if(!env) {
     env = "";
   }
 
-  printf("launch daemon: CWD=%s %s %s\n", cwd, env, args);
+  if(uri[0] == '/') {
+    if(!(elf=fs_readfile(uri, 0))) {
+      return -1;
+    }
+
+  } else if(!strncmp(uri, "file:", 5)) {
+    if(!(elf=fs_readfile(uri+5, 0))) {
+      return -1;
+    }
+
+  } else if(!strncmp(uri, "http:", 5) ||
+	    !strncmp(uri, "https:", 6)) {
+    if(!(elf=http2_get(uri, 0))) {
+      return -1;
+    }
+  }
+
+  if(!elf) {
+    return -1;
+  }
+
+  printf("launch daemon: CWD=%s %s %s %s\n", cwd, env, uri, args);
 
   if(pipe(fds) == -1) {
     perror("pipe");
     return 1;
-  }
-
-  if(!(elf=fs_readfile(path, 0))) {
-    return -1;
   }
 
   args_split(args, argv, 255);

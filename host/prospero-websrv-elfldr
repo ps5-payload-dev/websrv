@@ -39,7 +39,15 @@ for ARG in "$@"; do
     PAYLOAD_ARGS="${PAYLOAD_ARGS} ${ARG// /\\ }"
 done
 
-curl --form "elf=@${PAYLOAD_PATH}" \
-     --url-query pipe="1" \
-     --url-query args="$PAYLOAD_ARGS" \
-     http://$PS5_HOST:8080/elfldr
+set -x
+if [[ $PAYLOAD_PATH == http://* || $PAYLOAD_PATH == https://* ]]; then
+    curl --url-query elf="${PAYLOAD_PATH}" \
+	 --url-query pipe="1" \
+	 --url-query args="$PAYLOAD_ARGS" \
+	 http://$PS5_HOST:8080/elfldr
+else
+    curl --form "elf=@${PAYLOAD_PATH}" \
+	 --url-query pipe="1" \
+	 --url-query args="$PAYLOAD_ARGS" \
+	 http://$PS5_HOST:8080/elfldr
+fi

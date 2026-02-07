@@ -51,7 +51,7 @@ sys_launch_homebrew(const char* cwd, const char* path, const char* args,
 }
 
 int
-sys_launch_daemon(const char* cwd, const char* path, const char* args,
+sys_launch_daemon(const char* cwd, const char* uri, const char* args,
 		  const char* env) {
   char cmd[255];
   FILE *pf;
@@ -59,8 +59,11 @@ sys_launch_daemon(const char* cwd, const char* path, const char* args,
   if(!args) {
     args = "";
   }
+  if(uri[0] != '/') {
+    return -1;
+  }
 
-  snprintf(cmd, sizeof(cmd), "%s %s", path, args);
+  snprintf(cmd, sizeof(cmd), "%s %s", uri, args);
   printf("launch daemon: %s\n", cmd);
 
   if(!(pf=popen(cmd,"r"))) {
