@@ -348,7 +348,7 @@ async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout =
     /** @type {BrowsePageCategoryItem[]} */
     let items = new Array();
 
-    if (pathType == 'dir') {
+    if (pathType == 'dir' || pathType == 'any') {
         items.push({
             primaryText: "[Select this directory]",
             secondaryText: "",

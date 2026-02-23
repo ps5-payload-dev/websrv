@@ -63,7 +63,7 @@ function showCarousel(items) {
     window.parent.postMessage({ extensionId: window.extensionId, action: EXTENSION_API_PARENT_SHOW_CAROUSEL, items: encodeURIComponent(JSON.stringify(remapFunctionsToFunctionIds(items))) }, "*");
 }
 
-function pickPath(initialPath = "", title = 'Select file...', allowNetworkLocations = false, pathType = 'file') {
+function pickPath(initialPath = "", title = 'Select file...', allowNetworkLocations = false, pathType = 'any') {
     const uuid = uuidv4();
     window.parent.postMessage({ extensionId: window.extensionId, action: EXTENSION_API_PARENT_FILE_BROWSER, callback: uuid, initialPath: encodeURIComponent(initialPath), title:  encodeURIComponent(title), allowNetworkLocations: encodeURIComponent(allowNetworkLocations), pathType: encodeURIComponent(pathType) }, "*");
 
