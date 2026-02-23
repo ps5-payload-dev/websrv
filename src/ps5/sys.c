@@ -37,7 +37,7 @@ along with this program; see the file COPYING. If not, see
 #include "elfldr.h"
 #include "fs.h"
 #include "hbldr.h"
-#include "http2.h"
+#include "http.h"
 #include "notify.h"
 #include "pt.h"
 #include "sys.h"
@@ -263,7 +263,7 @@ sys_launch_daemon(const char* cwd, const char* uri, const char* args,
 
   } else if(!strncmp(uri, "http:", 5) ||
 	    !strncmp(uri, "https:", 6)) {
-    if(!(elf=http2_get(uri, 0))) {
+    if(!(elf=http_get(uri, 0))) {
       return -1;
     }
   }

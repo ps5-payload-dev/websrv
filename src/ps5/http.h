@@ -22,4 +22,4 @@ along with this program; see the file COPYING. If not, see
 /**
  *
  **/
-uint8_t* http2_get(const char* url, size_t* len);
+uint8_t* http_get(const char* url, size_t* len);
