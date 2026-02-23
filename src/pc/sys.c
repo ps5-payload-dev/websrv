@@ -90,3 +90,14 @@ sys_launch_payload(const char* cwd, uint8_t* elf, size_t elf_size,
   return sys_launch_homebrew(cwd, filename, args, env);
 }
 
+int
+sys_get_cpu_temperature(int* temperature) {
+  printf("get cpu temperature");
+  return -1;
+}
+
+int
+sys_get_soc_temperature(int index, int* temperature) {
+  printf("get soc[%02d] temperature", index);
+  return -1;
+}
