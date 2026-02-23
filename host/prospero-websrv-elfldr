@@ -17,7 +17,6 @@
 
 PS5_HOST=
 
-
 while getopts "h:" opt; do
     case ${opt} in
 	h) PS5_HOST=$OPTARG;;
@@ -39,7 +38,6 @@ for ARG in "$@"; do
     PAYLOAD_ARGS="${PAYLOAD_ARGS} ${ARG// /\\ }"
 done
 
-set -x
 if [[ $PAYLOAD_PATH == http://* || $PAYLOAD_PATH == https://* ]]; then
     curl --url-query elf="${PAYLOAD_PATH}" \
 	 --url-query pipe="1" \
