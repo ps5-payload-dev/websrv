@@ -16,25 +16,81 @@ along with this program; see the file COPYING. If not, see
 
 
 async function main() {
-    const PAYLOAD_NAME = 'pkg_install.elf';
-    const PAYLOAD_PATH = window.workingDir + '/' + PAYLOAD_NAME;
+    const PAYLOAD_NAME = 'pkg_install.elf'
+    const PAYLOAD_PATH = window.workingDir + '/' + PAYLOAD_NAME
+    const INSTALL_ALL_PREFIX = '__install_all__:'
+
+    async function drainStream(stream) {
+        if (!stream) return
+        const reader = stream.getReader()
+        while (true) {
+            const { done } = await reader.read()
+            if (done) break
+        }
+    }
+
+    function joinPath(base, name) {
+        if (base.startsWith('/')) {
+            if (!base.endsWith('/')) base += '/'
+            return base + name
+        }
+        const u = new URL(base)
+        let p = u.pathname || '/'
+        if (!p.endsWith('/')) p += '/'
+        p += encodeURIComponent(name)
+        u.pathname = p
+        return u.toString()
+    }
+
+    async function installAllInDir(dirPath) {
+        const listing = await ApiClient.fsListDir(dirPath)
+        if (!listing.data) {
+            alert('Failed to load directory: ' + redactUrlPassword(dirPath) + '\nError code: ' + listing.status)
+            return
+        }
+
+        const pkgs = listing.data
+            .filter(e => e && !e.isDir() && e.name && e.name.toLowerCase().endsWith('.pkg'))
+            .map(e => joinPath(dirPath, e.name))
+
+        if (pkgs.length === 0) {
+            alert('No .pkg found in: ' + redactUrlPassword(dirPath))
+            return
+        }
+
+        for (let i = 0; i < pkgs.length; i++) {
+            let pkg = pkgs[i]
+            if (!pkg.startsWith('/')) {
+                pkg = ApiClient.getNetworkShareHttpProxyUrl(pkg)
+            }
+            const r = await ApiClient.launchApp(PAYLOAD_PATH, [PAYLOAD_NAME, pkg], null, null, true)
+            await drainStream(r.data)
+        }
+
+        alert('Install all finished.\nCount: ' + pkgs.length)
+    }
 
     return {
-        mainText: "PKG installer",
+        mainText: 'PKG installer',
         secondaryText: 'Install a PKG file',
-	onclick: async () => {
-            let file = await pickFile('', 'Select PKG...', true);
-            if(!file) {
-                return;
+        onclick: async () => {
+            let sel = await pickPath('', 'Select PKG...', true, 'pkginstall')
+            if (!sel) return
+
+            if (sel.startsWith(INSTALL_ALL_PREFIX)) {
+                await installAllInDir(sel.substring(INSTALL_ALL_PREFIX.length))
+                return
             }
-            if(!file.startsWith('/')) {
-                file = ApiClient.getNetworkShareHttpProxyUrl(file);
+
+            if (!sel.startsWith('/')) {
+                sel = ApiClient.getNetworkShareHttpProxyUrl(sel)
             }
-	    return {
-		path: PAYLOAD_PATH,
-                args: [PAYLOAD_NAME, file],
+
+            return {
+                path: PAYLOAD_PATH,
+                args: [PAYLOAD_NAME, sel],
                 daemon: true
-	    };
+            }
         }
-    };
+    }
 }
