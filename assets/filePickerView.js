@@ -372,6 +372,30 @@ async function renderBrowsePageForPath(path, rootPath, fadein = false, fadeout =
         }
     });
 
+    if (pathType == 'pkginstall' && data.data) {
+        let hasPkg = false
+        for (let i = 0; i < data.data.length; i++) {
+            const e = data.data[i]
+            if (e && !e.isDir() && e.name && e.name.toLowerCase().endsWith('.pkg')) {
+                hasPkg = true
+                break
+            }
+        }
+
+        if (hasPkg) {
+            items.push({
+                primaryText: 'Install all',
+                secondaryText: '',
+                endTextPrimary: '',
+                endTextSecondary: '',
+                icon: FILE_ICON,
+                onclick: () => {
+                    return { path: '__install_all__:' + path, finished: true }
+                }
+            })
+        }
+    }
+
     for (let i = 0; i < data.data.length; i++) {
         let dirListing = data.data[i];
 
