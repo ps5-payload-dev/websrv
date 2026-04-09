@@ -255,7 +255,6 @@ sys_launch_homebrew(const char* cwd, const char* path, const char* args,
 }
 
 
-
 int
 sys_launch_daemon(const char* cwd, const char* uri, const char* args,
 		  const char* env) {
