@@ -21,6 +21,7 @@ along with this program; see the file COPYING. If not, see
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
+#include <errno.h>
 #include <libgen.h>
 #include <limits.h>
 #include <signal.h>
@@ -518,11 +519,11 @@ install_launcher(void) {
     return 0;
   }
 
-  if(mkdir("/user/app/FAKE00000", 0755)) {
+  if(mkdir("/user/app/FAKE00000", 0755) && errno != EEXIST) {
     perror("mkdir");
     return -1;
   }
-  if(mkdir("/user/app/FAKE00000/sce_sys", 0755)) {
+  if(mkdir("/user/app/FAKE00000/sce_sys", 0755) && errno != EEXIST) {
     perror("mkdir");
     return -1;
   }
