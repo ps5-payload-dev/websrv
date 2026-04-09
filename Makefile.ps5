@@ -36,7 +36,7 @@ SRCS   += src/ps5/notify.c src/ps5/http.c
 
 CFLAGS := -g -O0 -Wall -Werror -Isrc -DVERSION_TAG=\"$(VERSION_TAG)\"
 
-LDADD  := -lkernel_sys -lSceSystemService -lSceUserService
+LDADD  := -lkernel_sys -lSceSystemService -lSceUserService -lSceAppInstUtil
 LDADD  += -lSceSsl -lSceHttp
 LDADD  += `$(PS5_PAYLOAD_SDK)/bin/prospero-pkg-config libmicrohttpd --libs`
 LDADD  += `$(PS5_PAYLOAD_SDK)/bin/prospero-pkg-config microdns --libs`

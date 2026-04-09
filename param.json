@@ -1,0 +1,10 @@
+{
+    "titleId": "FAKE00000",
+    "deeplinkUri": "http://127.0.0.1:8080",
+    "localizedParameters": {
+	"defaultLanguage": "en-US",
+	"en-US": {
+	    "titleName": "Homebrew Launcher"
+	}
+    }
+}

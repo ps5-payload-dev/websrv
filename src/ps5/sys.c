@@ -29,6 +29,7 @@ along with this program; see the file COPYING. If not, see
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <sys/stat.h>
 #include <sys/sysctl.h>
 #include <sys/syscall.h>
 
@@ -44,6 +45,26 @@ along with this program; see the file COPYING. If not, see
 #include "websrv.h"
 
 
+#define INCASSET(name, file)			\
+  __asm__(".section .rodata\n"			\
+	  ".global " #name "\n"			\
+	  ".global " #name "_end\n"		\
+	  ".global " #name "_size\n"		\
+	  ".align 16\n"				\
+	  #name ":\n"				\
+	  ".incbin \"" file "\"\n"		\
+	  #name "_end:\n"			\
+	  #name "_size:\n"			\
+	  ".quad " #name "_end - " #name "\n"	\
+	  ".previous\n");			\
+  extern const uint8_t name[];			\
+  extern const size_t name##_size;
+
+
+INCASSET(param, "param.json");
+INCASSET(icon0, "icon0.png");
+
+
 typedef struct app_launch_ctx {
   uint32_t structsize;
   uint32_t user_id;
@@ -52,6 +73,9 @@ typedef struct app_launch_ctx {
   uint32_t check_flag;
 } app_launch_ctx_t;
 
+
+int sceAppInstUtilInitialize(void);
+int sceAppInstUtilAppInstallAll(void*);
 
 int  sceUserServiceInitialize(void*);
 int  sceUserServiceGetForegroundUser(uint32_t *user_id);
@@ -448,6 +472,73 @@ on_fatal_signal(int sig) {
 }
 
 
+static int
+install_app(const char* title_id, const char* dir) {
+  int (*sceAppInstUtilAppInstallTitleDir)(const char*, const char*, void*) = 0;
+  const char* nid = "Wudg3Xe3heE";
+  uint32_t handle;
+
+  if(!kernel_dynlib_handle(-1, "libSceAppInstUtil.sprx", &handle)) {
+    sceAppInstUtilAppInstallTitleDir = (void*)kernel_dynlib_resolve(-1, handle, nid);
+  }
+
+  if(sceAppInstUtilAppInstallTitleDir) {
+    return sceAppInstUtilAppInstallTitleDir(title_id, dir, 0);
+  }
+
+  return sceAppInstUtilAppInstallAll(0);
+}
+
+
+static int
+install_file(const char* path, const uint8_t* data, size_t size) {
+  FILE* f;
+
+  if(!(f=fopen(path, "w"))) {
+    return -1;
+  }
+
+  if(fwrite(data, size, 1, f) != 1) {
+    fclose(f);
+    return -1;
+  }
+
+  fclose(f);
+  return 0;
+}
+
+
+static int
+install_launcher(void) {
+  struct stat st;
+
+  if(!stat("/user/appmeta/FAKE00000/param.json", &st)) {
+    return 0;
+  }
+  if(!stat("/user/app/FAKE00000/param.json", &st)) {
+    return 0;
+  }
+
+  if(mkdir("/user/app/FAKE00000", 0755)) {
+    perror("mkdir");
+    return -1;
+  }
+  if(mkdir("/user/app/FAKE00000/sce_sys", 0755)) {
+    perror("mkdir");
+    return -1;
+  }
+
+  if(install_file("/user/app/FAKE00000/sce_sys/param.json", param, param_size)) {
+    return -1;
+  }
+  if(install_file("/user/app/FAKE00000/sce_sys/icon0.png", icon0, icon0_size)) {
+    return -1;
+  }
+
+  return install_app("FAKE00000", "/user/app/");
+}
+
+
 __attribute__((constructor)) static void
 sys_init(void) {
   pid_t pid;
@@ -477,6 +568,10 @@ sys_init(void) {
   }
 
   kernel_set_ucred_authid(-1, 0x4801000000000013L);
+
+  if(!sceAppInstUtilInitialize()) {
+    install_launcher();
+  }
 
   sys_notify_address("Serving HTTP on", 8080);
 }
