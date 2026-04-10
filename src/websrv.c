@@ -202,6 +202,7 @@ hbldr_request(struct MHD_Connection *conn) {
   } else if(pipe && strcmp(pipe, "0")) {
     if((resp=MHD_create_response_from_pipe(fd))) {
       MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, "text/x-log; charset=utf-8");
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CACHE_CONTROL, "no-cache");
       ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
       MHD_destroy_response(resp);
     }
@@ -263,6 +264,8 @@ elfldr_request(struct MHD_Connection *conn, post_data_t *data) {
 
   if(pipe && strcmp(pipe, "0")) {
     if((resp=MHD_create_response_from_pipe(fd))) {
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, "text/x-log; charset=utf-8");
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CACHE_CONTROL, "no-cache");
       ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
       MHD_destroy_response(resp);
     }
