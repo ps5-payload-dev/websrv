@@ -15,7 +15,7 @@
 # along with this program; see the file COPYING. If not see
 # <http://www.gnu.org/licenses/>.
 
-VER="20240919"
+VER="20260301"
 URL="https://github.com/AlisterT/openjazz/archive/refs/tags/$VER.tar.gz"
 SHAREWARE="https://www.classicdosgames.com/files/games/epic/1jazz13.zip"
 
@@ -41,7 +41,7 @@ ${CMAKE} -DCMAKE_BUILD_TYPE=Release \
 ${MAKE} -C $TEMPDIR/build || exit 1
 
 mkdir -p "${SCRIPT_DIR}/sce_sys" || exit 1
-mv $TEMPDIR/openjazz-$VER/doc/OpenJazz.png "${SCRIPT_DIR}/sce_sys/icon0.png" || exit 1
+mv $TEMPDIR/openjazz-$VER/res/unix/OpenJazz.png "${SCRIPT_DIR}/sce_sys/icon0.png" || exit 1
 mv $TEMPDIR/build/OpenJazz "${SCRIPT_DIR}/openjazz.elf" || exit 1
 
 mkdir $TEMPDIR/shareware || exit 1
