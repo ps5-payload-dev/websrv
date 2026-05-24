@@ -15,7 +15,7 @@
 # along with this program; see the file COPYING. If not see
 # <http://www.gnu.org/licenses/>.
 
-VER="20241226-10608-8d79c372a"
+VER="20260203-10664-ba6b7bb1d"
 URL="http://dukeworld.duke4.net/eduke32/synthesis/$VER/eduke32_src_$VER.tar.xz"
 DEMO="http://dukeworld.duke4.net/classic%20dukeworld/share/3dduke13.zip"
 
