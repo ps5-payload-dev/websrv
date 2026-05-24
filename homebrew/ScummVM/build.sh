@@ -15,7 +15,7 @@
 # along with this program; see the file COPYING. If not see
 # <http://www.gnu.org/licenses/>.
 
-VER="2.9.0"
+VER="2026.2.0"
 URL="https://downloads.scummvm.org/frs/scummvm/$VER/scummvm-$VER.tar.xz"
 
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
