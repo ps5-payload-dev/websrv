@@ -28,11 +28,17 @@ jobs:
       run: |
         make clean all PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
 
+    - name: Build demo plugin
+      run: |
+        cd plugin/demo && make clean all PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
+
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
         name: Payload
-        path: websrv-ps5.elf
+        path: |
+          websrv-ps5.elf
+          plugin/demo/demo.so
         if-no-files-found: error
 
   release:

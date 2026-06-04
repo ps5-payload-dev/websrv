@@ -28,6 +28,7 @@ along with this program; see the file COPYING. If not, see
 #include "asset.h"
 #include "fs.h"
 #include "mdns.h"
+#include "plugin.h"
 #include "smb.h"
 #include "sys.h"
 #include "version.h"
@@ -332,8 +333,14 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
     if(!strcmp("/version", url)) {
       return version_request(conn);
     }
+    if(!strcmp("/plugin", url) || !strcmp("/plugin/", url)) {
+      return plugin_list_request(conn);
+    }
     if(!strcmp("/", url) || !url[0]) {
       return asset_request(conn, "/index.html");
+    }
+    if(plugin_request(conn, url, method, 0) == MHD_YES) {
+      return MHD_YES;
     }
     return asset_request(conn, url);
   }
@@ -346,6 +353,10 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
     }
     if(!strcmp("/elfldr", url)) {
       return elfldr_request(conn, req->data);
+    }
+    if(plugin_request(conn, url, method,
+		      (const plugin_post_data_t*)req->data) == MHD_YES) {
+      return MHD_YES;
     }
   }
 
@@ -386,6 +397,8 @@ websrv_listen(unsigned short port) {
   int srvfd;
 
   signal(SIGPIPE, SIG_IGN);
+
+  plugin_load_all();
 
   if((srvfd=socket(AF_INET, SOCK_STREAM, 0)) < 0) {
     perror("socket");

@@ -28,6 +28,8 @@ Examples:
 - http://ps5:8080/smb?addr=192.168.1.1 - List shares on a remote SMB host (json)
 - http://ps5:8080/smb/share?addr=192.168.1.1 - List files and folders shared by a remote SMB host (json)
 - http://ps5:8080/smb/share/file?addr=192.168.1.1 - Download a remote SMB file via websrv
+- http://ps5:8080/plugin - List loaded native plugins (html)
+- http://ps5:8080/plugin/demo - Example native plugin (if installed)
 
 ## Installing Homebrew
 The web server will search for homebrew in /data/homebrew, /mnt/usb%d/homebrew, /mnt/ext%d/homebrew,
@@ -47,6 +49,41 @@ available capabillitiles, see:
 For real-world homebrew, checkout:
 - https://github.com/ps5-payload-dev/websrv/releases
 - https://github.com/cy33hc/ps5-ezremote-client
+
+## Native plugins
+websrv can load native plugins from shared objects (`.so` files) placed under
+`/data/homebrew/websrv/plugin` (and the same `homebrew/websrv/plugin` path on
+USB/external volumes). Each plugin is a shared object named `<soname>.so` and
+must export:
+
+- `<soname>_plugin_register_url()` — returns the URL prefix without a leading
+  slash, e.g. `"plugin/demo"` (serves `http://ps5:8080/plugin/demo` and
+  sub-paths).
+- `<soname>_plugin_handle_request()` — handles HTTP requests routed to that
+  prefix. Receives a per-request `plugin_context_t` (`void*`, the host
+  `MHD_Connection`), parsed POST fields as a `plugin_post_data_t` list (NULL for
+  GET/HEAD), and a `plugin_response_fn` callback. Call `respond(ctx, resp)` to
+  send a response (the host copies the body before the callback returns); both
+  `respond` and `handle_request` return **0 on success**. Return non-zero from
+  `handle_request` if the request is not handled. Release per-request buffers
+  after `respond` returns. Plugins need only [src/plugin_api.h](src/plugin_api.h),
+  not libmicrohttpd.
+
+For `demo.so`, the symbols are `demo_plugin_register_url` and
+`demo_plugin_handle_request`.
+
+See [src/plugin_api.h](src/plugin_api.h) and the example in
+[plugin/demo](plugin/demo). Build the demo plugin with:
+
+```console
+john@localhost:websrv/plugin/demo$ export PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
+john@localhost:websrv/plugin/demo$ make
+john@localhost:websrv/plugin/demo$ mkdir -p /data/homebrew/websrv/plugin/demo
+john@localhost:websrv/plugin/demo$ cp demo.so /data/homebrew/websrv/plugin/demo/
+```
+
+Restart or reload websrv; matching requests are dispatched to the plugin
+instead of the built-in static assets.
 
 ## Building
 Assuming you have the [packbrew][packbrew] SDK installed on a Debian-flavored

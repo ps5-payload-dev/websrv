@@ -84,13 +84,30 @@ body {
 }
 
 .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
     text-align: center;
-    margin-top: 2rem;
+    margin-top: 0.75rem;
+    pointer-events: none;
 }
 
 .header * {
     margin: 0;
     padding: 0;
+}
+
+.header a {
+    pointer-events: auto;
+    color: var(--secondary-text-color);
+    text-decoration: none;
+}
+
+.header a:hover {
+    color: var(--text-color);
+    text-decoration: underline;
 }
 
 div.carousel {
