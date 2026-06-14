@@ -36,6 +36,8 @@ cd "${TEMPDIR}"
 git clone --recurse-submodules $URL
 cd pemu
 
+sed -i 's|SDL_WINDOW_SHOWN|SDL_WINDOW_FULLSCREEN|g' external/libcross2d/source/platforms/sdl2/sdl2_renderer.cpp
+
 mkdir cmake-build && cd cmake-build
 ${CMAKE} -DPLATFORM_PS5=ON -DOPTION_MPV_PLAYER=OFF -DCMAKE_BUILD_TYPE=Release ..
 
