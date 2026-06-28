@@ -72,10 +72,6 @@ typedef struct app_launch_ctx {
   uint32_t app_opt;
   uint64_t crash_report;
   uint32_t check_flag;
-
-  // End of SCE fields, the following fields are just used to
-  // pass arguments to bigapp_launch_thread().
-  char **argv;
 } app_launch_ctx_t;
 
 
@@ -205,54 +201,72 @@ find_pid(const char* name) {
 }
 
 
+/**
+ *
+ **/
 static void*
-bigapp_launch_thread(void* args) {
-  app_launch_ctx_t *ctx  = (app_launch_ctx_t *)args;
+bigapp_launch_thread(void* arg) {
+  char** argv = (char**)arg;
+  app_launch_ctx_t ctx = {0};
 
-  sceSystemServiceLaunchApp("FAKE00000", ctx->argv, ctx);
+  if(sceUserServiceGetForegroundUser(&ctx.user_id)) {
+    return 0;
+  }
+
+  sceSystemServiceLaunchApp("FAKE00000", argv, &ctx);
 
   return 0;
 }
 
 
+/**
+ *
+ **/
 static pid_t
-bigapp_launch(uint32_t user_id, char** argv) {
-  app_launch_ctx_t ctx = {.user_id = user_id, .argv = argv};
+bigapp_launch(char** argv) {
+  struct kevent evt = {0};
+  pid_t parent = -1;
+  pid_t child = -1;
   pthread_t trd;
-  pid_t parent;
-  pid_t child;
+  int kq = -1;
 
   if((parent=find_pid("SceSysCore.elf")) < 0) {
-    puts("SceSysCore.elf is not running?");
+    perror("findpid");
     return -1;
   }
 
-  if(pt_attach(parent) < 0) {
+  if((kq=kqueue()) < 0) {
+    perror("kqueue");
+    return -1;
+  }
+
+  EV_SET(&evt, parent, EVFILT_PROC, EV_ADD | EV_ENABLE | EV_CLEAR,
+	 NOTE_FORK | NOTE_EXEC | NOTE_TRACK, 0, 0);
+  if(kevent(kq, &evt, 1, 0, 0, 0) < 0) {
+    perror("kevent");
+    close(kq);
+    return -1;
+  }
+
+  pthread_create(&trd, 0, &bigapp_launch_thread, (void*)argv);
+  pthread_detach(trd);
+
+  if(kevent(kq, 0, 0, &evt, 1, 0) < 0) {
+    perror("kevent");
+    close(kq);
+    return -1;
+  }
+
+  close(kq);
+
+  if(!(evt.fflags & NOTE_CHILD)) {
+    return -1;
+  }
+
+  child = evt.ident;
+
+  if(pt_attach(child)) {
     perror("pt_attach");
-    return -1;
-  }
-
-  if(pt_follow_fork(parent) < 0) {
-    perror("pt_follow_fork");
-    pt_detach(parent, 0);
-    return -1;
-  }
-
-  if(pt_continue(parent, SIGCONT) < 0) {
-    perror("pt_continue");
-    pt_detach(parent, 0);
-    return -1;
-  }
-
-  pthread_create(&trd, 0, &bigapp_launch_thread, &ctx);
-  if((child=pt_await_child(parent)) < 0) {
-    perror("pt_await_child");
-    pt_detach(parent, 0);
-    return -1;
-  }
-
-  if(pt_detach(parent, 0) < 0) {
-    perror("pt_detach");
     return -1;
   }
 
@@ -273,8 +287,6 @@ bigapp_launch(uint32_t user_id, char** argv) {
     pt_detach(child, SIGKILL);
     return -1;
   }
-
-  pthread_join(trd, 0);
 
   return child;
 }
@@ -395,7 +407,6 @@ pid_t
 hbldr_launch(const char*cwd, const char* path, int stdio, char** argv,
 	     char** envp) {
   char buf[PATH_MAX];
-  uint32_t user_id;
   uint8_t* elf;
   int app_id;
   pid_t pid;
@@ -409,11 +420,6 @@ hbldr_launch(const char*cwd, const char* path, int stdio, char** argv,
       perror("fakeapp_create_if_missing");
       return -1;
     }
-  }
-
-  if(sceUserServiceGetForegroundUser(&user_id)) {
-    perror("sceUserServiceGetForegroundUser");
-    return -1;
   }
 
   if((app_id=sceSystemServiceGetAppIdOfRunningBigApp()) > 0) {
@@ -438,7 +444,7 @@ hbldr_launch(const char*cwd, const char* path, int stdio, char** argv,
     return -1;
   }
 
-  if((pid=bigapp_launch(user_id, argv)) < 0) {
+  if((pid=bigapp_launch(argv)) < 0) {
     return -1;
   }
 
