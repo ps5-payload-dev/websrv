@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#   Copyright (C) 2024 John Törnblom
+#   Copyright (C) 2026 John Törnblom
 #
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -15,103 +15,62 @@
 # along with this program; see the file COPYING. If not see
 # <http://www.gnu.org/licenses/>.
 
-# Build script by Alex Free, based on template of other projects.
+VER=7.1
+URL=https://github.com/fabiangreffrath/crispy-doom/archive/refs/tags/crispy-doom-$VER.tar.gz
+WAD_DOOM=https://www.doomworld.com/3ddownloads/ports/shareware_doom_iwad.zip
+WAD_HERETIC=https://www.doomworld.com/3ddownloads/ports/shareware_heretic_iwad.zip
+WAD_HEXEN=https://www.doomworld.com/3ddownloads/ports/shareware_hexen_iwad.zip
+
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
 
 if [[ -z "$PS5_PAYLOAD_SDK" ]]; then
-    if [ -z "${PS5_PAYLOAD_SDK}" ]; then
-	export PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk
-    fi
-fi
-
-source "${PS5_PAYLOAD_SDK}/toolchain/prospero.sh" || exit 1
-
-cd "${SCRIPT_DIR}"
-# Executables are included with sdk, just copy it.
-# Each engine uses it's own config files, and by putting them in their own folder it makes it nicer to manage this by the UI.
-# Download sharewares when available with wget, that is already installed as a neccesary dep in the toolchain building process.
-rm -rf doom heretic hexen strife payloads
-
-if [[ "$1" == "clean" ]]; then
-     exit 0
+    echo "error: PS5_PAYLOAD_SDK is not set"
+    exit 1
 fi
 
 set -e
 
-# We put all payloads in one dir to cleanup UX.
-mkdir payloads
+source "${PS5_PAYLOAD_SDK}/toolchain/prospero.sh"
 
-# All these tmp dirs are because we need somewhere to extract/play MIDI tracks found in WADs, and we don't have a /tmp on PS5. This is setup by envars in the javascript.
-mkdir -p doom/tmp
-mkdir -p heretic/tmp
-mkdir -p hexen/tmp
-# No shareware of strife this can run, the demo is very different from retail and not compatible: https://github.com/fabiangreffrath/crispy-doom/blob/master/README.Strife.md#what-are-some-known-problems.
-mkdir -p strife/tmp
+TEMPDIR=$(mktemp -d)
+trap 'rm -rf -- "$TEMPDIR"' EXIT
 
-# Make music-packs.
-mkdir doom/music-packs
-mkdir heretic/music-packs
-mkdir hexen/music-packs
+# fetch assets
+cd $TEMPDIR
+curl -o wad_doom.zip "${WAD_DOOM}"
+curl -o wad_heretic.zip "${WAD_HERETIC}"
+curl -o wad_hexen.zip "${WAD_HEXEN}"
+unzip wad_doom.zip
+unzip wad_heretic.zip
+unzip wad_hexen.zip
+mv *.WAD "${SCRIPT_DIR}/"
 
-# Make autoload
-mkdir doom/autoload
-mkdir heretic/autoload
-mkdir hexen/autoload
-mkdir strife/autoload
+# fetch and build the engine
+curl -L -o crispy-doom.tar.gz "${URL}"
+tar xf crispy-doom.tar.gz
+cd crispy-doom-crispy-doom-$VER
 
-# Shareware site: https://www.doomworld.com/classicdoom/info/shareware.php is cool, but need to spoof a valid UA or download gets denied.
+# Forking a ps5 bigapp crashes the kernel
+sed -i 's|childpid = fork();|return -1;|g' src/setup/execute.c
 
-# DOOM.
-cp -v "${PS5_SYSROOT}/${PS5_HBROOT}/bin/crispy-doom" payloads/crispy-doom.elf
-cp -v "${PS5_SYSROOT}/${PS5_HBROOT}/bin/crispy-doom-setup" payloads/crispy-doom-setup.elf
-# Doom v1.9 shareware. No Doom 2 shareware was ever made btw.
-wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-     https://www.doomworld.com/3ddownloads/ports/shareware_doom_iwad.zip \
-     -O doom/shareware_doom_iwad.zip
+./autogen.sh --prefix="${PREFIX}" --host=x86_64-pc-freebsd \
+             --disable-doc --disable-zpool --disable-icons \
+             --disable-bash-completion
+${MAKE}
 
-unzip doom/shareware_doom_iwad.zip -d doom
-rm doom/shareware_doom_iwad.zip
-# Crispy.
-cp -v default-configs/crispy-doom.cfg doom
-# Vanilla.
-cp -v default-configs/doom.cfg doom
+mv data/doom.png "${SCRIPT_DIR}/"
+mv src/crispy-doom "${SCRIPT_DIR}/crispy-doom.elf"
+mv src/crispy-doom-setup "${SCRIPT_DIR}/crispy-doom-setup.elf"
 
-# Heretic.
-cp -v "${PS5_SYSROOT}/${PS5_HBROOT}/bin/crispy-heretic" payloads/crispy-heretic.elf
-cp -v "${PS5_SYSROOT}/${PS5_HBROOT}/bin/crispy-heretic-setup" payloads/crispy-heretic-setup.elf
-# Heretic v1.2 shareware.
-wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-     https://www.doomworld.com/3ddownloads/ports/shareware_heretic_iwad.zip \
-     -O heretic/shareware_heretic_iwad.zip
+mv data/heretic.png "${SCRIPT_DIR}/"
+mv src/crispy-heretic "${SCRIPT_DIR}/crispy-heretic.elf"
+mv src/crispy-heretic-setup "${SCRIPT_DIR}/crispy-heretic-setup.elf"
 
-unzip heretic/shareware_heretic_iwad.zip -d heretic
-rm heretic/shareware_heretic_iwad.zip
-# Crispy.
-cp -v default-configs/crispy-heretic.cfg heretic
-# Vanilla.
-cp -v default-configs/heretic.cfg heretic
+mv data/hexen.png "${SCRIPT_DIR}/"
+mv src/crispy-hexen "${SCRIPT_DIR}/crispy-hexen.elf"
+mv src/crispy-hexen-setup "${SCRIPT_DIR}/crispy-hexen-setup.elf"
 
-# Hexen.
-cp -v "${PS5_SYSROOT}/${PS5_HBROOT}/bin/crispy-hexen" payloads/crispy-hexen.elf
-cp -v "${PS5_SYSROOT}/${PS5_HBROOT}/bin/crispy-hexen-setup" payloads/crispy-hexen-setup.elf
-# Hexen shareware v1.1.
-wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-     https://www.doomworld.com/3ddownloads/ports/shareware_hexen_iwad.zip \
-     -O hexen/shareware_hexen_iwad.zip
-
-unzip hexen/shareware_hexen_iwad.zip -d hexen
-rm hexen/shareware_hexen_iwad.zip
-# Crispy.
-cp -v default-configs/crispy-hexen.cfg hexen
-# Vanilla.
-cp -v default-configs/hexen.cfg hexen
-
-# Strife.
-cp -v "${PS5_SYSROOT}/${PS5_HBROOT}/bin/crispy-strife" payloads/crispy-strife.elf
-cp -v "${PS5_SYSROOT}/${PS5_HBROOT}/bin/crispy-strife-setup" payloads/crispy-strife-setup.elf
-# AGAIN, no demo/shareware usable since this is a RE of lost source code never released, for the retail DOS version.
-# Crispy.
-cp -v default-configs/crispy-strife.cfg strife
-# Vanilla.
-cp -v default-configs/strife.cfg strife
+mv data/strife.png "${SCRIPT_DIR}/"
+mv src/crispy-strife "${SCRIPT_DIR}/crispy-strife.elf"
+mv src/crispy-strife-setup "${SCRIPT_DIR}/crispy-strife-setup.elf"
