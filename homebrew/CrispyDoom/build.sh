@@ -17,9 +17,9 @@
 
 VER=7.1
 URL=https://github.com/fabiangreffrath/crispy-doom/archive/refs/tags/crispy-doom-$VER.tar.gz
-WAD_DOOM=https://www.doomworld.com/3ddownloads/ports/shareware_doom_iwad.zip
-WAD_HERETIC=https://www.doomworld.com/3ddownloads/ports/shareware_heretic_iwad.zip
-WAD_HEXEN=https://www.doomworld.com/3ddownloads/ports/shareware_hexen_iwad.zip
+WAD_DOOM=https://archive.org/download/doomworld/doomworld.tar/doomworld%2Fports%2Fshareware_doom_iwad.zip
+WAD_HERETIC=https://archive.org/download/doomworld/doomworld.tar/doomworld%2Fports%2Fshareware_heretic_iwad.zip
+WAD_HEXEN=https://archive.org/download/doomworld/doomworld.tar/doomworld%2Fports%2Fshareware_hexen_iwad.zip
 
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "${SCRIPT_PATH}")"
