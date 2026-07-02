@@ -41,10 +41,6 @@ cd $TEMPDIR
 curl -o wad_doom.zip "${WAD_DOOM}"
 curl -o wad_heretic.zip "${WAD_HERETIC}"
 curl -o wad_hexen.zip "${WAD_HEXEN}"
-sync
-sha256sum wad_doom.zip
-sha256sum wad_heretic.zip
-sha256sum wad_hexen.zip
 unzip wad_doom.zip
 unzip wad_heretic.zip
 unzip wad_hexen.zip
