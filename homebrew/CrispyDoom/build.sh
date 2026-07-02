@@ -38,16 +38,16 @@ trap 'rm -rf -- "$TEMPDIR"' EXIT
 
 # fetch assets
 cd $TEMPDIR
-curl -o wad_doom.zip "${WAD_DOOM}"
-curl -o wad_heretic.zip "${WAD_HERETIC}"
-curl -o wad_hexen.zip "${WAD_HEXEN}"
+wget -O wad_doom.zip "${WAD_DOOM}"
+wget -O wad_heretic.zip "${WAD_HERETIC}"
+wget -O wad_hexen.zip "${WAD_HEXEN}"
 unzip wad_doom.zip
 unzip wad_heretic.zip
 unzip wad_hexen.zip
 mv *.WAD "${SCRIPT_DIR}/"
 
 # fetch and build the engine
-curl -L -o crispy-doom.tar.gz "${URL}"
+wget -O crispy-doom.tar.gz "${URL}"
 tar xf crispy-doom.tar.gz
 cd crispy-doom-crispy-doom-$VER
 
