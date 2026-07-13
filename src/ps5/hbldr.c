@@ -386,11 +386,14 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio,
   elfldr_set_cwd(pid, cwd);
   elfldr_set_stdio(pid, stdio);
 
-  // invoke sys_set_butget(0)
-  // This allow bigapp homebrew to operate on relative paths using
-  // open, mkdir, etc.
-  pt_syscall(pid, 0x23b, 0);
-  
+  // invoke sys_set_butget(0). This allows bigapp homebrew to operate on
+  // relative paths using open, mkdir, etc. TODO: On older firmwares, this
+  // causes a kernel panic when the bigapp is restarted. Figure out what
+  // firmwares this issue affect, and how to address it.
+  if(kernel_get_fw_version() > 0x10000000) {
+    pt_syscall(pid, 0x23b, 0);
+  }
+
   // Execute the ELF
   if(elfldr_exec(pid, elf)) {
     return -1;
