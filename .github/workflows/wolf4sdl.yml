@@ -1,0 +1,68 @@
+name: Wolf4SDL
+
+on:
+  push:
+    paths:
+      - 'homebrew/Wolf4SDL/**'
+    tags:
+      - '*'
+  pull_request:
+    paths:
+      - 'homebrew/Wolf4SDL/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install bash clang-18 lld-18
+          sudo apt install build-essential
+
+      - name: Install toolchain
+        run: |
+          wget https://github.com/ps5-payload-dev/pacbrew-repo/releases/latest/download/ps5-payload-dev.tar.gz
+          sudo tar xf ps5-payload-dev.tar.gz -C /
+
+      - name: Build
+        run: |
+          PS5_PAYLOAD_SDK=/opt/ps5-payload-sdk ./homebrew/Wolf4SDL/build.sh
+
+      - name: Zip build output
+        run: |
+          cd homebrew
+          zip -r ../Wolf4SDL.zip Wolf4SDL
+
+      - name: Upload zipped artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Wolf4SDL
+          path: Wolf4SDL.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Wolf4SDL
+          path: .
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          prerelease: true
+          files: Wolf4SDL.zip
+
