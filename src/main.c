@@ -40,10 +40,10 @@ main(int argc, char** argv) {
   signal(SIGCHLD, SIG_IGN);
 
   while(1) {
-#ifdef __SCE__
+#ifdef HAVE_MDNS
     mdns_discovery_start();
-    ssdp_discovery_start();
 #endif
+    ssdp_discovery_start();
     websrv_listen(port);
     sleep(3);
   }
