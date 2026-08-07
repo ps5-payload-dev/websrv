@@ -18,9 +18,11 @@ VERSION_TAG := $(shell git describe --abbrev=10 --dirty --always --tags)
 
 PYTHON ?= python3
 
-BIN   := websrv.pc
-SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c src/mime.c
-SRCS   += src/pc/sys.c
+BIN := websrv.pc
+
+SRCS := src/main.c src/websrv.c src/asset.c src/fs.c src/mime.c
+SRCS += src/ssdp.c
+SRCS += src/pc/sys.c
 
 CFLAGS := -Wall -DVERSION_TAG=\"$(VERSION_TAG)\"
 LDADD  += `pkg-config libmicrohttpd --libs`

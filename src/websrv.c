@@ -313,17 +313,9 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
     if(!strncmp("/fs/", url, 4)) {
       return fs_request(conn, url);
     }
-#ifdef __SCE__
-    if(!strcmp("/mdns", url)) {
-      return mdns_request(conn, url);
-    }
     if(!strcmp("/ssdp", url)) {
       return ssdp_request(conn, url);
     }
-    if(!strncmp("/smb", url, 4)) {
-      return smb_request(conn, url);
-    }
-#endif
     if(!strcmp("/launch", url)) {
       return launch_request(conn);
     }
@@ -339,6 +331,16 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
     if(!strcmp("/", url) || !url[0]) {
       return asset_request(conn, "/index.html");
     }
+#ifdef HAVE_MDNS
+    if(!strcmp("/mdns", url)) {
+      return mdns_request(conn, url);
+    }
+#endif
+#ifdef HAVE_SMB
+    if(!strncmp("/smb", url, 4)) {
+      return smb_request(conn, url);
+    }
+#endif
     return asset_request(conn, url);
   }
 
