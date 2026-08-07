@@ -29,6 +29,7 @@ along with this program; see the file COPYING. If not, see
 #include "fs.h"
 #include "mdns.h"
 #include "smb.h"
+#include "ssdp.h"
 #include "sys.h"
 #include "version.h"
 #include "websrv.h"
@@ -315,6 +316,9 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
 #ifdef __SCE__
     if(!strcmp("/mdns", url)) {
       return mdns_request(conn, url);
+    }
+    if(!strcmp("/ssdp", url)) {
+      return ssdp_request(conn, url);
     }
     if(!strncmp("/smb", url, 4)) {
       return smb_request(conn, url);

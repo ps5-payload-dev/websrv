@@ -18,6 +18,7 @@ along with this program; see the file COPYING. If not, see
 #include <signal.h>
 
 #include "mdns.h"
+#include "ssdp.h"
 #include "websrv.h"
 
 
@@ -41,6 +42,7 @@ main(int argc, char** argv) {
   while(1) {
 #ifdef __SCE__
     mdns_discovery_start();
+    ssdp_discovery_start();
 #endif
     websrv_listen(port);
     sleep(3);

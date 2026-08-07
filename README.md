@@ -25,6 +25,8 @@ Examples:
 - http://ps5:8080/fs/?fmt=json - Browser the local filesystem (json)
 - http://ps5:8080/fs/system_ex/app/NPXS40028/redis.conf - Download a local file
 - http://ps5:8080/mdns - List mDNS services discovered by websrv (json)
+- http://ps5:8080/ssdp - List SSDP (UPnP) services discovered by websrv (json)
+- http://ps5:8080/ssdp?st=urn:schemas-upnp-org:device:MediaServer:1 - List discovered DLNA media servers (json)
 - http://ps5:8080/smb?addr=192.168.1.1 - List shares on a remote SMB host (json)
 - http://ps5:8080/smb/share?addr=192.168.1.1 - List files and folders shared by a remote SMB host (json)
 - http://ps5:8080/smb/share/file?addr=192.168.1.1 - Download a remote SMB file via websrv
