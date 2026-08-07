@@ -44,7 +44,14 @@ main(int argc, char** argv) {
     mdns_discovery_start();
 #endif
     ssdp_discovery_start();
+
     websrv_listen(port);
+
+#ifdef HAVE_MDNS
+    mdns_discovery_stop();
+#endif
+    ssdp_discovery_stop();
+
     sleep(3);
   }
 
