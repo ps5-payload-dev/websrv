@@ -42,7 +42,6 @@ LDADD += -lSceSsl -lSceHttp
 LDADD += `$(PS5_PAYLOAD_SDK)/bin/prospero-pkg-config libmicrohttpd --libs`
 LDADD += `$(PS5_PAYLOAD_SDK)/bin/prospero-pkg-config microdns --libs`
 LDADD += `$(PS5_PAYLOAD_SDK)/bin/prospero-pkg-config libsmb2 --libs`
-LDADD += `$(PS5_PAYLOAD_SDK)/bin/prospero-pkg-config libcurl --libs`
 
 ASSETS   := $(wildcard assets/*)
 GEN_SRCS := $(patsubst assets/%,gen/%, $(ASSETS:=.c))

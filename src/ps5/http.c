@@ -20,43 +20,110 @@ along with this program; see the file COPYING. If not, see
 #include <string.h>
 #include <strings.h>
 
-#include <curl/curl.h>
-
-#include "../http.h"
+#include "http.h"
 
 
 /**
- * Give up if the remote server does not accept the connection in time.
+ * Memory pools used by libnet, libssl and libhttp. They are created once and
+ * shared by all requests, so they must accommodate the transfers running in
+ * parallel. Requests fail with SCE_HTTP_ERROR_OUT_OF_MEMORY (0x80431022)
+ * when they are too small.
  **/
+#define HTTP_NET_POOL_SIZE  (64  * 1024)
+#define HTTP_SSL_POOL_SIZE  (256 * 1024)
+#define HTTP_POOL_SIZE      (128 * 1024)
+
+
+/**
+ * Give up if the remote server does not resolve or accept the connection in
+ * time (in seconds).
+ **/
+#define HTTP_RESOLVE_TIMEOUT 15
 #define HTTP_CONNECT_TIMEOUT 15
 
 
 /**
- * Give up if the remote server transfers less than HTTP_STALL_LIMIT bytes
- * per second during HTTP_STALL_TIMEOUT seconds.
+ * Give up if the remote server transfers nothing during HTTP_STALL_TIMEOUT
+ * seconds.
  **/
-#define HTTP_STALL_LIMIT      1
 #define HTTP_STALL_TIMEOUT   60
 
 
 /**
- * Maximum number of redirects to follow before giving up.
+ * Maximum size of the header section sent by a remote server.
  **/
-#define HTTP_MAX_REDIRECTS    8
+#define HTTP_HEADER_MAX_SIZE 0x4000
 
 
 /**
- * How long to wait for socket activity before checking on libcurl again.
+ * Maximum number of bytes pulled out of libhttp in one go, which reports the
+ * number of bytes read in an int.
  **/
-#define HTTP_POLL_TIMEOUT  1000
+#define HTTP_READ_MAX        0x100000
 
 
 /**
- * Amount of body data buffered between two reads. Must be larger than
- * HTTP_CURL_BUFFER_SIZE, so a chunk handed over by libcurl always fits.
+ * Amount of body data buffered by http_get() before its buffer is grown.
  **/
-#define HTTP_BUFFER_SIZE      0x10000
-#define HTTP_CURL_BUFFER_SIZE 0x4000
+#define HTTP_BUFFER_BLOCK    0x10000
+
+
+/**
+ * Constants defined by libhttp.
+ **/
+#define SCE_HTTP_VERSION_1_1      2
+
+#define SCE_HTTP_METHOD_GET       0
+#define SCE_HTTP_METHOD_POST      1
+#define SCE_HTTP_METHOD_HEAD      2
+#define SCE_HTTP_METHOD_OPTIONS   3
+#define SCE_HTTP_METHOD_PUT       4
+#define SCE_HTTP_METHOD_DELETE    5
+#define SCE_HTTP_METHOD_TRACE     6
+#define SCE_HTTP_METHOD_CONNECT   7
+
+#define SCE_HTTP_HEADER_OVERWRITE 0
+#define SCE_HTTP_HEADER_ADD       1
+
+
+#ifdef VERSION_TAG
+#define HTTP_USER_AGENT "websrv/" VERSION_TAG
+#else
+#define HTTP_USER_AGENT "websrv"
+#endif
+
+
+int sceNetInit(void);
+int sceNetPoolCreate(const char*, int, int);
+int sceNetPoolDestroy(int);
+
+int sceSslInit(size_t);
+int sceSslTerm(int);
+
+int sceHttpInit(int, int, size_t);
+int sceHttpTerm(int);
+
+int sceHttpCreateTemplate(int, const char*, int, int);
+int sceHttpDeleteTemplate(int);
+int sceHttpsSetSslCallback(int, void*, void*);
+int sceHttpSetResponseHeaderMaxSize(int, size_t);
+int sceHttpSetAutoRedirect(int, int);
+int sceHttpSetResolveTimeOut(int, uint32_t);
+int sceHttpSetConnectTimeOut(int, uint32_t);
+int sceHttpSetSendTimeOut(int, uint32_t);
+int sceHttpSetRecvTimeOut(int, uint32_t);
+
+int sceHttpCreateConnectionWithURL(int, const char*, int);
+int sceHttpDeleteConnection(int);
+
+int sceHttpCreateRequestWithURL(int, int, const char*, uint64_t);
+int sceHttpAddRequestHeader(int, const char*, const char*, uint32_t);
+int sceHttpSendRequest(int, const void*, size_t);
+int sceHttpGetStatusCode(int, int*);
+int sceHttpGetAllResponseHeaders(int, char**, size_t*);
+int sceHttpReadData(int, void*, size_t);
+int sceHttpAbortRequest(int);
+int sceHttpDeleteRequest(int);
 
 
 /**
@@ -72,66 +139,131 @@ typedef struct http_header {
 /**
  * State of an ongoing request.
  *
- * The transfer is driven by the thread reading the response, one chunk at a
- * time, so no data is fetched until somebody asks for it, and no more than
- * HTTP_BUFFER_SIZE bytes are ever held in memory. libcurl is told to pause
- * whenever it produces data faster than it is read.
+ * libhttp buffers the transfer internally and hands over the body as it is
+ * pulled out with http_response_read(), so a response only keeps track of
+ * the objects that must be released, and of the headers that were copied out
+ * of libhttp while the request was still alive.
  **/
 struct http_response {
-  CURLM             *multi;
-  CURL              *curl;
-  struct curl_slist *reqhdrs;
+  int            tmplId;
+  int            connId;
+  int            reqId;
 
-  int                ready;  // response headers have been received
-  int                done;   // transfer has run to completion
-  int                failed; // transfer did not deliver a complete response
-  int                skip;   // discard body, another response follows
-  int                paused; // libcurl is waiting for the buffer to drain
+  long           status;
+  http_header_t *headers;
+  http_header_t *tail;
 
-  long               status;
-  http_header_t     *headers;
-  http_header_t     *tail;
-
-  char               buf[HTTP_BUFFER_SIZE];
-  size_t             len;
-  size_t             off;
+  int            eof;    // the whole body has been read
+  int            failed; // transfer did not deliver a complete response
 };
 
 
 /**
- * Buffer used by http_get().
+ * libnet, libssl and libhttp are initialized on demand, and stay initialized
+ * for the lifetime of the process.
  **/
-typedef struct http_buffer {
-  uint8_t *data;
-  size_t   size;
-} http_buffer_t;
+static pthread_once_t g_http_once = PTHREAD_ONCE_INIT;
 
-
-static pthread_once_t g_curl_once = PTHREAD_ONCE_INIT;
+static int g_libnetMemId  = -1;
+static int g_libsslCtxId  = -1;
+static int g_libhttpCtxId = -1;
 
 
 static void
-http_curl_init(void) {
-  curl_global_init(CURL_GLOBAL_DEFAULT);
+http_perror(const char *fn, int err) {
+  fprintf(stderr, "%s: 0x%08x\n", fn, (unsigned int)err);
 }
 
 
 /**
- * Only let libcurl speak http, both for the request itself and for any
+ * Accept whatever certificate the remote server presents, which is what the
+ * libcurl-based implementation does with CURLOPT_SSL_VERIFYPEER.
+ **/
+static int
+http_ssl_cb(int libsslCtxId, unsigned int verifyErr, void *const sslCert[],
+	    int certNum, void *userArg) {
+  return 0;
+}
+
+
+/**
+ * Set up the pools shared by all requests.
+ **/
+static void
+http_global_init(void) {
+  // libnet may already have been initialized by another part of the payload
+  sceNetInit();
+
+  if((g_libnetMemId=sceNetPoolCreate("websrv", HTTP_NET_POOL_SIZE, 0)) < 0) {
+    http_perror("sceNetPoolCreate", g_libnetMemId);
+    g_libnetMemId = -1;
+    return;
+  }
+
+  if((g_libsslCtxId=sceSslInit(HTTP_SSL_POOL_SIZE)) < 0) {
+    http_perror("sceSslInit", g_libsslCtxId);
+    sceNetPoolDestroy(g_libnetMemId);
+    g_libnetMemId = -1;
+    g_libsslCtxId = -1;
+    return;
+  }
+
+  if((g_libhttpCtxId=sceHttpInit(g_libnetMemId, g_libsslCtxId,
+				 HTTP_POOL_SIZE)) < 0) {
+    http_perror("sceHttpInit", g_libhttpCtxId);
+    sceSslTerm(g_libsslCtxId);
+    sceNetPoolDestroy(g_libnetMemId);
+    g_libnetMemId  = -1;
+    g_libsslCtxId  = -1;
+    g_libhttpCtxId = -1;
+  }
+}
+
+
+/**
+ * Only let libhttp speak http, both for the request itself and for any
  * redirect it follows. Without this, a URL like file:///etc/passwd would be
  * served by the proxy.
  **/
-static void
-http_curl_restrict(CURL *curl) {
-#if LIBCURL_VERSION_NUM >= 0x075500 // 7.85.0
-  curl_easy_setopt(curl, CURLOPT_PROTOCOLS_STR, "http,https");
-  curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
-#else
-  curl_easy_setopt(curl, CURLOPT_PROTOCOLS,
-		   (long)(CURLPROTO_HTTP | CURLPROTO_HTTPS));
-  curl_easy_setopt(curl, CURLOPT_REDIR_PROTOCOLS,
-		   (long)(CURLPROTO_HTTP | CURLPROTO_HTTPS));
-#endif
+static int
+http_url_supported(const char *url) {
+  return url && (!strncasecmp(url, "http://", 7) ||
+		 !strncasecmp(url, "https://", 8));
+}
+
+
+/**
+ * Translate a method to the constant expected by libhttp, or -1 if libhttp
+ * cannot issue it.
+ **/
+static int
+http_method_id(const char *method) {
+  if(!method || !strcasecmp(method, "GET")) {
+    return SCE_HTTP_METHOD_GET;
+  }
+  if(!strcasecmp(method, "HEAD")) {
+    return SCE_HTTP_METHOD_HEAD;
+  }
+  if(!strcasecmp(method, "POST")) {
+    return SCE_HTTP_METHOD_POST;
+  }
+  if(!strcasecmp(method, "PUT")) {
+    return SCE_HTTP_METHOD_PUT;
+  }
+  if(!strcasecmp(method, "DELETE")) {
+    return SCE_HTTP_METHOD_DELETE;
+  }
+  if(!strcasecmp(method, "OPTIONS")) {
+    return SCE_HTTP_METHOD_OPTIONS;
+  }
+  if(!strcasecmp(method, "TRACE")) {
+    return SCE_HTTP_METHOD_TRACE;
+  }
+  if(!strcasecmp(method, "CONNECT")) {
+    return SCE_HTTP_METHOD_CONNECT;
+  }
+
+  return -1;
 }
 
 
@@ -202,144 +334,31 @@ http_headers_append(http_response_t *resp, const char *line, size_t len) {
 /**
  * Collect the headers sent by a remote server.
  *
- * libcurl invokes this for informational responses and for each redirect it
- * follows, so headers are reset on every status line, and the response is
- * only flagged as ready once the headers of the final response have been
- * received.
- **/
-static size_t
-http_header_cb(char *ptr, size_t size, size_t nmemb, void *ctx) {
-  http_response_t *resp = ctx;
-  size_t len = size * nmemb;
-  const char *sp;
-
-  if(resp->ready) {
-    return len;
-  }
-
-  if(len > 5 && !strncasecmp(ptr, "HTTP/", 5)) {
-    http_headers_free(resp->headers);
-    resp->headers = 0;
-    resp->tail = 0;
-    resp->status = 0;
-
-    if((sp=memchr(ptr, ' ', len))) {
-      resp->status = strtol(sp+1, 0, 10);
-    }
-
-    return len;
-  }
-
-  if(len && ptr[0] != '\r' && ptr[0] != '\n') {
-    http_headers_append(resp, ptr, len);
-    return len;
-  }
-
-  // an empty line terminates the header section
-  if(resp->status >= 100 && resp->status < 200) {
-    return len; // informational, the real response follows
-  }
-
-  if(resp->status >= 300 && resp->status < 400 &&
-     http_response_header(resp, "Location")) {
-    resp->skip = 1; // libcurl follows the redirect, drop this body
-    return len;
-  }
-
-  resp->skip = 0;
-  resp->ready = 1;
-
-  return len;
-}
-
-
-/**
- * Buffer the body sent by a remote server.
- *
- * libcurl keeps whatever it could not hand over and offers it again once the
- * transfer is unpaused, so no data is lost when the buffer is full.
- **/
-static size_t
-http_write_cb(char *ptr, size_t size, size_t nmemb, void *ctx) {
-  http_response_t *resp = ctx;
-  size_t len = size * nmemb;
-
-  if(resp->skip) {
-    return len;
-  }
-
-  if(len > sizeof(resp->buf) - resp->len) {
-    if(!resp->len) {
-      return 0; // does not fit in an empty buffer, abort rather than stall
-    }
-    resp->paused = 1;
-    return CURL_WRITEFUNC_PAUSE;
-  }
-
-  memcpy(resp->buf + resp->len, ptr, len);
-  resp->len += len;
-
-  return len;
-}
-
-
-/**
- * Reap the result of a finished transfer.
+ * libhttp hands over the header section of the final response, status line
+ * included, in a buffer owned by the request, so the interesting parts are
+ * copied out before the request is deleted. Continuation lines are dropped,
+ * they have been deprecated for a long time.
  **/
 static void
-http_response_finish(http_response_t *resp) {
-  CURLMsg *msg;
-  int left = 0;
+http_headers_parse(http_response_t *resp, const char *buf, size_t size) {
+  const char *nl;
+  size_t len;
 
-  while((msg=curl_multi_info_read(resp->multi, &left))) {
-    if(msg->msg != CURLMSG_DONE) {
-      continue;
+  while(size) {
+    if((nl=memchr(buf, '\n', size))) {
+      len = nl - buf + 1;
+    } else {
+      len = size;
     }
-    if(msg->data.result != CURLE_OK) {
-      fprintf(stderr, "curl_multi_perform: %s\n",
-	      curl_easy_strerror(msg->data.result));
-      resp->failed = 1;
+
+    if(buf[0] != ' ' && buf[0] != '\t' &&
+       !(len > 5 && !strncasecmp(buf, "HTTP/", 5))) {
+      http_headers_append(resp, buf, len);
     }
+
+    buf  += len;
+    size -= len;
   }
-
-  resp->done = 1;
-}
-
-
-/**
- * Let libcurl make progress, waiting for socket activity if it has nothing
- * to hand over yet.
- **/
-static int
-http_response_perform(http_response_t *resp) {
-  int running = 0;
-
-  if(curl_multi_perform(resp->multi, &running) != CURLM_OK) {
-    resp->failed = 1;
-    resp->done = 1;
-    return -1;
-  }
-
-  if(!running) {
-    http_response_finish(resp);
-    return 0;
-  }
-
-  if(resp->len || resp->paused) {
-    return 0;
-  }
-
-#if LIBCURL_VERSION_NUM >= 0x074200 // 7.66.0
-  if(curl_multi_poll(resp->multi, 0, 0, HTTP_POLL_TIMEOUT, 0) != CURLM_OK) {
-#else
-  if(curl_multi_wait(resp->multi, 0, 0, HTTP_POLL_TIMEOUT, 0) != CURLM_OK) {
-#endif
-    resp->failed = 1;
-    resp->done = 1;
-    return -1;
-  }
-
-  return 0;
 }
 
 
@@ -347,77 +366,130 @@ http_response_t*
 http_request(const char *method, const char *url,
 	     const char * const *headers) {
   http_response_t *resp;
-  struct curl_slist *sl;
+  int status = 0;
+  char name[256];
+  const char *val;
+  char *hdrbuf = 0;
+  size_t hdrlen = 0;
+  size_t len;
+  int id;
+  int err;
 
-  pthread_once(&g_curl_once, http_curl_init);
+  pthread_once(&g_http_once, http_global_init);
 
-  if(!url || !url[0]) {
+  if(g_libhttpCtxId < 0) {
     return 0;
   }
 
-  if(!method) {
-    method = "GET";
+  if(!http_url_supported(url)) {
+    return 0;
+  }
+
+  if((id=http_method_id(method)) < 0) {
+    return 0;
   }
 
   if(!(resp=calloc(1, sizeof(http_response_t)))) {
     return 0;
   }
 
-  if(!(resp->curl=curl_easy_init()) || !(resp->multi=curl_multi_init())) {
+  resp->tmplId = -1;
+  resp->connId = -1;
+  resp->reqId  = -1;
+
+  if((resp->tmplId=sceHttpCreateTemplate(g_libhttpCtxId, HTTP_USER_AGENT,
+					 SCE_HTTP_VERSION_1_1, 1)) < 0) {
+    http_perror("sceHttpCreateTemplate", resp->tmplId);
+    resp->tmplId = -1;
+    http_response_free(resp);
+    return 0;
+  }
+
+  if((err=sceHttpsSetSslCallback(resp->tmplId, http_ssl_cb, 0))) {
+    http_perror("sceHttpsSetSslCallback", err);
+    http_response_free(resp);
+    return 0;
+  }
+
+  if((err=sceHttpSetResponseHeaderMaxSize(resp->tmplId,
+					  HTTP_HEADER_MAX_SIZE))) {
+    http_perror("sceHttpSetResponseHeaderMaxSize", err);
+    http_response_free(resp);
+    return 0;
+  }
+
+  sceHttpSetAutoRedirect(resp->tmplId, 1);
+  sceHttpSetResolveTimeOut(resp->tmplId, HTTP_RESOLVE_TIMEOUT * 1000000);
+  sceHttpSetConnectTimeOut(resp->tmplId, HTTP_CONNECT_TIMEOUT * 1000000);
+  sceHttpSetSendTimeOut(resp->tmplId, HTTP_STALL_TIMEOUT * 1000000);
+  sceHttpSetRecvTimeOut(resp->tmplId, HTTP_STALL_TIMEOUT * 1000000);
+
+  if((resp->connId=sceHttpCreateConnectionWithURL(resp->tmplId, url, 0)) < 0) {
+    http_perror("sceHttpCreateConnectionWithURL", resp->connId);
+    resp->connId = -1;
+    http_response_free(resp);
+    return 0;
+  }
+
+  if((resp->reqId=sceHttpCreateRequestWithURL(resp->connId, id, url, 0)) < 0) {
+    http_perror("sceHttpCreateRequestWithURL", resp->reqId);
+    resp->reqId = -1;
     http_response_free(resp);
     return 0;
   }
 
   for(; headers && *headers; headers++) {
-    if(!(sl=curl_slist_append(resp->reqhdrs, *headers))) {
-      break;
+    if(!(val=strchr(*headers, ':'))) {
+      continue;
     }
-    resp->reqhdrs = sl;
+
+    len = val - *headers;
+    while(len && ((*headers)[len-1] == ' ' || (*headers)[len-1] == '\t')) {
+      len--;
+    }
+    if(!len || len >= sizeof(name)) {
+      continue;
+    }
+
+    memcpy(name, *headers, len);
+    name[len] = 0;
+
+    val++;
+    while(*val == ' ' || *val == '\t') {
+      val++;
+    }
+
+    if((err=sceHttpAddRequestHeader(resp->reqId, name, val,
+				    SCE_HTTP_HEADER_ADD))) {
+      http_perror("sceHttpAddRequestHeader", err);
+    }
   }
 
-  if(!strcasecmp(method, "HEAD")) {
-    curl_easy_setopt(resp->curl, CURLOPT_NOBODY, 1l);
-  } else if(strcasecmp(method, "GET")) {
-    curl_easy_setopt(resp->curl, CURLOPT_CUSTOMREQUEST, method);
-  }
-
-  curl_easy_setopt(resp->curl, CURLOPT_SSL_VERIFYPEER, 0L);
-  curl_easy_setopt(resp->curl, CURLOPT_URL, url);
-  curl_easy_setopt(resp->curl, CURLOPT_HTTPHEADER, resp->reqhdrs);
-  http_curl_restrict(resp->curl);
-  curl_easy_setopt(resp->curl, CURLOPT_FOLLOWLOCATION, 1l);
-  curl_easy_setopt(resp->curl, CURLOPT_MAXREDIRS, (long)HTTP_MAX_REDIRECTS);
-  curl_easy_setopt(resp->curl, CURLOPT_NOSIGNAL, 1l);
-  curl_easy_setopt(resp->curl, CURLOPT_BUFFERSIZE,
-		   (long)HTTP_CURL_BUFFER_SIZE);
-  curl_easy_setopt(resp->curl, CURLOPT_CONNECTTIMEOUT,
-		   (long)HTTP_CONNECT_TIMEOUT);
-  curl_easy_setopt(resp->curl, CURLOPT_LOW_SPEED_LIMIT,
-		   (long)HTTP_STALL_LIMIT);
-  curl_easy_setopt(resp->curl, CURLOPT_LOW_SPEED_TIME,
-		   (long)HTTP_STALL_TIMEOUT);
-  curl_easy_setopt(resp->curl, CURLOPT_HEADERFUNCTION, http_header_cb);
-  curl_easy_setopt(resp->curl, CURLOPT_HEADERDATA, resp);
-  curl_easy_setopt(resp->curl, CURLOPT_WRITEFUNCTION, http_write_cb);
-  curl_easy_setopt(resp->curl, CURLOPT_WRITEDATA, resp);
-#ifdef VERSION_TAG
-  curl_easy_setopt(resp->curl, CURLOPT_USERAGENT, "websrv/" VERSION_TAG);
-#endif
-
-  if(curl_multi_add_handle(resp->multi, resp->curl) != CURLM_OK) {
+  // blocks until the headers of the final response have been received
+  if((err=sceHttpSendRequest(resp->reqId, 0, 0))) {
+    http_perror("sceHttpSendRequest", err);
     http_response_free(resp);
     return 0;
   }
 
-  while(!resp->ready && !resp->done) {
-    if(http_response_perform(resp)) {
-      break;
-    }
-  }
-
-  if(!resp->ready) {
+  if((err=sceHttpGetStatusCode(resp->reqId, &status))) {
+    http_perror("sceHttpGetStatusCode", err);
     http_response_free(resp);
     return 0;
+  }
+
+  resp->status = status;
+
+  if((err=sceHttpGetAllResponseHeaders(resp->reqId, &hdrbuf, &hdrlen))) {
+    http_perror("sceHttpGetAllResponseHeaders", err);
+  } else if(hdrbuf && hdrlen) {
+    http_headers_parse(resp, hdrbuf, hdrlen);
+  }
+
+  // responses that never carry a body
+  if(id == SCE_HTTP_METHOD_HEAD || status == 204 || status == 304 ||
+     (status >= 100 && status < 200)) {
+    resp->eof = 1;
   }
 
   return resp;
@@ -426,40 +498,30 @@ http_request(const char *method, const char *url,
 
 ssize_t
 http_response_read(http_response_t *resp, void *buf, size_t len) {
-  size_t n;
+  int n;
 
   if(!resp || !buf || !len) {
     return -1;
   }
 
-  while(resp->off >= resp->len) {
-    resp->off = 0;
-    resp->len = 0;
-
-    if(resp->done) {
-      return resp->failed ? -1 : 0;
-    }
-
-    if(resp->paused) {
-      resp->paused = 0;
-      if(curl_easy_pause(resp->curl, CURLPAUSE_CONT) != CURLE_OK) {
-	resp->failed = 1;
-	return -1;
-      }
-      continue;
-    }
-
-    if(http_response_perform(resp)) {
-      return -1;
-    }
+  if(resp->eof) {
+    return resp->failed ? -1 : 0;
   }
 
-  if((n=resp->len - resp->off) > len) {
-    n = len;
+  if(len > HTTP_READ_MAX) {
+    len = HTTP_READ_MAX;
   }
 
-  memcpy(buf, resp->buf + resp->off, n);
-  resp->off += n;
+  if((n=sceHttpReadData(resp->reqId, buf, len)) < 0) {
+    http_perror("sceHttpReadData", n);
+    resp->failed = 1;
+    resp->eof = 1;
+    return -1;
+  }
+
+  if(!n) {
+    resp->eof = 1;
+  }
 
   return (ssize_t)n;
 }
@@ -510,17 +572,18 @@ http_response_free(http_response_t *resp) {
     return;
   }
 
-  if(resp->multi) {
-    if(resp->curl) {
-      curl_multi_remove_handle(resp->multi, resp->curl);
+  if(resp->reqId >= 0) {
+    if(!resp->eof) {
+      // the caller gave up before the whole body was received
+      sceHttpAbortRequest(resp->reqId);
     }
-    curl_multi_cleanup(resp->multi);
+    sceHttpDeleteRequest(resp->reqId);
   }
-  if(resp->curl) {
-    curl_easy_cleanup(resp->curl);
+  if(resp->connId >= 0) {
+    sceHttpDeleteConnection(resp->connId);
   }
-  if(resp->reqhdrs) {
-    curl_slist_free_all(resp->reqhdrs);
+  if(resp->tmplId >= 0) {
+    sceHttpDeleteTemplate(resp->tmplId);
   }
 
   http_headers_free(resp->headers);
@@ -528,79 +591,57 @@ http_response_free(http_response_t *resp) {
 }
 
 
-static size_t
-http_buffer_cb(char *ptr, size_t size, size_t nmemb, void *ctx) {
-  http_buffer_t *buf = ctx;
-  size_t len = size * nmemb;
-  uint8_t *data;
-
-  if(!(data=realloc(buf->data, buf->size + len + 1))) {
-    return 0;
-  }
-
-  memcpy(data + buf->size, ptr, len);
-  buf->data = data;
-  buf->size += len;
-  buf->data[buf->size] = 0;
-
-  return len;
-}
-
-
 uint8_t*
 http_get(const char *url, size_t *size) {
-  http_buffer_t buf = {0, 0};
-  long status = 0;
-  CURLcode res;
-  CURL *curl;
+  http_response_t *resp;
+  uint8_t *data = 0;
+  size_t cap = 0;
+  size_t len = 0;
+  uint8_t *tmp;
+  ssize_t n;
 
-  pthread_once(&g_curl_once, http_curl_init);
-
-  if(!url || !url[0]) {
+  if(!(resp=http_request("GET", url, 0))) {
     return 0;
   }
 
-  if(!(curl=curl_easy_init())) {
+  if(http_response_status(resp) >= 400) {
+    fprintf(stderr, "http_get: %s responded with %ld\n", url,
+	    http_response_status(resp));
+    http_response_free(resp);
     return 0;
   }
 
-  curl_easy_setopt(curl, CURLOPT_URL, url);
-  http_curl_restrict(curl);
-  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1l);
-  curl_easy_setopt(curl, CURLOPT_MAXREDIRS, (long)HTTP_MAX_REDIRECTS);
-  curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1l);
-  curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, (long)HTTP_CONNECT_TIMEOUT);
-  curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, (long)HTTP_STALL_LIMIT);
-  curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, (long)HTTP_STALL_TIMEOUT);
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, http_buffer_cb);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buf);
-#ifdef VERSION_TAG
-  curl_easy_setopt(curl, CURLOPT_USERAGENT, "websrv/" VERSION_TAG);
-#endif
+  while(1) {
+    if(len + HTTP_BUFFER_BLOCK + 1 > cap) {
+      cap = cap ? cap * 2 : 2 * HTTP_BUFFER_BLOCK;
+      if(!(tmp=realloc(data, cap))) {
+	free(data);
+	http_response_free(resp);
+	return 0;
+      }
+      data = tmp;
+    }
 
-  res = curl_easy_perform(curl);
-  curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
-  curl_easy_cleanup(curl);
+    if((n=http_response_read(resp, data + len, HTTP_BUFFER_BLOCK)) < 0) {
+      free(data);
+      http_response_free(resp);
+      return 0;
+    }
 
-  if(res != CURLE_OK) {
-    fprintf(stderr, "curl_easy_perform: %s\n", curl_easy_strerror(res));
-    free(buf.data);
-    return 0;
+    if(!n) {
+      break;
+    }
+
+    len += n;
   }
 
-  if(status >= 400) {
-    fprintf(stderr, "http_get: %s responded with %ld\n", url, status);
-    free(buf.data);
-    return 0;
-  }
+  http_response_free(resp);
 
-  if(!buf.data) {
-    buf.data = calloc(1, 1);
-  }
+  data[len] = 0;
 
   if(size) {
-    *size = buf.size;
+    *size = len;
   }
 
-  return buf.data;
+  return data;
 }
