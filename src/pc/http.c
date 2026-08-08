@@ -22,7 +22,7 @@ along with this program; see the file COPYING. If not, see
 
 #include <curl/curl.h>
 
-#include "../http.h"
+#include "http.h"
 
 
 /**
@@ -381,7 +381,6 @@ http_request(const char *method, const char *url,
     curl_easy_setopt(resp->curl, CURLOPT_CUSTOMREQUEST, method);
   }
 
-  curl_easy_setopt(resp->curl, CURLOPT_SSL_VERIFYPEER, 0L);
   curl_easy_setopt(resp->curl, CURLOPT_URL, url);
   curl_easy_setopt(resp->curl, CURLOPT_HTTPHEADER, resp->reqhdrs);
   http_curl_restrict(resp->curl);

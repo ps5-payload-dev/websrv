@@ -28,6 +28,7 @@ along with this program; see the file COPYING. If not, see
 #include "asset.h"
 #include "fs.h"
 #include "mdns.h"
+#include "proxy.h"
 #include "smb.h"
 #include "ssdp.h"
 #include "sys.h"
@@ -327,6 +328,9 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
     }
     if(!strcmp("/version", url)) {
       return version_request(conn);
+    }
+    if(!strcmp("/proxy", url)) {
+      return proxy_request(conn, method);
     }
     if(!strcmp("/", url) || !url[0]) {
       return asset_request(conn, "/index.html");

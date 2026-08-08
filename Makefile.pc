@@ -21,11 +21,12 @@ PYTHON ?= python3
 BIN := websrv.pc
 
 SRCS := src/main.c src/websrv.c src/asset.c src/fs.c src/mime.c
-SRCS += src/ssdp.c
-SRCS += src/pc/sys.c
+SRCS += src/ssdp.c src/proxy.c
+SRCS += src/pc/sys.c src/pc/http.c
 
-CFLAGS := -Wall -DVERSION_TAG=\"$(VERSION_TAG)\"
+CFLAGS := -Wall -DVERSION_TAG=\"$(VERSION_TAG)\" -Isrc
 LDADD  += `pkg-config libmicrohttpd --libs`
+LDADD  += `pkg-config libcurl --libs`
 
 ASSETS   := $(wildcard assets/*)
 GEN_SRCS := $(patsubst assets/%,gen/%, $(ASSETS:=.c))
