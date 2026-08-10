@@ -390,74 +390,51 @@ file_close(void *cls) {
 
 
 /**
- * Parse a single byte range from a Range header.
+ * Parse range header.
  **/
 static int
 parse_range(const char* range, uint64_t size, uint64_t* start, uint64_t* end) {
-  uint64_t first;
-  uint64_t last;
-  const char* p;
-  char* q;
-
-  if(!range || strncmp("bytes=", range, 6)) {
-    return -1;
-  }
-
-  p = range + 6;
-  while(*p == ' ') {
-    p++;
-  }
+  char* p;
 
   // multipart ranges are not supported, serve the whole file instead
-  if(strchr(p, ',')) {
+  if(!range || strncmp("bytes=", range, 6) || strchr(range, ',')) {
     return -1;
   }
+  range += 6;
 
-  // suffix range, e.g. "bytes=-500" means the last 500 bytes
-  if(*p == '-') {
-    p++;
-    errno = 0;
-    last = strtoull(p, &q, 10);
-    if(q == p || errno) {
+  // a suffix range, e.g. "-500", means the last 500 bytes
+  if(*range == '-') {
+    *end = size - 1;
+    *start = strtoull(range + 1, &p, 10);
+    if(*p) {
       return -1;
     }
-    if(!last) {
+    if(!*start) {
       return 1;
     }
-    *start = (last < size) ? size - last : 0;
-    *end = size - 1;
+    *start = (*start < size) ? size - *start : 0;
     return 0;
   }
 
-  errno = 0;
-  first = strtoull(p, &q, 10);
-  if(q == p || errno || *q != '-') {
+  *start = strtoull(range, &p, 10);
+  if(*p != '-') {
     return -1;
   }
 
-  p = q + 1;
-  if(!*p) {
-    last = size - 1;
+  // an absent last-pos, e.g. "500-", means the rest of the file
+  if(!*++p) {
+    *end = size - 1;
   } else {
-    errno = 0;
-    last = strtoull(p, &q, 10);
-    if(q == p || errno) {
+    *end = strtoull(p, &p, 10);
+    if(*p) {
       return -1;
+    }
+    if(*end >= size) {
+      *end = size - 1;
     }
   }
 
-  if(last >= size) {
-    last = size - 1;
-  }
-
-  if(first > last) {
-    return 1;
-  }
-
-  *start = first;
-  *end = last;
-
-  return 0;
+  return (*start > *end);
 }
 
 
