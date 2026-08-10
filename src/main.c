@@ -39,9 +39,7 @@ main(int argc, char** argv) {
   signal(SIGCHLD, SIG_IGN);
 
   while(1) {
-#ifdef __SCE__
     mdns_discovery_start();
-#endif
     websrv_listen(port);
     sleep(3);
   }

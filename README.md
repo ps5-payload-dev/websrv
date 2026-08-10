@@ -56,6 +56,12 @@ john@localhost:ps5-payload-dev/websrv$ export PS5_PAYLOAD_SDK=/opt/ps5-payload-s
 john@localhost:ps5-payload-dev/websrv$ make
 ```
 
+If you are compiling for Ubuntu 26.04:
+```console
+john@localhost:ps5-payload-dev/websrv$ sudo apt install ibmicrohttpd-dev libsmb2-dev libmicrodns-dev
+john@localhost:ps5-payload-dev/websrv$ make -f Makefile.pc
+```
+
 ## Known Issues
 - Homebrew sometimes crashes when there is already a previous homebrew running.
 

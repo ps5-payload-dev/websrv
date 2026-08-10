@@ -312,14 +312,12 @@ websrv_on_request(void *cls, struct MHD_Connection *conn,
     if(!strncmp("/fs/", url, 4)) {
       return fs_request(conn, url);
     }
-#ifdef __SCE__
     if(!strcmp("/mdns", url)) {
       return mdns_request(conn, url);
     }
     if(!strncmp("/smb", url, 4)) {
       return smb_request(conn, url);
     }
-#endif
     if(!strcmp("/launch", url)) {
       return launch_request(conn);
     }
