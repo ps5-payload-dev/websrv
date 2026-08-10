@@ -1,4 +1,4 @@
-/* Copyright (C) 2025 John Törnblom
+/* Copyright (C) 2026 John Törnblom
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
@@ -14,6 +14,7 @@ You should have received a copy of the GNU General Public License
 along with this program; see the file COPYING. If not, see
 <http://www.gnu.org/licenses/>.  */
 
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,6 +62,15 @@ along with this program; see the file COPYING. If not, see
   "  </head>"                                    \
   "  <body>Internal server error</body>"         \
   "</html>"
+
+
+/**
+ * State for a (possibly partial) file transfer.
+ **/
+typedef struct file_read_sm {
+  FILE*    file;
+  uint64_t start;
+} file_read_sm_t;
 
 
 /**
@@ -342,18 +352,21 @@ dir_request(struct MHD_Connection *conn, const char* path) {
 
 /**
  * Read parts of a file on disk.
+ *
+ * Note: pos is relative to the start of the response body, which for a
+ * range request is not the start of the file.
  **/
 static ssize_t
 file_read(void *cls, uint64_t pos, char *buf, size_t max) {
-  FILE *file = cls;
+  file_read_sm_t *sm = cls;
   size_t len;
 
-  if(fseek(file, pos, SEEK_SET)) {
+  if(fseeko(sm->file, (off_t)(sm->start + pos), SEEK_SET)) {
     return MHD_CONTENT_READER_END_WITH_ERROR;
   }
 
-  if(!(len=fread(buf, 1, max, file))) {
-    if(ferror(file)) {
+  if(!(len=fread(buf, 1, max, sm->file))) {
+    if(ferror(sm->file)) {
       return MHD_CONTENT_READER_END_WITH_ERROR;
     } else {
       return MHD_CONTENT_READER_END_OF_STREAM;
@@ -369,8 +382,82 @@ file_read(void *cls, uint64_t pos, char *buf, size_t max) {
  **/
 static void
 file_close(void *cls) {
-  FILE *file = cls;
-  fclose(file);
+  file_read_sm_t *sm = cls;
+
+  fclose(sm->file);
+  free(sm);
+}
+
+
+/**
+ * Parse a single byte range from a Range header.
+ **/
+static int
+parse_range(const char* range, uint64_t size, uint64_t* start, uint64_t* end) {
+  uint64_t first;
+  uint64_t last;
+  const char* p;
+  char* q;
+
+  if(!range || strncmp("bytes=", range, 6)) {
+    return -1;
+  }
+
+  p = range + 6;
+  while(*p == ' ') {
+    p++;
+  }
+
+  // multipart ranges are not supported, serve the whole file instead
+  if(strchr(p, ',')) {
+    return -1;
+  }
+
+  // suffix range, e.g. "bytes=-500" means the last 500 bytes
+  if(*p == '-') {
+    p++;
+    errno = 0;
+    last = strtoull(p, &q, 10);
+    if(q == p || errno) {
+      return -1;
+    }
+    if(!last) {
+      return 1;
+    }
+    *start = (last < size) ? size - last : 0;
+    *end = size - 1;
+    return 0;
+  }
+
+  errno = 0;
+  first = strtoull(p, &q, 10);
+  if(q == p || errno || *q != '-') {
+    return -1;
+  }
+
+  p = q + 1;
+  if(!*p) {
+    last = size - 1;
+  } else {
+    errno = 0;
+    last = strtoull(p, &q, 10);
+    if(q == p || errno) {
+      return -1;
+    }
+  }
+
+  if(last >= size) {
+    last = size - 1;
+  }
+
+  if(first > last) {
+    return 1;
+  }
+
+  *start = first;
+  *end = last;
+
+  return 0;
 }
 
 
@@ -379,11 +466,18 @@ file_close(void *cls) {
  **/
 static enum MHD_Result
 file_request(struct MHD_Connection *conn, const char* path) {
+  unsigned int status = MHD_HTTP_OK;
+  struct MHD_Response *resp = 0;
   enum MHD_Result ret = MHD_NO;
-  struct MHD_Response *resp;
+  file_read_sm_t *sm = 0;
+  const char* range = 0;
   const char* mime = 0;
+  uint64_t start = 0;
+  uint64_t size = 0;
+  uint64_t end = 0;
   struct stat st;
   FILE *file = 0;
+  char buf[128];
 
   if(!stat(path, &st)) {
     mime = mime_get_type(path);
@@ -399,18 +493,82 @@ file_request(struct MHD_Connection *conn, const char* path) {
     return ret;
   }
 
-  if((resp=MHD_create_response_from_callback(st.st_size, 32 * PAGE_SIZE,
-					     &file_read, file,
-					     &file_close))) {
+  size = (uint64_t)st.st_size;
+
+  // empty file, nothing to range over
+  if(!size) {
+    fclose(file);
+    if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
+      if(mime) {
+	MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, mime);
+      }
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_ACCEPT_RANGES, "bytes");
+      ret = websrv_queue_response(conn, MHD_HTTP_OK, resp);
+      MHD_destroy_response(resp);
+    }
+    return ret;
+  }
+
+  end = size - 1;
+  range = MHD_lookup_connection_value(conn, MHD_HEADER_KIND,
+				      MHD_HTTP_HEADER_RANGE);
+
+  switch(parse_range(range, size, &start, &end)) {
+  case 0:
+    status = MHD_HTTP_PARTIAL_CONTENT;
+    break;
+
+  case 1: // unsatisfiable
+    fclose(file);
+    if((resp=MHD_create_response_from_buffer(0, "", MHD_RESPMEM_PERSISTENT))) {
+      snprintf(buf, sizeof(buf), "bytes */%ld", size);
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_RANGE, buf);
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_ACCEPT_RANGES, "bytes");
+      ret = websrv_queue_response(conn, MHD_HTTP_RANGE_NOT_SATISFIABLE, resp);
+      MHD_destroy_response(resp);
+    }
+    return ret;
+
+  default: // no (usable) range header, serve the whole file
+    start = 0;
+    end = size - 1;
+    break;
+  }
+
+  if(!(sm=calloc(1, sizeof(file_read_sm_t)))) {
+    fclose(file);
+    if((resp=MHD_create_response_from_buffer(strlen(PAGE_500), PAGE_500,
+                                             MHD_RESPMEM_PERSISTENT))) {
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, "text/html");
+      ret = websrv_queue_response(conn, MHD_HTTP_INTERNAL_SERVER_ERROR, resp);
+      MHD_destroy_response(resp);
+    }
+    return ret;
+  }
+
+  sm->file = file;
+  sm->start = start;
+
+  if((resp=MHD_create_response_from_callback(end - start + 1, 32 * PAGE_SIZE,
+					     &file_read, sm, &file_close))) {
     if(mime) {
       MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_TYPE, mime);
     }
-    ret = websrv_queue_response (conn, MHD_HTTP_OK, resp);
+
+    MHD_add_response_header(resp, MHD_HTTP_HEADER_ACCEPT_RANGES, "bytes");
+    if(status == MHD_HTTP_PARTIAL_CONTENT) {
+      snprintf(buf, sizeof(buf), "bytes %ld-%ld/%ld", start, end, size);
+      MHD_add_response_header(resp, MHD_HTTP_HEADER_CONTENT_RANGE, buf);
+    }
+
+    ret = websrv_queue_response(conn, status, resp);
     MHD_destroy_response(resp);
     return ret;
   }
 
   fclose(file);
+  free(sm);
+
   return MHD_NO;
 }
 
