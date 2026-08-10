@@ -20,11 +20,10 @@ PYTHON ?= python3
 
 BIN   := websrv.pc
 SRCS   := src/main.c src/websrv.c src/asset.c src/fs.c src/mime.c
-SRCS   += src/mdns.c src/smb.c
+SRCS   += src/mdns.c
 SRCS   += src/pc/sys.c
 
 CFLAGS := -Wall -DVERSION_TAG=\"$(VERSION_TAG)\"
-LDADD  += `pkg-config libsmb2 --libs`
 LDADD  += `pkg-config libmicrohttpd --libs`
 LDADD  += `pkg-config microdns --libs`
 
