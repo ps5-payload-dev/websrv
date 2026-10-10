@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#   Copyright (C) 2024 John Törnblom
+#   Copyright (C) 2026 John Törnblom
 #
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -52,10 +52,14 @@ patch -p0 < $SCRIPT_DIR/eduke32-vfs-without-relative-paths.diff
 
 CFLAGS="$($PS5_PAYLOAD_SDK/bin/prospero-sdl2-config --cflags)"
 LDFLAGS="$($PS5_PAYLOAD_SDK/bin/prospero-sdl2-config --libs)"
-${MAKE} PRETTY_OUTPUT=0 USE_OPENGL=0 HAVE_GTK2=0 \
+${MAKE} PRETTY_OUTPUT=0 USE_OPENGL=1 HAVE_GTK2=0 \
 	USE_MIMALLOC=0 PLATFORM=BSD LTO=0 \
 	SDLCONFIG="${PS5_PAYLOAD_SDK}/bin/prospero-sdl2-config" \
 	CC="$CC" CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" STRIP=$STRP || exit 1
 
 mv eduke32 "${SCRIPT_DIR}/eduke32.elf" || exit 1
 
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libGL.so.1" "${SCRIPT_DIR}/"
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libEGL.so.1" "${SCRIPT_DIR}/"
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libgallium-26.2.0.so" "${SCRIPT_DIR}/"
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libvulkan.so.1" "${SCRIPT_DIR}/"

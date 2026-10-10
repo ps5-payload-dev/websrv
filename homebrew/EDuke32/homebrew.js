@@ -18,6 +18,7 @@ along with this program; see the file COPYING. If not, see
 async function main() {
     const WORKDIR = window.workingDir;
     const PAYLOAD = WORKDIR + '/eduke32.elf';
+    const ENV = {LD_LIBRARY_PATH: WORKDIR};
 
     return {
         mainText: "EDuke32",
@@ -25,7 +26,8 @@ async function main() {
 	onclick: async () => {
 	    return {
 		path: PAYLOAD,
-                cwd: WORKDIR
+                cwd: WORKDIR,
+                env: ENV
 	    };
         }
     };
