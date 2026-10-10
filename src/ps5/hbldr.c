@@ -381,6 +381,7 @@ bigapp_replace(pid_t pid, uint8_t* elf, const char* progname, int stdio,
   }
 
   bigapp_set_argv0(pid, progname);
+  elfldr_raise_privileges(pid);
   elfldr_set_procname(pid, basename(progname));
   elfldr_set_environ(pid, envp);
   elfldr_set_cwd(pid, cwd);
@@ -447,8 +448,6 @@ hbldr_launch(const char*cwd, const char* path, int stdio, char** argv,
   if((pid=bigapp_launch(argv)) < 0) {
     return -1;
   }
-
-  elfldr_raise_privileges(pid);
 
   if(bigapp_replace(pid, elf, path, stdio, cwd, envp) < 0) {
     pt_detach(pid, SIGKILL);
