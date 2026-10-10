@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#   Copyright (C) 2024 John Törnblom
+#   Copyright (C) 2026 John Törnblom
 #
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -48,9 +48,11 @@ sed -i 's|SDL2_LIBRARY|SDL2_LIBRARIES|g' $TEMPDIR/yquake2-$VER/CMakeLists.txt
 cd $TEMPDIR
 
 ${CMAKE} -DCMAKE_BUILD_TYPE=Release \
+	 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
 	 -DCMAKE_EXE_LINKER_FLAGS="-rdynamic" \
+	 -DSOFT_RENDERER=NO \
 	 -DGL1_RENDERER=NO \
-	 -DGL3_RENDERER=NO \
+	 -DGL3_RENDERER=YES \
 	 -DGLES1_RENDERER=NO \
 	 -DGLES3_RENDERER=NO \
 	 -B $TEMPDIR/build \
@@ -58,7 +60,14 @@ ${CMAKE} -DCMAKE_BUILD_TYPE=Release \
 ${CMAKE} --build $TEMPDIR/build
 
 mv $TEMPDIR/build/release/quake2 "${SCRIPT_DIR}/quake2.elf" || exit 1
-mv $TEMPDIR/build/release/ref_soft.so "${SCRIPT_DIR}/" || exit 1
+mv $TEMPDIR/build/release/ref_gl3.so "${SCRIPT_DIR}/" || exit 1
 mv $TEMPDIR/build/release/baseq2/game.so "${SCRIPT_DIR}/baseq2/" || exit 1
 mv $TEMPDIR/Install/Data/baseq2/pak0.pak "${SCRIPT_DIR}/baseq2/" || exit 1
 mv $TEMPDIR/Install/Data/baseq2/players "${SCRIPT_DIR}/baseq2/" || exit 1
+
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libGL.so.1" "${SCRIPT_DIR}/"
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libEGL.so.1" "${SCRIPT_DIR}/"
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libgallium-26.2.0.so" "${SCRIPT_DIR}/"
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libvulkan.so.1" "${SCRIPT_DIR}/"
+
+
