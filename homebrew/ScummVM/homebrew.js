@@ -18,7 +18,9 @@ along with this program; see the file COPYING. If not, see
 async function main() {
     const PAYLOAD = window.workingDir + '/scummvm.elf';
     const CWD = window.workingDir + '/data';
+    const ENV = {LD_LIBRARY_PATH: window.workingDir};
     const ARGS = ['--fullscreen',
+                  '--gfx-mode=opengl',
                   '--config=/data/homebrew/ScummVM/scummvm.ini',
                   '--screenshotpath=/data/homebrew/ScummVM/screenshots',
                   '--savepath=/data/homebrew/ScummVM/saves',
@@ -32,7 +34,8 @@ async function main() {
 	    return {
 		path: PAYLOAD,
                 cwd: CWD,
-                args: ARGS
+                args: ARGS,
+                env: ENV
 	    };
         }
     };

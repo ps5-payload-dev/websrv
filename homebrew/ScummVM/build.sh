@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#   Copyright (C) 2024 John Törnblom
+#   Copyright (C) 2026 John Törnblom
 #
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -45,10 +45,17 @@ export PKG_CONFIG_PATH=${PKG_CONFIG_SYSROOT_DIR}/user/homebrew/libdata/pkgconfig
 	    --with-sdl-prefix="${PS5_PAYLOAD_SDK}/target/user/homebrew/bin" \
 	    --with-libcurl-prefix="${PS5_PAYLOAD_SDK}/target/user/homebrew/bin" \
 	    --with-freetype2-prefix="${PS5_PAYLOAD_SDK}/target/user/homebrew/bin" \
+	    --opengl-mode=gl \
 	    --enable-vkeybd
 ${MAKE} dist-generic || exit 1
 
 cp dist-generic/scummvm/scummvm "${SCRIPT_DIR}/scummvm.elf" || exit 1
+
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libGL.so.1" "${SCRIPT_DIR}/" || exit 1
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libEGL.so.1" "${SCRIPT_DIR}/" || exit 1
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libgallium-26.2.0.so" "${SCRIPT_DIR}/" || exit 1
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libvulkan.so.1" "${SCRIPT_DIR}/" || exit 1
+
 cp -r dist-generic/scummvm/data "${SCRIPT_DIR}/data" || exit 1
 mkdir -p "${SCRIPT_DIR}/extras" && touch "${SCRIPT_DIR}/extras/.keep" || exit 1
 mkdir -p "${SCRIPT_DIR}/icons" && touch "${SCRIPT_DIR}/icons/.keep" || exit 1
