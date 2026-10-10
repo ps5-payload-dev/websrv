@@ -38,5 +38,8 @@ cd "${TEMPDIR}/mari0-${VER}" || exit 1
 zip -r9 "${SCRIPT_DIR}/mari0.love" * || exit 1
 
 cp "${PS5_SYSROOT}/${PS5_HBROOT}/bin/love" "${SCRIPT_DIR}/love.elf" || exit t
-cp "${PS5_SYSROOT}/${PS5_HBROOT}/lib/libOSMesa.so.8" "${SCRIPT_DIR}/libOSMesa.so.8" || exit t
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libGL.so.1" "${SCRIPT_DIR}/" || exit 1
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libEGL.so.1" "${SCRIPT_DIR}/" || exit 1
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libgallium-26.2.0.so" "${SCRIPT_DIR}/" || exit 1
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libvulkan.so.1" "${SCRIPT_DIR}/" || exit 1
 
