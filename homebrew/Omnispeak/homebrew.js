@@ -21,6 +21,7 @@ async function main() {
     const ARGS = ['/FULLSCREEN',
                   '/GAMEPATH', WORKDIR,
                   '/USERPATH', WORKDIR];
+    const ENV = {LD_LIBRARY_PATH: WORKDIR};
     return {
         mainText: "Omnispeak",
         secondaryText: 'A Commander Keen source port',
@@ -28,7 +29,8 @@ async function main() {
 	    return {
 		path: PAYLOAD,
                 args: ARGS,
-                cwd: WORKDIR
+                cwd: WORKDIR,
+                env: ENV
 	    };
         }
     };

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#   Copyright (C) 2024 John Törnblom
+#   Copyright (C) 2026 John Törnblom
 #
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -40,7 +40,8 @@ wget -O $TEMPDIR/omnispeak-linux.tar.gz "${BIN}" || exit 1
 tar xf $TEMPDIR/omnispeak-linux.tar.gz -C $TEMPDIR || exit 1
 
 ${CMAKE} -DCMAKE_BUILD_TYPE=Release \
-	 -DRENDERER=sdl2 \
+	 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+	 -DRENDERER=sdl2gl \
 	 -B $TEMPDIR/build \
 	 -S $TEMPDIR/omnispeak-$VER || exit 1
 ${MAKE} -C $TEMPDIR/build || exit 1
@@ -49,3 +50,7 @@ mv $TEMPDIR/build/omnispeak "${SCRIPT_DIR}/omnispeak.elf" || exit 1
 mv $TEMPDIR/omnispeak-linux-$VER/*.CK4 "${SCRIPT_DIR}/" || exit 1
 mv $TEMPDIR/omnispeak-linux-$VER/data "${SCRIPT_DIR}/data" || exit 1
 
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libGL.so.1" "${SCRIPT_DIR}/"
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libEGL.so.1" "${SCRIPT_DIR}/"
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libgallium-26.2.0.so" "${SCRIPT_DIR}/"
+cp "${PS5_PAYLOAD_SDK}/target/user/homebrew/lib/libvulkan.so.1" "${SCRIPT_DIR}/"
