@@ -1,0 +1,9 @@
+(supertux-config
+  (profile 1)
+  (custom_mouse_cursor #f)
+  (disable_network #f)
+  (video
+    (fullscreen #t)
+    (video "opengl20")
+  )
+)
